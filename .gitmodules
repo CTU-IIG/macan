@@ -1,0 +1,3 @@
+[submodule "infineon-proprietary"]
+	path = infineon-proprietary
+	url = ssh://git@rtime.felk.cvut.cz/macan/infineon-proprietary

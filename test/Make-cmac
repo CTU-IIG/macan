@@ -1,0 +1,2 @@
+all:
+	gcc -Wall -ggdb -orun -I../keywrap main.c aes_cmac.c ../keywrap/common.c -lnettle
