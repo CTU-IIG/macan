@@ -25,34 +25,44 @@
 #include <time.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <unistd.h>
 #include <string.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <errno.h>
+#include "common.h"
+#include "aes_keywrap.h"
+#ifdef TC1798
+#include "can_frame.h"
+#include "Std_Types.h"
+#include "Mcu.h"
+#include "Port.h"
+#include "Can.h"
+#include "EcuM.h"
+#include "Test_Print.h"
+#include "Os.h"
+#include "she.h"
+#else
+#include <unistd.h>
 #include <net/if.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
 #include <nettle/aes.h>
-#include "common.h"
 #include "aes_cmac.h"
-#include "aes_keywrap.h"
+#endif /* TC1798 */
 
 /* ToDo
  *   implement groups
  *   some error processing
  */
 
-#define WRITE_DELAY 500000
+
+#define WRITE_DELAY 0.5
 #define NODE_KS 0
 #define NODE_TS 1
-#ifndef NODE_ID
-# error NODE_TS or NODE_OTHER not defined
-#endif /* NODE_ID */
+/* ToDo: if NODE_ID OTHER error check */
 #ifndef CAN_IF
 # error CAN_IF not specified
 #endif /* CAN_IF */
@@ -112,7 +122,7 @@ union macan_frame {
 	struct ack ack;
 };
 
-/* ltk stands for long term key; it is key shared with key serve*/
+/* ltk stands for long term key; it is a key shared with key server */
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
@@ -169,6 +179,17 @@ struct com_part cpart[] =
 	[NODE_ID]    = {{0}, 0, 0}
 };
 
+#ifdef TC1798
+int write(int s, struct can_frame *cf, int len)
+{
+	/* ToDo: consider some use of PduIdType */
+	Can_PduType PduInfo_test = {17, cf->can_dlc, cf->can_id, cf->data};
+	Can_Write(CAN_IF, &PduInfo_test);
+
+	return 16; /* :-) */
+}
+#endif
+
 int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
 #ifdef TC1798
 {
@@ -212,6 +233,7 @@ void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
 void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 #ifdef TC1798
 {
+	aes_set_key(key);
 	aes_unwrap(key, len, dst, src, src);
 }
 #else
@@ -223,7 +245,7 @@ void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 }
 #endif /* TC1798 */
 
-int process_ack(struct can_frame *cf, struct aes_ctx *cipher)
+int process_ack(struct can_frame *cf)
 {
 	uint8_t id;
 	struct com_part *cp;
@@ -286,7 +308,6 @@ void send_ack(int s, uint8_t dst_id)
 	cf.can_dlc = 8;
 	memcpy(cf.data, &ack, 8);
 
-	usleep(WRITE_DELAY);
 	res = write(s, &cf, sizeof(struct can_frame));
 	if (res != 16) {
 		perror("send ack");
@@ -370,17 +391,31 @@ void send_challenge(int s, uint8_t fwd_id)
 	cf.can_id = NODE_ID;
 	cf.can_dlc = 8;
 	memcpy(cf.data, &chal, sizeof(struct challenge));
-	usleep(WRITE_DELAY);
 	write(s, &cf, sizeof(struct can_frame));
 }
 
-void process_req_challenge(int s, struct can_frame *cf)
+struct timespec ts_base;
+uint64_t last_usec;
+
+void process_challenge(int s, struct can_frame *cf)
 {
-	assert(cf->can_id == NODE_KS);
-
+	struct can_frame canf;
 	struct challenge *ch = (struct challenge *)cf->data;
+	uint8_t plain[10];
+	uint8_t cmac4[4];
 
-	send_challenge(s, ch->fwd_id);
+	memcpy(plain, ch->chg, 6);
+	memcpy(plain + 6, &last_usec, 4);
+	/* ToDo: this should not be ltk */
+
+	canf.can_id = NODE_TS;
+	canf.can_dlc = 8;
+	memcpy(canf.data, &last_usec, 4);
+	sign(ltk, canf.data + 4, plain, 10);
+
+	write(s, &canf, sizeof(canf));
+
+	printf("Signed ts sent.\n");
 }
 
 void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
@@ -409,7 +444,6 @@ void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 	cf.can_dlc = 7;
 	memcpy(&cf.data, &areq, 7);
 
-	usleep(WRITE_DELAY);
 	write(s, &cf, sizeof(cf));
 }
 
@@ -473,51 +507,19 @@ int is_channel_ready(uint8_t dst)
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
-	struct aes_ctx cipher;
 	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
 	int fwd;
 
-	/* ToDo: move this */
-	aes_set_encrypt_key(&cipher, 16, ltk);
-
-	/* ToDo: not true when 32-bit signal format */
-	if (cryf->dst_id != NODE_ID)
-		return;
-	//printf("flags=%d", cryf->flags);
-
-	switch (cryf->flags) {
-	case 0:
-		break;
-	case 1:
-		process_req_challenge(s, cf);
-		break;
-	case 2:
-		if (cf->can_id == NODE_KS) {
-			fwd = process_skey(cf);
-
-			if (fwd != -1) {
-				send_ack(s, fwd);
-			}
-		} else {
-			if (process_ack(cf, &cipher))
-				send_ack(s, cf->can_id);
-		}
-		break;
-	case 3:
-		if (cf->can_dlc == 7)
-			process_sig_auth(cf);
-		else
-			process_sig_recv(cf);
-		break;
-	}
+	/* ToDo: check if challege message */
+	process_challenge(s, cf);
 }
 
+#ifndef TC1798
 void read_can_main(int s)
 {
 	struct can_frame cf;
 	int rbyte;
 
-	/* ToDo: what is read */
 	rbyte = read(s, &cf, sizeof(struct can_frame));
 	if (rbyte == -1 && errno == EAGAIN) {
 		return;
@@ -532,16 +534,7 @@ void read_can_main(int s)
 	print_hexn(&cf, sizeof(struct can_frame));
 	can_recv_cb(s, &cf);
 }
-
-void write_can_main(int s, struct can_frame *cf, uint8_t *pend)
-{
-	if (*pend == 0)
-		return;
-
-	/* ToDo: check send */
-	usleep(WRITE_DELAY);
-	write(s, cf, sizeof(struct can_frame));
-}
+#endif
 
 int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 {
@@ -571,7 +564,6 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 	memcpy(&cf.data, &sig, 8);
 
 	/* ToDo: assure success */
-	usleep(WRITE_DELAY);
 	write(s, &cf, sizeof(cf));
 
 	return 0;
@@ -603,54 +595,66 @@ void read_signals()
 
 }
 
-void operate_ecu(int s)
+void usec_since(uint64_t *usec)
+{
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+
+	*usec = (ts.tv_sec - ts_base.tv_sec) * 1000000;
+	*usec += (ts.tv_nsec - ts_base.tv_nsec) / 1000;
+}
+
+void broadcast_time(int s)
+{
+	struct can_frame cf;
+	uint64_t usec;
+
+	usec_since(&usec);
+	last_usec = usec;
+
+	cf.can_id = NODE_ID;
+	cf.can_dlc = 4;
+	memcpy(cf.data, &usec, 4);
+
+	write(s, &cf, sizeof(cf));
+}
+
+void operate_ts(int s)
 {
 	int scom = 0;
 
 	while(1) {
 		read_can_main(s);
+		broadcast_time(s);
 
-		read_signals();
-		//write_can_main(s, cf, &pend);
-
-		/* operate_ecu(); */
-
-		if (scom == 0) {
-			scom = 1;
-			send_challenge(s, NODE_OTHER);
-		}
-
-		if (is_channel_ready(NODE_OTHER) && scom == 1) {
-			scom++;
-			printf("channel ready = DONE\n");
-#if NODE_ID==2
-			send_auth_req(s, NODE_OTHER, ENGINE, 0);
-#endif
-		}
-
-		if (is_channel_ready(NODE_OTHER)) {
-			dispatch_signal(s, NODE_OTHER, ENGINE, signal[ENGINE]);
-		}
-		/*
-		if (tt < t) {
-			tt += 1;
-			write(s, &cf, sizeof(struct can_frame));
-		}*/
-		//write_can(s, &cf, &write_pending);
-		usleep(250);
+		usleep(500000);
 	}
-
+		//write_can(s, &cf, &write_pending);
 }
 
-int main(int argc, char *argv[])
+int init()
+#ifdef TC1798
+{
+	Test_Time_SetAlarm(0, 0, 100000, tim_handler);
+	Can_SetControllerMode(CAN_CONTROLLER0, CAN_T_START);
+	//Can_SetControllerMode(CAN_CONTROLLER1, CAN_T_START);
+
+	/* activate SHE */
+	/* ToDo: revisit */
+	SHE_CLC &= ~(0x1);
+	while (SHE_CLC & 0x2) {};
+	wait_until_done();
+
+	return 0;
+}
+#else
 {
 	int s;
-	struct sockaddr_can addr;
-	struct can_frame cf;
+	int r;
 	struct ifreq ifr;
 	char *ifname = CAN_IF;
-	time_t t, tt;
-	time_t r;
+	struct sockaddr_can addr;
 
 	if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
 		perror("Error while opening socket");
@@ -679,11 +683,17 @@ int main(int argc, char *argv[])
 		return -2;
 	}
 
-	t = time(NULL);
-	tt = t;
+	return s;
+}
+#endif
 
-	operate_ecu(s);
+int main(int argc, char *argv[])
+{
+	int s;
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts_base);
+	s = init();
+	operate_ts(s);
 
 	return 0;
 }
-

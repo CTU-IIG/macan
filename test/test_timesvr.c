@@ -59,18 +59,10 @@
  */
 
 
-#ifdef TC1798
-# define NODE_ID 2
-# define NODE_OTHER 3
-# define CAN_IF 2 /* Hth on TC1798, iface name on pc */
-#endif
-
 #define WRITE_DELAY 0.5
 #define NODE_KS 0
 #define NODE_TS 1
-#ifndef NODE_ID
-# error NODE_TS or NODE_OTHER not defined
-#endif /* NODE_ID */
+/* ToDo: if NODE_ID OTHER error check */
 #ifndef CAN_IF
 # error CAN_IF not specified
 #endif /* CAN_IF */
@@ -386,17 +378,16 @@ int process_skey(struct can_frame *cf)
 	return -1;
 }
 
-void send_challenge(int s, uint8_t fwd_id)
+void send_ts_challenge(int s)
 {
 	struct can_frame cf;
-	struct challenge chal = {1, NODE_KS, fwd_id, {0}};
+	struct challenge chal = {1, NODE_KS, 0, {0}};
 
+	/* ToDo: time and key challenge at one time*/
 	gen_challenge(g_chg);
 	memcpy(chal.chg, g_chg, 6);
 
-	g_fwd_id = fwd_id;
-
-	cf.can_id = NODE_ID;
+	cf.can_id = NODE_TS;
 	cf.can_dlc = 8;
 	memcpy(cf.data, &chal, sizeof(struct challenge));
 	write(s, &cf, sizeof(struct can_frame));
@@ -407,8 +398,6 @@ void process_req_challenge(int s, struct can_frame *cf)
 	assert(cf->can_id == NODE_KS);
 
 	struct challenge *ch = (struct challenge *)cf->data;
-
-	send_challenge(s, ch->fwd_id);
 }
 
 void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
@@ -501,12 +490,37 @@ int is_channel_ready(uint8_t dst)
 void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
+	uint8_t plain[10];
+	uint32_t usec;
 	int fwd;
 
-	/* ToDo: not true when 32-bit signal format */
-	if (cryf->dst_id != NODE_ID)
+	if (cf->can_id != 1)
 		return;
-	//printf("flags=%d", cryf->flags);
+
+	if (cf->can_dlc == 4) {
+		memcpy(&usec, cf->data, 4);
+		printf("time received = %d\n", usec);
+	}
+
+	if (cf->can_dlc == 8) {
+		memcpy(&usec, cf->data, 4);
+		printf("signed time received = %d\n", usec);
+
+		memcpy(plain, g_chg, 6);
+		memcpy(plain + 6, &usec, 4);
+		if (!check_cmac(ltk, cf->data + 4, plain, sizeof(plain))) {
+			printf("CMAC error");
+		}
+		printf("CMAC OK\n");
+	}
+
+	static uint32_t chal_int = 0;
+	if (chal_int % 5 == 0) {
+		send_ts_challenge(s);
+	}
+	chal_int++;
+
+	return;
 
 	switch (cryf->flags) {
 	case 0:
@@ -616,73 +630,41 @@ void read_signals()
 
 }
 
-void operate_ecu(int s)
+void broadcast_time(int s)
+{
+	struct timespec ts;
+	struct can_frame cf;
+	uint32_t usec;
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	usec = ts.tv_nsec / 1000;
+
+	cf.can_id = NODE_ID;
+	cf.can_dlc = 4;
+	memcpy(cf.data, &usec, 4);
+
+	write(s, &cf, sizeof(cf));
+
+	//printf("Time is %ld sec, %ld, nsec\n", ts.tv_sec, ts.tv_nsec);
+}
+
+void operate_ts(int s)
 {
 	int scom = 0;
 
 	while(1) {
-#ifndef TC1798
 		read_can_main(s);
-#endif
+		//broadcast_time(s);
 
-		read_signals();
-
-		/* operate_ecu(); */
-
-		if (scom == 0) {
-			scom = 1;
-			send_challenge(s, NODE_OTHER);
-		}
-
-		if (is_channel_ready(NODE_OTHER) && scom == 1) {
-			scom++;
-			printf("channel ready = DONE\n");
-#if NODE_ID==2
-			send_auth_req(s, NODE_OTHER, ENGINE, 0);
-#endif
-		}
-
-		if (is_channel_ready(NODE_OTHER)) {
-			dispatch_signal(s, NODE_OTHER, ENGINE, signal[ENGINE]);
-		}
-		/*
-		if (tt < t) {
-			tt += 1;
-			write(s, &cf, sizeof(struct can_frame));
-		}*/
-		//write_can(s, &cf, &write_pending);
-#ifndef TC1798
-		usleep(250);
-#endif /* TC1798 */
+		usleep(1000);
 	}
+		//write_can(s, &cf, &write_pending);
 }
-
-/* ToDo: what if overflow? */
-#define f_STM 100000000
-#define TIME_USEC (f_STM / 1000000)
-
-void read_time(uint64_t *time)
-#ifdef TC1798
-{
-	uint32_t *time32 = (uint32_t *)time;
-	time32[0] = STM_TIM0.U;
-	time32[1] = STM_TIM6.U;
-	*time /= TIME_USEC;
-}
-#else
-{
-	struct timespec ts;
-
-	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-	*time = ts.tv_sec * 1000000;
-	*time += ts.tv_nsec / 1000;
-}
-
-#endif /* TC1798 */
 
 int init()
 #ifdef TC1798
 {
+	Test_Time_SetAlarm(0, 0, 100000, tim_handler);
 	Can_SetControllerMode(CAN_CONTROLLER0, CAN_T_START);
 	//Can_SetControllerMode(CAN_CONTROLLER1, CAN_T_START);
 
@@ -738,7 +720,8 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = init();
-	operate_ecu(s);
+	operate_ts(s);
 
 	return 0;
 }
+
