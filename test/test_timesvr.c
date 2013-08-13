@@ -68,6 +68,8 @@
 # error CAN_IF not specified
 #endif /* CAN_IF */
 
+void read_time(uint64_t *time);
+
 struct challenge {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
@@ -128,6 +130,8 @@ uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
+
+uint64_t macan_time_sync = 0;
 
 #define SIG_DONTSIGN -1
 #define SIG_SIGNONCE 0
@@ -320,6 +324,7 @@ void send_ack(int s, uint8_t dst_id)
 uint8_t seq = 0;
 uint8_t g_fwd_id = 0;
 uint8_t g_chg[6];
+uint8_t g_ts_chg[6];
 uint8_t keywrap[32];
 uint8_t *key_ptr = keywrap;
 uint8_t skey[24];
@@ -383,9 +388,8 @@ void send_ts_challenge(int s)
 	struct can_frame cf;
 	struct challenge chal = {1, NODE_TS, 0, {0}};
 
-	/* ToDo: time and key challenge at one time*/
-	gen_challenge(g_chg);
-	memcpy(chal.chg, g_chg, 6);
+	gen_challenge(g_ts_chg);
+	memcpy(chal.chg, g_ts_chg, 6);
 
 	cf.can_id = NODE_ID;
 	cf.can_dlc = 8;
@@ -411,10 +415,11 @@ void send_challenge(int s, uint8_t fwd_id)
 
 void process_req_challenge(int s, struct can_frame *cf)
 {
-	if (cf->can_id != NODE_KS)
-		return;
+	assert(cf->can_id == NODE_KS);
 
 	struct challenge *ch = (struct challenge *)cf->data;
+
+	send_challenge(s, ch->fwd_id);
 }
 
 void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
@@ -504,6 +509,9 @@ int is_channel_ready(uint8_t dst)
 	return ((grp & wf) == wf);
 }
 
+uint64_t ts_chal_time;
+uint64_t ts_last_usec;
+
 /* ToDo: make it robust here  */
 void can_recv_cb(int s, struct can_frame *cf)
 {
@@ -514,14 +522,27 @@ void can_recv_cb(int s, struct can_frame *cf)
 
 	if (cf->can_id == SIG_TIME) {
 		switch(cf->can_dlc) {
-		case 4:
+		case 4: /* check time */
 			memcpy(&usec, cf->data, 4);
-			printf("time received = %d\n", usec);
+			printf("time received = %u\n", usec);
+
+			uint64_t recent;
+			uint64_t time_delta = 1000;
+
+			read_time(&recent);
+			recent += macan_time_sync;
+			if (abs(recent - usec) > time_delta) {
+				printf("error: time out of sync (%u = %u - %u)\n", abs(recent - usec), recent, usec);
+
+				ts_chal_time = recent;
+				ts_last_usec = usec;
+				send_ts_challenge(s);
+			}
 
 			break;
 		case 8:
 			memcpy(&usec, cf->data, 4);
-			printf("signed time received = %d\n", usec);
+			printf("signed time received = %u\n", usec);
 
 			if (!is_channel_ready(NODE_TS)) {
 				return;
@@ -530,13 +551,24 @@ void can_recv_cb(int s, struct can_frame *cf)
 			uint8_t *skey;
 			skey = cpart[NODE_TS].skey;
 
-			memcpy(plain, g_chg, 6);
+			memcpy(plain, g_ts_chg, 6);
 			memcpy(plain + 6, &usec, 4);
 			if (!check_cmac(skey, cf->data + 4, plain, sizeof(plain))) {
 				printf("CMAC error\n");
 			} else {
 				printf("CMAC OK\n");
 			}
+
+			/* ToDo: some sync pending flag? */
+			read_time(&recent);
+			recent += macan_time_sync;
+			if (usec != ts_last_usec) {
+				printf("error: last time is not as expected\n");
+				break;
+			}
+
+			/* ToDo: test, then simplify */
+			macan_time_sync += (usec + (recent - ts_chal_time)) - recent;
 
 			break;
 		}
@@ -654,24 +686,6 @@ void read_signals()
 
 }
 
-void broadcast_time(int s)
-{
-	struct timespec ts;
-	struct can_frame cf;
-	uint32_t usec;
-
-	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-	usec = ts.tv_nsec / 1000;
-
-	cf.can_id = NODE_ID;
-	cf.can_dlc = 4;
-	memcpy(cf.data, &usec, 4);
-
-	write(s, &cf, sizeof(cf));
-
-	//printf("Time is %ld sec, %ld, nsec\n", ts.tv_sec, ts.tv_nsec);
-}
-
 void operate_ts(int s)
 {
 	static int buz = 0;
@@ -686,8 +700,8 @@ void operate_ts(int s)
 		}
 
 		if (is_channel_ready(NODE_TS) && buz == 1) {
-			printf("channel OK\n");
 			buz++;
+			printf("channel OK\n");
 			send_ts_challenge(s);
 		}
 
@@ -695,6 +709,30 @@ void operate_ts(int s)
 	}
 		//write_can(s, &cf, &write_pending);
 }
+
+/* ToDo: what if overflow? */
+#define f_STM 100000000
+#define TIME_USEC (f_STM / 1000000)
+
+void read_time(uint64_t *time)
+#ifdef TC1798
+{
+	uint32_t *time32 = (uint32_t *)time;
+	time32[0] = STM_TIM0.U;
+	time32[1] = STM_TIM6.U;
+	*time /= TIME_USEC;
+}
+#else
+{
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	*time = ts.tv_sec * 1000000;
+	*time += ts.tv_nsec / 1000;
+}
+#endif /* TC1798 */
+
+uint64_t macan_time_sync;
 
 int init()
 #ifdef TC1798

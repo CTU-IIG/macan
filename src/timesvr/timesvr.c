@@ -69,6 +69,8 @@
 # error CAN_IF not specified
 #endif /* CAN_IF */
 
+void read_time(uint64_t *time);
+
 struct challenge {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
@@ -154,6 +156,9 @@ uint32_t signal_cnt[] = {
 	[BRAKE] = 0,
 	[TRAMIS] = 0,
 };
+
+struct timespec ts_base;
+uint64_t last_usec;
 
 /* channel states */
 #define CS_UNINIT 0
@@ -413,16 +418,12 @@ void process_req_challenge(int s, struct can_frame *cf)
 	send_challenge(s, ch->fwd_id);
 }
 
-struct timespec ts_base;
-uint64_t last_usec;
-
 int process_challenge(int s, struct can_frame *cf)
 {
 	struct can_frame canf;
 	struct challenge *ch = (struct challenge *)cf->data;
 	uint8_t *skey;
 	uint8_t plain[10];
-	uint8_t cmac4[4];
 	uint8_t dst_id;
 
 	dst_id = cf->can_id;
@@ -663,8 +664,14 @@ void broadcast_time(int s)
 {
 	struct can_frame cf;
 	uint64_t usec;
+	static int i = 0;
 
-	usec_since(&usec);
+	i++;
+	if (i % 5)
+		return;
+
+	read_time(&usec);
+	usec = usec + 500000;
 	last_usec = usec;
 
 	cf.can_id = SIG_TIME;
@@ -676,16 +683,36 @@ void broadcast_time(int s)
 
 void operate_ts(int s)
 {
-	int scom = 0;
-
 	while(1) {
 		read_can_main(s);
-		//broadcast_time(s);
+		broadcast_time(s);
 
 		usleep(500000);
 	}
 		//write_can(s, &cf, &write_pending);
 }
+
+/* ToDo: what if overflow? */
+#define f_STM 100000000
+#define TIME_USEC (f_STM / 1000000)
+
+void read_time(uint64_t *time)
+#ifdef TC1798
+{
+	uint32_t *time32 = (uint32_t *)time;
+	time32[0] = STM_TIM0.U;
+	time32[1] = STM_TIM6.U;
+	*time /= TIME_USEC;
+}
+#else
+{
+	struct timespec ts;
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	*time = ts.tv_sec * 1000000;
+	*time += ts.tv_nsec / 1000;
+}
+#endif /* TC1798 */
 
 int init()
 #ifdef TC1798
@@ -745,7 +772,6 @@ int main(int argc, char *argv[])
 {
 	int s;
 
-	clock_gettime(CLOCK_MONOTONIC_RAW, &ts_base);
 	s = init();
 	operate_ts(s);
 
