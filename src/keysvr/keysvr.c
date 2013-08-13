@@ -47,6 +47,7 @@
 #define WRITE_DELAY 500000
 #define NODE_KS 0
 #define NODE_TS 1
+#define SIG_TIME 4
 #define NODE_ID NODE_KS
 
 struct challenge {
@@ -205,6 +206,8 @@ void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
 
+	if (cf->can_id == SIG_TIME)
+		return;
 	if (cryf->dst_id != NODE_ID)
 		return;
 	//printf("flags=%d, dst_id=%d\n", cryf->flags, a->dst_id);

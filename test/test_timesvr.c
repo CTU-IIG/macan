@@ -62,6 +62,7 @@
 #define WRITE_DELAY 0.5
 #define NODE_KS 0
 #define NODE_TS 1
+#define SIG_TIME 4
 /* ToDo: if NODE_ID OTHER error check */
 #ifndef CAN_IF
 # error CAN_IF not specified
@@ -174,9 +175,9 @@ struct com_part {
 struct com_part cpart[] =
 {
 	[NODE_KS]    = {{0}, 0, 0},
-	[NODE_TS]    = {{0}, 0, 0},
-	[NODE_OTHER] = {{0}, 0, 0x8 | 0x4},
-	[NODE_ID]    = {{0}, 0, 0}
+	[NODE_TS]    = {{0}, 0, 0x1 << NODE_ID | 0x1 << NODE_TS},
+	[NODE_OTHER] = {{0}, 0, 0x1 << NODE_ID | 0x1 << NODE_OTHER},
+	[NODE_ID]    = {{0}, 0, 0x1 << NODE_ID | 0x1 << NODE_ID}
 };
 
 #ifdef TC1798
@@ -272,7 +273,6 @@ int process_ack(struct can_frame *cf)
 		return -1;
 	}
 
-	/* ToDo: Redo and then redo again */
 	uint32_t is_present = 1 << NODE_ID;
 	uint32_t ack_group = 0;
 	memcpy(&ack_group, ack->group, 3);
@@ -381,13 +381,29 @@ int process_skey(struct can_frame *cf)
 void send_ts_challenge(int s)
 {
 	struct can_frame cf;
-	struct challenge chal = {1, NODE_KS, 0, {0}};
+	struct challenge chal = {1, NODE_TS, 0, {0}};
 
 	/* ToDo: time and key challenge at one time*/
 	gen_challenge(g_chg);
 	memcpy(chal.chg, g_chg, 6);
 
-	cf.can_id = NODE_TS;
+	cf.can_id = NODE_ID;
+	cf.can_dlc = 8;
+	memcpy(cf.data, &chal, sizeof(struct challenge));
+	write(s, &cf, sizeof(struct can_frame));
+}
+
+void send_challenge(int s, uint8_t fwd_id)
+{
+	struct can_frame cf;
+	struct challenge chal = {1, NODE_KS, fwd_id, {0}};
+
+	gen_challenge(g_chg);
+	memcpy(chal.chg, g_chg, 6);
+
+	g_fwd_id = fwd_id;
+
+	cf.can_id = NODE_ID;
 	cf.can_dlc = 8;
 	memcpy(cf.data, &chal, sizeof(struct challenge));
 	write(s, &cf, sizeof(struct can_frame));
@@ -395,7 +411,8 @@ void send_ts_challenge(int s)
 
 void process_req_challenge(int s, struct can_frame *cf)
 {
-	assert(cf->can_id == NODE_KS);
+	if (cf->can_id != NODE_KS)
+		return;
 
 	struct challenge *ch = (struct challenge *)cf->data;
 }
@@ -471,7 +488,7 @@ void process_sig_recv(struct can_frame *cf)
 	skey = cpart[cf->can_id].skey;
 
 	if (!check_cmac(skey, sig->cmac, plain, sizeof(plain))) {
-		printf("CMAC error");
+		printf("CMAC error\n");
 		return;
 	}
 
@@ -487,6 +504,7 @@ int is_channel_ready(uint8_t dst)
 	return ((grp & wf) == wf);
 }
 
+/* ToDo: make it robust here  */
 void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
@@ -494,33 +512,39 @@ void can_recv_cb(int s, struct can_frame *cf)
 	uint32_t usec;
 	int fwd;
 
-	if (cf->can_id != 1)
-		return;
+	if (cf->can_id == SIG_TIME) {
+		switch(cf->can_dlc) {
+		case 4:
+			memcpy(&usec, cf->data, 4);
+			printf("time received = %d\n", usec);
 
-	if (cf->can_dlc == 4) {
-		memcpy(&usec, cf->data, 4);
-		printf("time received = %d\n", usec);
-	}
+			break;
+		case 8:
+			memcpy(&usec, cf->data, 4);
+			printf("signed time received = %d\n", usec);
 
-	if (cf->can_dlc == 8) {
-		memcpy(&usec, cf->data, 4);
-		printf("signed time received = %d\n", usec);
+			if (!is_channel_ready(NODE_TS)) {
+				return;
+			}
 
-		memcpy(plain, g_chg, 6);
-		memcpy(plain + 6, &usec, 4);
-		if (!check_cmac(ltk, cf->data + 4, plain, sizeof(plain))) {
-			printf("CMAC error");
+			uint8_t *skey;
+			skey = cpart[NODE_TS].skey;
+
+			memcpy(plain, g_chg, 6);
+			memcpy(plain + 6, &usec, 4);
+			if (!check_cmac(skey, cf->data + 4, plain, sizeof(plain))) {
+				printf("CMAC error\n");
+			} else {
+				printf("CMAC OK\n");
+			}
+
+			break;
 		}
-		printf("CMAC OK\n");
+		return;
 	}
 
-	static uint32_t chal_int = 0;
-	if (chal_int % 5 == 0) {
-		send_ts_challenge(s);
-	}
-	chal_int++;
-
-	return;
+	if (cryf->dst_id != NODE_ID)
+		return;
 
 	switch (cryf->flags) {
 	case 0:
@@ -536,7 +560,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 				send_ack(s, fwd);
 			}
 		} else {
-			if (process_ack(cf))
+			if (process_ack(cf) == 1)
 				send_ack(s, cf->can_id);
 		}
 		break;
@@ -650,11 +674,22 @@ void broadcast_time(int s)
 
 void operate_ts(int s)
 {
-	int scom = 0;
+	static int buz = 0;
 
 	while(1) {
 		read_can_main(s);
 		//broadcast_time(s);
+
+		if (buz == 0) {
+			buz++;
+			send_challenge(s, NODE_TS);
+		}
+
+		if (is_channel_ready(NODE_TS) && buz == 1) {
+			printf("channel OK\n");
+			buz++;
+			send_ts_challenge(s);
+		}
 
 		usleep(1000);
 	}

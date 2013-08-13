@@ -62,6 +62,8 @@
 #define WRITE_DELAY 0.5
 #define NODE_KS 0
 #define NODE_TS 1
+#define SIG_TIME 4
+#define NODE_ID NODE_TS
 /* ToDo: if NODE_ID OTHER error check */
 #ifndef CAN_IF
 # error CAN_IF not specified
@@ -174,9 +176,9 @@ struct com_part {
 struct com_part cpart[] =
 {
 	[NODE_KS]    = {{0}, 0, 0},
-	[NODE_TS]    = {{0}, 0, 0},
-	[NODE_OTHER] = {{0}, 0, 0x8 | 0x4},
-	[NODE_ID]    = {{0}, 0, 0}
+	[NODE_TS]    = {{0}, 0, 0x1 << NODE_ID | 0x1 << NODE_TS},
+	[NODE_OTHER] = {{0}, 0, 0x1 << NODE_ID | 0x1 << NODE_OTHER},
+	[NODE_ID]    = {{0}, 0, 0x1 << NODE_ID | 0x1 << NODE_ID}
 };
 
 #ifdef TC1798
@@ -394,28 +396,57 @@ void send_challenge(int s, uint8_t fwd_id)
 	write(s, &cf, sizeof(struct can_frame));
 }
 
+int is_channel_ready(uint8_t dst)
+{
+	uint32_t grp = (*((uint32_t *)&cpart[dst].group_id)) & 0x00ffffff;
+	uint32_t wf = (*((uint32_t *)&cpart[dst].wait_for)) & 0x00ffffff;
+
+	return ((grp & wf) == wf);
+}
+
+void process_req_challenge(int s, struct can_frame *cf)
+{
+	assert(cf->can_id == NODE_KS);
+
+	struct challenge *ch = (struct challenge *)cf->data;
+
+	send_challenge(s, ch->fwd_id);
+}
+
 struct timespec ts_base;
 uint64_t last_usec;
 
-void process_challenge(int s, struct can_frame *cf)
+int process_challenge(int s, struct can_frame *cf)
 {
 	struct can_frame canf;
 	struct challenge *ch = (struct challenge *)cf->data;
+	uint8_t *skey;
 	uint8_t plain[10];
 	uint8_t cmac4[4];
+	uint8_t dst_id;
+
+	dst_id = cf->can_id;
+
+	/* ToDo: check if there is an effort to establish */
+	if (!is_channel_ready(dst_id)) {
+		printf("no auth channel\n");
+		return -1;
+	}
+
+	skey = cpart[dst_id].skey;
 
 	memcpy(plain, ch->chg, 6);
 	memcpy(plain + 6, &last_usec, 4);
-	/* ToDo: this should not be ltk */
 
-	canf.can_id = NODE_TS;
+	canf.can_id = SIG_TIME;
 	canf.can_dlc = 8;
 	memcpy(canf.data, &last_usec, 4);
-	sign(ltk, canf.data + 4, plain, 10);
+	sign(skey, canf.data + 4, plain, 10);
 
 	write(s, &canf, sizeof(canf));
 
 	printf("Signed ts sent.\n");
+	return 0;
 }
 
 void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
@@ -489,7 +520,7 @@ void process_sig_recv(struct can_frame *cf)
 	skey = cpart[cf->can_id].skey;
 
 	if (!check_cmac(skey, sig->cmac, plain, sizeof(plain))) {
-		printf("CMAC error");
+		printf("CMAC error\n");
 		return;
 	}
 
@@ -497,21 +528,44 @@ void process_sig_recv(struct can_frame *cf)
 	printf("received authorized sig=%i\n", sig->signal[0]);
 }
 
-int is_channel_ready(uint8_t dst)
-{
-	uint32_t grp = (*((uint32_t *)&cpart[dst].group_id)) & 0x00ffffff;
-	uint32_t wf = (*((uint32_t *)&cpart[dst].wait_for)) & 0x00ffffff;
-
-	return ((grp & wf) == wf);
-}
-
 void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
 	int fwd;
 
-	/* ToDo: check if challege message */
-	process_challenge(s, cf);
+	/* ToDo: differ plain and macan frames */
+	if (cryf->dst_id != NODE_ID)
+		return;
+	//printf("flags=%d", cryf->flags);
+	switch (cryf->flags) {
+	case 0:
+		break;
+	case 1:
+		if (cf->can_id == NODE_KS) {
+			process_req_challenge(s, cf);
+		} else {
+			process_challenge(s, cf);
+		}
+		break;
+	case 2:
+		if (cf->can_id == NODE_KS) {
+			fwd = process_skey(cf);
+
+			if (fwd != -1) {
+				send_ack(s, fwd);
+			}
+		} else {
+			if (process_ack(cf) == 1)
+				send_ack(s, cf->can_id);
+		}
+		break;
+	case 3:
+		if (cf->can_dlc == 7)
+			process_sig_auth(cf);
+		else
+			process_sig_recv(cf);
+		break;
+	}
 }
 
 #ifndef TC1798
@@ -613,7 +667,7 @@ void broadcast_time(int s)
 	usec_since(&usec);
 	last_usec = usec;
 
-	cf.can_id = NODE_ID;
+	cf.can_id = SIG_TIME;
 	cf.can_dlc = 4;
 	memcpy(cf.data, &usec, 4);
 
@@ -626,7 +680,7 @@ void operate_ts(int s)
 
 	while(1) {
 		read_can_main(s);
-		broadcast_time(s);
+		//broadcast_time(s);
 
 		usleep(500000);
 	}

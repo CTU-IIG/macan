@@ -20,7 +20,7 @@ keysvr:
 	gcc -Wall -ggdb -o${OUTDIR}keysvr ${INC} ${LIB} src/keysvr/keysvr.c src/common.c src/aes_keywrap.c
 
 timesvr:
-	gcc -Wall -ggdb -o${OUTDIR}timesvr -DCAN_IF=\"can3\" -DNODE_ID=1 -DNODE_OTHER=2 ${INC} ${LIB} -lrt src/timesvr/timesvr.c src/common.c src/aes_keywrap.c src/aes_cmac.c
+	gcc -Wall -ggdb -o${OUTDIR}timesvr -DCAN_IF=\"can3\" -DNODE_OTHER=3 ${INC} ${LIB} -lrt src/timesvr/timesvr.c src/common.c src/aes_keywrap.c src/aes_cmac.c
 
 test:
 	gcc -Wall -ggdb -o${OUTDIR}/test_timesvr -DCAN_IF=\"can2\" -DNODE_ID=3 -DNODE_OTHER=2 ${INC} ${LIB} -lrt test/test_timesvr.c src/common.c src/aes_keywrap.c src/aes_cmac.c
