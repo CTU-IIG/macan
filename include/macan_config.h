@@ -36,8 +36,8 @@ enum sig_id {
 struct sig_spec {
 	uint8_t can_nsid;  /* can non-secured id */
 	uint8_t can_sid;   /* can secured id */
-	uint8_t src_id;       /* node dispathing this signal */
-	uint8_t dst_id;       /* node receiving this signal */
+	uint8_t src_id;    /* node dispathing this signal */
+	uint8_t dst_id;    /* node receiving this signal */
 	uint8_t presc;     /* prescaler */
 };
 

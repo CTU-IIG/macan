@@ -57,6 +57,7 @@
 
 void can_recv_cb(int s, struct can_frame *cf);
 
+/* ToDo: implement SIG_TIME as standard signal */
 struct sig_spec macan_sig_spec[] = {
         [ENGINE] = {0, 10, 2, 3, 5},
         [BRAKE]  = {1, 11, 2, 3, 7},
@@ -68,10 +69,10 @@ extern uint8_t ltk[];
 /* ToDo: generate this table */
 struct com_part cpart[] =
 {
-	[0]    = {{0}, 0, 0, 0x8 | 0x4},
-	[1]    = {{0}, 0, 0, 0x8 | 0x4},
-	[2]    = {{0}, 0, 0, 0x8 | 0x4},
-	[3]    = {{0}, 0, 0, 0x8 | 0x4}
+	[0]    = {{0}, 0, 0, 1 << 0 | 1 << NODE_ID},
+	[1]    = {{0}, 0, 0, 1 << 1 | 1 << NODE_ID},
+	[2]    = {{0}, 0, 0, 1 << 2 | 1 << NODE_ID},
+	[3]    = {{0}, 0, 0, 1 << 3 | 1 << NODE_ID}
 };
 
 #define SIG_DONTSIGN -1
@@ -89,18 +90,38 @@ uint32_t signal_cnt[] = {
 	[TRAMIS] = 0,
 };
 
+/* ToDo: aggregate to struct */
+uint8_t g_chg[6];
+uint8_t g_ts_chg[6];
+struct macan_time g_time = {0};
+
 /**
  * macan_init()
  *
- * Request keys to all comunication partners.
+ * Requests keys to all comunication partners. Returns 1 if all specified
+ * keys are obtained.
  */
 int macan_init(int s)
 {
 	uint8_t src_id;
 	static int i = -1;
 
-	if (i == SIG_MAX)
+	/* ToDo: remove this */
+	if (i == -1) {
+		static int buz = 0;
+		if (buz == 0) {
+			buz++;
+			send_challenge(s, NODE_KS, NODE_TS, g_chg);
+		}
+
+		if (!is_channel_ready(NODE_TS))
+			return 0;
+	}
+
+
+	if (i == SIG_MAX) {
 		return 1;
+	}
 
 	if (i != -1) {
 		src_id = macan_sig_spec[i].src_id;
@@ -128,7 +149,7 @@ int macan_init(int s)
  * @len: ignored
  *
  * write implemented on top of AUTOSAR functions.
- * */
+ */
 #ifdef TC1798
 int write(int s, struct can_frame *cf, int len)
 {
@@ -292,13 +313,6 @@ void send_ack(int s, uint8_t dst_id)
 	return;
 }
 
-/* ToDo: aggregate to struct */
-uint8_t seq = 0;
-uint8_t g_chg[6];
-uint8_t keywrap[32];
-uint8_t *key_ptr = keywrap;
-uint8_t skey[24];
-
 void gen_challenge(uint8_t *chal)
 {
 	int i;
@@ -319,6 +333,7 @@ int receive_skey(struct can_frame *cf)
 	struct sess_key *sk;
 	uint8_t fwd_id;
 	static uint8_t keywrap[32];
+	uint8_t skey[24];
 	uint8_t seq, len;
 
 	sk = (struct sess_key *)cf->data;
@@ -331,9 +346,7 @@ int receive_skey(struct can_frame *cf)
 	memcpy(keywrap + 6 * seq, sk->data, sk->len);
 
 	if (seq == 5) {
-		seq = 0;
 		print_hexn(keywrap, 32);
-
 		unwrap_key(ltk, 32, skey, keywrap);
 		print_hexn(skey, 24);
 
@@ -392,8 +405,53 @@ void receive_challenge(int s, struct can_frame *cf)
 	send_challenge(s, NODE_KS, ch->fwd_id, g_chg);
 }
 
+void receive_time(int s, struct can_frame *cf)
+{
+	uint32_t time_ts;
+	uint64_t recent;
+
+	memcpy(&time_ts, cf->data, 4);
+	recent = read_time() + g_time.sync;
+
+	printf("time received = %u\n", time_ts);
+
+	if (abs(recent - time_ts) > TIME_DELTA) {
+		printf("error: time out of sync (%u = %llu - %u)\n", abs(recent - time_ts), recent, time_ts);
+
+		g_time.chal_ts = recent;
+		send_challenge(s, NODE_TS, 0, g_ts_chg);
+	}
+}
+
+void receive_signed_time(int s, struct can_frame *cf)
+{
+	uint32_t time_ts;
+	uint8_t plain[10];
+	uint8_t *skey;
+
+	memcpy(&time_ts, cf->data, 4);
+	printf("signed time received = %u\n", time_ts);
+
+	if (!is_channel_ready(NODE_TS)) {
+		return;
+	}
+
+	skey = cpart[NODE_TS].skey;
+
+	memcpy(plain, g_ts_chg, 6);
+	memcpy(plain + 6, &time_ts, 4);
+	if (!check_cmac(skey, cf->data + 4, plain, sizeof(plain))) {
+		printf("CMAC \033[1;31merror\033[0;0m\n");
+		return;
+	}
+	printf("CMAC OK\n");
+
+	/* ToDo: some sync pending flag? */
+	g_time.sync += (time_ts - g_time.chal_ts);
+}
+
 /**
- *
+ * send_auth_req() - send authorization request
  */
 void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 {
@@ -572,21 +630,27 @@ void read_can_main(int s)
 #define f_STM 100000000
 #define TIME_USEC (f_STM / 1000000)
 
-void read_time(uint64_t *time)
+uint64_t read_time()
 #ifdef TC1798
 {
-	uint32_t *time32 = (uint32_t *)time;
+	uint64_t time;
+	uint32_t *time32 = (uint32_t *)&time;
 	time32[0] = STM_TIM0.U;
 	time32[1] = STM_TIM6.U;
 	*time /= TIME_USEC;
+
+	return time;
 }
 #else
 {
+	uint64_t time;
 	struct timespec ts;
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-	*time = ts.tv_sec * 1000000;
-	*time += ts.tv_nsec / 1000;
+	time = ts.tv_sec * 1000000;
+	time += ts.tv_nsec / 1000;
+
+	return time;
 }
 
 #endif /* TC1798 */

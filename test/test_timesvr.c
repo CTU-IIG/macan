@@ -131,7 +131,10 @@ uint8_t ltk[] = {
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
 
+uint64_t ts_chal_time;
+uint64_t ts_last_usec;
 uint64_t macan_time_sync = 0;
+uint8_t g_ts_chg[6];
 
 #define SIG_DONTSIGN -1
 #define SIG_SIGNONCE 0
@@ -324,7 +327,6 @@ void send_ack(int s, uint8_t dst_id)
 uint8_t seq = 0;
 uint8_t g_fwd_id = 0;
 uint8_t g_chg[6];
-uint8_t g_ts_chg[6];
 uint8_t keywrap[32];
 uint8_t *key_ptr = keywrap;
 uint8_t skey[24];
@@ -509,9 +511,6 @@ int is_channel_ready(uint8_t dst)
 	return ((grp & wf) == wf);
 }
 
-uint64_t ts_chal_time;
-uint64_t ts_last_usec;
-
 /* ToDo: make it robust here  */
 void can_recv_cb(int s, struct can_frame *cf)
 {
@@ -692,7 +691,6 @@ void operate_ts(int s)
 
 	while(1) {
 		read_can_main(s);
-		//broadcast_time(s);
 
 		if (buz == 0) {
 			buz++;
@@ -731,8 +729,6 @@ void read_time(uint64_t *time)
 	*time += ts.tv_nsec / 1000;
 }
 #endif /* TC1798 */
-
-uint64_t macan_time_sync;
 
 int init()
 #ifdef TC1798

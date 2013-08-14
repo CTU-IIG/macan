@@ -26,6 +26,8 @@
 
 #define NODE_KS 0
 #define NODE_TS 1
+#define SIG_TIME 4
+#define TIME_DELTA 1000   /* tolerated time divergency from TS in usecs */
 
 struct challenge {
 	uint8_t flags : 2;
@@ -75,11 +77,11 @@ struct signal_ex {
 	uint8_t cmac[4];
 };
 
-union macan_frame {
-	struct crypt_frame cf;
-	struct challenge chal;
-	struct sess_key skey;
-	struct ack ack;
+struct macan_time {
+	uint64_t sync;       /* contains the time difference between local time
+   			        and TS time;
+				i.e. TS_time = Local_time + sync */
+	uint64_t chal_ts;    /* local timestamp when request for signed time was sent  */
 };
 
 /*
@@ -120,6 +122,9 @@ extern uint8_t skey[24];
 int write(int s,struct can_frame *cf,int len);
 #endif
 int macan_init(int s);
+uint64_t read_time();
+void receive_time(int s, struct can_frame *cf);
+void receive_signed_time(int s, struct can_frame *cf);
 
 #endif /* MACAN_H */
 

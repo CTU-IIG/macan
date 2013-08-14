@@ -87,16 +87,24 @@ uint8_t ltk[] = {
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
 
-/* ToDo: aggregate to struct */
-uint8_t g_chg[6];
-
 void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
 	int fwd;
 
+	/* ToDo: make sure all branch end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
+	if (cf->can_id == SIG_TIME) {
+		switch(cf->can_dlc) {
+		case 4:
+			receive_time(s, cf);
+			return;
+		case 8:
+			receive_signed_time(s, cf);
+			return;
+		}
+	}
 
 	if (cryf->dst_id != NODE_ID)
 		return;
