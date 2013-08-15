@@ -37,6 +37,7 @@
 #include <nettle/aes.h>
 #include "common.h"
 #include "aes_keywrap.h"
+#include "macan.h"
 
 /**
  * ToDo
@@ -45,30 +46,6 @@
 
 /* ToDo: this should be moved to some config .h */
 #define WRITE_DELAY 500000
-#define NODE_KS 0
-#define NODE_TS 1
-#define SIG_TIME 4
-#define NODE_ID NODE_KS
-
-struct challenge {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
-	uint8_t fwd_id : 8;
-	uint8_t chg[6];
-};
-
-struct sess_key {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
-	uint8_t seq : 4;
-	uint8_t len : 4;
-	uint8_t data[6];
-};
-
-struct crypt_frame {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
-};
 
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -120,20 +97,6 @@ uint8_t lookup_skey(uint8_t src, uint8_t dst, uint8_t **skey)
 	return 0;
 }
 
-void send_req_chal(int s, int dst_id, int fwd_id)
-{
-	struct can_frame cf;
-	struct challenge chal = {1, dst_id, fwd_id, {0}};
-
-	cf.can_id = NODE_KS;
-	cf.can_dlc = 2;
-	memcpy(cf.data, &chal, sizeof(struct challenge));
-
-	/* ToDo: ensure */
-	usleep(WRITE_DELAY);
-	write(s, &cf, sizeof(struct can_frame));
-}
-
 void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, uint8_t *chal)
 {
 	uint8_t wrap[32];
@@ -145,21 +108,20 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 
 	/* ToDo: solve name inconsistency - key */
 	if (lookup_skey(dst_id, fwd_id, &key))
-		send_req_chal(s, fwd_id, dst_id);
+		send_challenge(s, fwd_id, dst_id, NULL);
 
 	memcpy(plain, chal, 6);
 	plain[6] = fwd_id;
 	plain[7] = dst_id;
 	memcpy(plain + 8, key, 16);
-	printf("plain is as:\n");
+	aes_wrap(cipher, 24, wrap, plain);
+
+	printf("send KEY (wrap, plain):\n");
+	print_hexn(wrap, 32);
 	print_hexn(plain, 24);
 
-	aes_wrap(cipher, 24, wrap, plain);
-	printf("wrapped as:\n");
-	print_hexn(wrap, 32);
-
 	skey.flags = 2;
-	skey.dst_id = dst_id; /* ToDo: ecui or j, reconsider names */
+	skey.dst_id = dst_id;
 
 	cf.can_id = NODE_KS;
 	cf.can_dlc = 8;
@@ -170,22 +132,21 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 		memcpy(skey.data, wrap + (6 * i), 6);
 		memcpy(cf.data, &skey, 8);
 
-		/* ToDo: check for success */
+		/* ToDo: check all writes for success */
 		usleep(WRITE_DELAY);
 		write(s, &cf, sizeof(struct can_frame));
 	}
-
 }
 
 /**
- * process_challenge() - responds to challenge message
+ * ks_receive_challenge() - responds to challenge message
  * @s:   socket fd
  * @cf:  received can frame
  *
  * This function responds with session key to the challenge sender
  * and also sends REQ_CHALLENGE to communication partner of the sender.
  */
-void process_challenge(int s, struct can_frame *cf)
+void ks_receive_challenge(int s, struct can_frame *cf)
 {
 	struct aes_ctx cipher;
 	struct challenge *chal;
@@ -206,65 +167,21 @@ void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
 
+	/* ToDo: do some filter here */
 	if (cf->can_id == SIG_TIME)
 		return;
-	if (cryf->dst_id != NODE_ID)
+	if (cryf->dst_id != NODE_KS)
 		return;
-	//printf("flags=%d, dst_id=%d\n", cryf->flags, a->dst_id);
 
 	/* ToDo: do some check on challenge message, the only message recepted by KS */
-	process_challenge(s, cf);
-}
-
-void read_can_main(int s)
-{
-	struct can_frame cf;
-	int rbyte;
-
-	/* ToDo: what is read */
-	rbyte = read(s, &cf, sizeof(struct can_frame));
-	if (rbyte == -1 && errno == EAGAIN) {
-		return;
-	}
-
-	if (rbyte != 16) {
-		printf("ERROR recv not 16 bytes");
-		exit(0);
-	}
-
-	printf("RECV ");
-	print_hexn(&cf, sizeof(struct can_frame));
-	can_recv_cb(s, &cf);
+	ks_receive_challenge(s, cf);
 }
 
 int main(int argc, char *argv[])
 {
 	int s;
-	struct sockaddr_can addr;
-	struct ifreq ifr;
 
-	char *ifname = "can0";
-
-	if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-		perror("Error while opening socket");
-		return -1;
-	}
-
-	int loopback = 0; /* 0 = disabled, 1 = enabled (default) */
-	setsockopt(s, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &loopback, sizeof(loopback));
-
-	strcpy(ifr.ifr_name, ifname);
-	ioctl(s, SIOCGIFINDEX, &ifr);
-
-	addr.can_family  = AF_CAN;
-	addr.can_ifindex = ifr.ifr_ifindex;
-
-	printf("%s at index %d\n", ifname, ifr.ifr_ifindex);
-
-	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		perror("Error in socket bind");
-		return -2;
-	}
+	s = init();
 
 	while (1) {
 		read_can_main(s);

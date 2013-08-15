@@ -16,7 +16,7 @@ node3:
 	gcc -Wall -ggdb -o${OUTDIR}node3 -DCAN_IF=\"can3\" -DNODE_ID=3 ${INC} ${LIB} src/node/node.c src/aes_keywrap.c src/common.c src/aes_cmac.c src/macan.c
 
 keysvr:
-	gcc -Wall -ggdb -o${OUTDIR}keysvr -DCAN_IF=\"can0\" ${INC} ${LIB} src/keysvr/keysvr.c src/common.c src/aes_keywrap.c
+	gcc -Wall -ggdb -o${OUTDIR}keysvr -DCAN_IF=\"can0\" -DNODE_ID=NODE_KS ${INC} ${LIB} src/keysvr/keysvr.c src/common.c src/aes_keywrap.c src/aes_cmac.c src/macan.c
 
 timesvr:
 	gcc -Wall -ggdb -o${OUTDIR}timesvr -DCAN_IF=\"can1\" -DNODE_OTHER=3 ${INC} ${LIB} -lrt src/timesvr/timesvr.c src/common.c src/aes_keywrap.c src/aes_cmac.c

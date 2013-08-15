@@ -104,20 +104,21 @@ struct macan_time g_time = {0};
 int macan_init(int s)
 {
 	uint8_t src_id;
-	static int i = -1;
+	static int i = -2;
 
 	/* ToDo: remove this */
-	if (i == -1) {
+	if (i == -2) {
 		static int buz = 0;
 		if (buz == 0) {
 			buz++;
 			send_challenge(s, NODE_KS, NODE_TS, g_chg);
 		}
 
-		if (!is_channel_ready(NODE_TS))
-			return 0;
+		if (cpart[NODE_TS].group_id & (1 << NODE_ID)) {
+			i++;
+		}
+		return 0;
 	}
-
 
 	if (i == SIG_MAX) {
 		return 1;
@@ -384,8 +385,10 @@ void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 	struct can_frame cf;
 	struct challenge chal = {1, dst_id, fwd_id, {0}};
 
-	gen_challenge(chg);
-	memcpy(chal.chg, chg, 6);
+	if (chg) {
+		gen_challenge(chg);
+		memcpy(chal.chg, chg, 6);
+	}
 
 	cf.can_id = NODE_ID;
 	cf.can_dlc = 8;
@@ -655,6 +658,7 @@ uint64_t read_time()
 
 #endif /* TC1798 */
 
+/* ToDo: check for init return in all usages */
 int init()
 #ifdef TC1798
 {
