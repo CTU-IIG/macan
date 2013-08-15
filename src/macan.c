@@ -55,6 +55,12 @@
 #include "macan_config.h"
 #include "macan.h"
 
+#ifdef TC1798
+# define NODE_ID 3
+# define NODE_OTHER 2
+# define CAN_IF 2 /* Hth on TC1798, iface name on pc */
+#endif
+
 void can_recv_cb(int s, struct can_frame *cf);
 
 /* ToDo: implement SIG_TIME as standard signal */
@@ -640,7 +646,7 @@ uint64_t read_time()
 	uint32_t *time32 = (uint32_t *)&time;
 	time32[0] = STM_TIM0.U;
 	time32[1] = STM_TIM6.U;
-	*time /= TIME_USEC;
+	time /= TIME_USEC;
 
 	return time;
 }

@@ -61,8 +61,8 @@
  */
 
 #ifdef TC1798
-# define NODE_ID 2
-# define NODE_OTHER 3
+# define NODE_ID 3
+# define NODE_OTHER 2
 # define CAN_IF 2 /* Hth on TC1798, iface name on pc */
 #endif
 
