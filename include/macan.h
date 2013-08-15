@@ -97,10 +97,13 @@ struct com_part {
 	uint32_t wait_for;
 };
 
+int macan_init(int s);
 int init();
 #if !defined(TC1798)
 void read_can_main(int s);
 #endif
+int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
+void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
 void receive_sig(struct can_frame *cf);
 void send_sig(int s,uint8_t sig_num,uint8_t signal);
 int is_channel_ready(uint8_t dst);
@@ -121,7 +124,6 @@ extern uint8_t skey[24];
 #if defined(TC1798)
 int write(int s,struct can_frame *cf,int len);
 #endif
-int macan_init(int s);
 uint64_t read_time();
 void receive_time(int s, struct can_frame *cf);
 void receive_signed_time(int s, struct can_frame *cf);
