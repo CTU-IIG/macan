@@ -69,6 +69,7 @@
 #define TS_DIVER 500000
 uint64_t last_usec;
 extern struct com_part cpart[];
+extern uint8_t g_chg[];
 
 /* ltk stands for long term key; it is a key shared with the key server */
 uint8_t ltk[] = {
@@ -113,7 +114,7 @@ int ts_receive_challenge(int s, struct can_frame *cf)
 
 	write(s, &canf, sizeof(canf));
 
-	printf("time signal sent\n");
+	printf("signed time sent\n");
 	return 0;
 }
 
@@ -140,15 +141,8 @@ void can_recv_cb(int s, struct can_frame *cf)
 	case 2:
 		if (cf->can_id == NODE_KS) {
 			fwd = receive_skey(cf);
-
-			if (fwd != -1) {
-				send_ack(s, fwd);
-			}
 			break;
 		}
-
-		if (receive_ack(cf))
-			send_ack(s, cf->can_id);
 		break;
 	case 3:
 		if (cf->can_dlc == 7)
@@ -197,11 +191,24 @@ void operate_ts(int s)
 	}
 }
 
+void ts_init(int s)
+{
+	int i;
+
+	for (i = 2; i < NODE_MAX; i++)
+	{
+		send_challenge(s, NODE_KS, i, g_chg);
+		while (!(cpart[i].group_id & (1 << NODE_ID)))
+			read_can_main(s);
+	}
+}
+
 int main(int argc, char *argv[])
 {
 	int s;
 
 	s = init();
+	ts_init(s);
 	operate_ts(s);
 
 	return 0;

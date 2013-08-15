@@ -31,7 +31,7 @@ enum sig_id {
 	SIG_MAX
 };
 
-#define NODE_MAX 2
+#define NODE_MAX 4
 
 struct sig_spec {
 	uint8_t can_nsid;  /* can non-secured id */

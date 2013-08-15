@@ -2,6 +2,7 @@ OUTDIR=build/linux/
 KW=../keywrap/
 INC=-Iinclude
 LIB=-lnettle -lrt
+#DEBUG=-DDEBUG_PRINT
 .PHONY: test node2 node3
 
 all: clean chk_build_folder node2 node3 keysvr timesvr test
@@ -10,10 +11,10 @@ chk_build_folder:
 	mkdir -p ${OUTDIR}
 
 node2:
-	gcc -Wall -ggdb -o${OUTDIR}node2 -DCAN_IF=\"can2\" -DNODE_ID=2 ${INC} ${LIB} src/node/node.c src/aes_keywrap.c src/common.c src/aes_cmac.c src/macan.c
+	gcc -Wall -ggdb ${DEBUG} -o${OUTDIR}node2 -DCAN_IF=\"can2\" -DNODE_ID=2 ${INC} ${LIB} src/node/node.c src/aes_keywrap.c src/common.c src/aes_cmac.c src/macan.c
 
 node3:
-	gcc -Wall -ggdb -o${OUTDIR}node3 -DCAN_IF=\"can3\" -DNODE_ID=3 ${INC} ${LIB} src/node/node.c src/aes_keywrap.c src/common.c src/aes_cmac.c src/macan.c
+	gcc -Wall -ggdb ${DEBUG} -o${OUTDIR}node3 -DCAN_IF=\"can3\" -DNODE_ID=3 ${INC} ${LIB} src/node/node.c src/aes_keywrap.c src/common.c src/aes_cmac.c src/macan.c
 
 keysvr:
 	gcc -Wall -ggdb -o${OUTDIR}keysvr -DCAN_IF=\"can0\" -DNODE_ID=NODE_KS ${INC} ${LIB} src/keysvr/keysvr.c src/common.c src/aes_keywrap.c src/aes_cmac.c src/macan.c

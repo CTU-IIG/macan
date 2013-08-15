@@ -73,13 +73,23 @@ struct sig_spec macan_sig_spec[] = {
 extern uint8_t ltk[];
 
 /* ToDo: generate this table */
+#if NODE_ID == NODE_TS
+struct com_part cpart[] =
+{
+	[0]    = {{0}, 0, 0, 1 << NODE_ID},
+	[1]    = {{0}, 0, 0, 1 << NODE_ID},
+	[2]    = {{0}, 0, 0, 1 << NODE_ID},
+	[3]    = {{0}, 0, 0, 1 << NODE_ID}
+};
+#else
 struct com_part cpart[] =
 {
 	[0]    = {{0}, 0, 0, 1 << 0 | 1 << NODE_ID},
-	[1]    = {{0}, 0, 0, 1 << 1 | 1 << NODE_ID},
+	[1]    = {{0}, 0, 0,          1 << NODE_ID},
 	[2]    = {{0}, 0, 0, 1 << 2 | 1 << NODE_ID},
 	[3]    = {{0}, 0, 0, 1 << 3 | 1 << NODE_ID}
 };
+#endif
 
 #define SIG_DONTSIGN -1
 #define SIG_SIGNONCE 0
@@ -98,7 +108,6 @@ uint32_t signal_cnt[] = {
 
 /* ToDo: aggregate to struct */
 uint8_t g_chg[6];
-uint8_t g_ts_chg[6];
 struct macan_time g_time = {0};
 
 /**
@@ -178,23 +187,59 @@ int write(int s, struct can_frame *cf, int len)
  * The function computes CMAC of the given plain text and compares
  * it against cmac4. Returns 1 if CMACs matches.
  */
-int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
+int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
 #ifdef TC1798
 {
 	uint8_t cmac[16];
-	aes_cmac(skey, len, cmac, plain);
+	uint32_t time;
+	uint32_t *ftime = (uint32_t *)fill_time;
+	int i;
 
-	return memchk(cmac4, cmac, 4);
+	if (!fill_time) {
+		aes_cmac(skey, len, cmac, plain);
+
+		return memchk(cmac4, cmac, 4);
+	}
+
+	time = get_macan_time() / TIME_DIV;
+
+	for (i = 0; i >= -1; i--) {
+		*ftime = time + i;
+		aes_cmac(skey, len, cmac, plain);
+
+		if (memchk(cmac4, cmac, 4) == 1)
+			return 1;
+	}
+
+	return 0;
 }
 #else
 {
 	struct aes_ctx cipher;
 	uint8_t cmac[16];
+	uint32_t time;
+	uint32_t *ftime = (uint32_t *)fill_time;
+	int i;
 
 	aes_set_encrypt_key(&cipher, 16, skey);
-	aes_cmac(&cipher, len, cmac, plain);
 
-	return memchk(cmac4, cmac, 4);
+	if (!fill_time) {
+		aes_cmac(&cipher, len, cmac, plain);
+
+		return memchk(cmac4, cmac, 4);
+	}
+
+	time = get_macan_time() / TIME_DIV;
+
+	for (i = 0; i >= -1; i--) {
+		*ftime = time + i;
+		aes_cmac(&cipher, len, cmac, plain);
+
+		if (memchk(cmac4, cmac, 4) == 1)
+			return 1;
+	}
+
+	return 0;
 }
 #endif /* TC1798 */
 
@@ -243,6 +288,41 @@ void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 }
 #endif /* TC1798 */
 
+void send_ack(int s, uint8_t dst_id)
+{
+	struct ack ack = {2, dst_id, {0}, {0}};
+	uint8_t plain[8] = {0};
+	uint32_t time;
+	uint8_t *skey;
+	struct can_frame cf;
+	volatile int res;
+
+	skey = cpart[dst_id].skey;
+	memcpy(&ack.group, &cpart[dst_id].group_id, 3);
+	time = get_macan_time() / TIME_DIV;
+
+	memcpy(plain, &time, 4);
+	plain[4] = ack.dst_id;
+	memcpy(plain + 5, ack.group, 3);
+
+#ifdef DEBUG_PRINT
+	memcpy(ack.cmac, &time, 4);
+#else
+	sign(skey, ack.cmac, plain, sizeof(plain));
+#endif
+
+	cf.can_id = NODE_ID;
+	cf.can_dlc = 8;
+	memcpy(cf.data, &ack, 8);
+
+	res = write(s, &cf, sizeof(struct can_frame));
+	if (res != 16) {
+		perror("send ack");
+	}
+
+	return;
+}
+
 /**
  * receive_ack()
  *
@@ -255,7 +335,6 @@ int receive_ack(struct can_frame *cf)
 	struct com_part *cp;
 	struct ack *ack = (struct ack *)cf->data;
 	uint8_t plain[8];
-	uint32_t time = 0;
 	uint8_t *skey;
 
 	id = cf->can_id;
@@ -267,12 +346,15 @@ int receive_ack(struct can_frame *cf)
 	cp = &cpart[id];
 	skey = cp->skey;
 
-	memcpy(plain, &time, 4);
 	plain[4] = ack->dst_id;
 	memcpy(plain + 5, ack->group, 3);
 
-	/* ToDo: make difference if wrong CMAC and I dont have the key*/
-	if (!check_cmac(skey, ack->cmac, plain, sizeof(plain))) {
+#ifdef DEBUG_PRINT
+	printf("time check: (local=%d, in msg=%d)\n", get_macan_time()/TIME_DIV, *(uint32_t *)ack->cmac);
+#endif
+
+	/* ToDo: make difference between wrong CMAC and not having the key */
+	if (!check_cmac(skey, ack->cmac, plain, plain, sizeof(plain))) {
 		printf("error: ACK CMAC failed\n");
 		return -1;
 	}
@@ -288,36 +370,6 @@ int receive_ack(struct can_frame *cf)
 		return 0;
 
 	return 1;
-}
-
-void send_ack(int s, uint8_t dst_id)
-{
-	struct ack ack = {2, dst_id, {0}, {0}};
-	uint8_t plain[8] = {0};
-	uint32_t time = 0;
-	uint8_t *skey;
-	struct can_frame cf;
-	volatile int res;
-
-	skey = cpart[dst_id].skey;
-	memcpy(&ack.group, &cpart[dst_id].group_id, 3);
-
-	memcpy(plain, &time, 4);
-	plain[4] = ack.dst_id;
-	memcpy(plain + 5, ack.group, 3);
-
-	sign(skey, ack.cmac, plain, sizeof(plain));
-
-	cf.can_id = NODE_ID;
-	cf.can_dlc = 8;
-	memcpy(cf.data, &ack, 8);
-
-	res = write(s, &cf, sizeof(struct can_frame));
-	if (res != 16) {
-		perror("send ack");
-	}
-
-	return;
 }
 
 void gen_challenge(uint8_t *chal)
@@ -368,7 +420,8 @@ int receive_skey(struct can_frame *cf)
 		cpart[fwd_id].group_id |= 1 << NODE_ID;
 		printf("receive session key (%d->%d) \033[1;32mOK\033[0;0m\n", NODE_ID, fwd_id);
 
-		return fwd_id;
+		/* ToDo: redo - TS communication is not acked */
+		return (fwd_id == NODE_TS) ? -1 : fwd_id;
 	}
 
 	return -1;
@@ -419,8 +472,20 @@ void receive_time(int s, struct can_frame *cf)
 	uint32_t time_ts;
 	uint64_t recent;
 
+	if (!is_channel_ready(NODE_TS)) {
+		return;
+	}
+
 	memcpy(&time_ts, cf->data, 4);
 	recent = read_time() + g_time.sync;
+
+	if (g_time.chal_ts) {
+		if ((recent - g_time.chal_ts) < TIME_TIMEOUT)
+			return;
+		else
+			g_time.chal_ts = 0;
+
+	}
 
 	printf("time received = %u\n", time_ts);
 
@@ -428,7 +493,7 @@ void receive_time(int s, struct can_frame *cf)
 		printf("error: time out of sync (%u = %llu - %u)\n", abs(recent - time_ts), recent, time_ts);
 
 		g_time.chal_ts = recent;
-		send_challenge(s, NODE_TS, 0, g_ts_chg);
+		send_challenge(s, NODE_TS, 0, g_time.chg);
 	}
 }
 
@@ -442,21 +507,22 @@ void receive_signed_time(int s, struct can_frame *cf)
 	printf("signed time received = %u\n", time_ts);
 
 	if (!is_channel_ready(NODE_TS)) {
+		g_time.chal_ts = 0;
 		return;
 	}
 
 	skey = cpart[NODE_TS].skey;
 
-	memcpy(plain, g_ts_chg, 6);
+	memcpy(plain, g_time.chg, 6);
 	memcpy(plain + 6, &time_ts, 4);
-	if (!check_cmac(skey, cf->data + 4, plain, sizeof(plain))) {
+	if (!check_cmac(skey, cf->data + 4, plain, NULL, sizeof(plain))) {
 		printf("CMAC \033[1;31merror\033[0;0m\n");
 		return;
 	}
 	printf("CMAC OK\n");
 
-	/* ToDo: some sync pending flag? */
 	g_time.sync += (time_ts - g_time.chal_ts);
+	g_time.chal_ts = 0;
 }
 
 /**
@@ -464,12 +530,13 @@ void receive_signed_time(int s, struct can_frame *cf)
  */
 void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 {
-	uint32_t t = 0;
+	uint32_t t;
 	uint8_t plain[8];
 	uint8_t *skey;
 	struct can_frame cf;
 	struct sig_auth_req areq;
 
+	t = get_macan_time();
 	skey = cpart[dst_id].skey;
 
 	memcpy(plain, &t, 4);
@@ -508,7 +575,7 @@ void receive_auth_req(struct can_frame *cf)
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
 
-	if (!check_cmac(skey, areq->cmac, plain, sizeof(plain))) {
+	if (!check_cmac(skey, areq->cmac, plain, NULL, sizeof(plain))) {
 		printf("error: sig_auth cmac is incorrect\n");
 	}
 
@@ -520,7 +587,7 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 {
 	struct can_frame cf;
 	uint8_t plain[8];
-	uint32_t t = 0;
+	uint32_t t;
 	uint8_t *skey;
 	struct signal_ex sig = {
 		3, dst_id, sig_num, {0}, {0}
@@ -530,6 +597,7 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 		return -1;
 
 	skey = cpart[dst_id].skey;
+	t = get_macan_time() / TIME_DIV;
 
 	memcpy(plain, &t, 4);
 	plain[4] = NODE_ID;
@@ -537,7 +605,11 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 	memcpy(plain + 6, &signal, 2);
 
 	memcpy(&sig.signal, &signal, 2);
+#ifdef DEBUG_PRINT
+	memcpy(sig.cmac, &time, 4);
+#else
 	sign(skey, sig.cmac, plain, sizeof(plain));
+#endif
 
 	cf.can_id = NODE_ID;
 	cf.can_dlc = 8;
@@ -585,19 +657,20 @@ void receive_sig(struct can_frame *cf)
 	struct signal_ex *sig;
 	uint8_t plain[8];
 	uint8_t *skey;
-	uint32_t t = 0;
 
 	sig = (struct signal_ex *)cf->data;
 
-	memcpy(plain, &t, 4);
 	plain[4] = cf->can_id;
 	plain[5] = NODE_ID;
 	memcpy(plain + 6, sig->signal, 2);
 
 	skey = cpart[cf->can_id].skey;
 
-	if (!check_cmac(skey, sig->cmac, plain, sizeof(plain))) {
-		printf("CMAC error");
+#ifdef DEBUG_PRINT
+	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time()/TIME_DIV, *(uint32_t *)sig->cmac);
+#endif
+	if (!check_cmac(skey, sig->cmac, plain, plain, sizeof(plain))) {
+		printf("signal CMAC \033[1;31merror\033[0;0m");
 		return;
 	}
 
@@ -661,8 +734,12 @@ uint64_t read_time()
 
 	return time;
 }
-
 #endif /* TC1798 */
+
+uint64_t get_macan_time()
+{
+	return read_time() + g_time.sync;
+}
 
 /* ToDo: check for init return in all usages */
 int init()

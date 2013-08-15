@@ -123,6 +123,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 			break;
 		}
 
+		/* ToDo: what if ack CMAC fails, there should be no response */
 		if (receive_ack(cf))
 			send_ack(s, cf->can_id);
 		break;
@@ -149,6 +150,8 @@ void read_signals()
 
 void operate_ecu(int s)
 {
+	static uint32_t cnt = 0;
+
 	while(1) {
 #ifndef TC1798
 		read_can_main(s);
@@ -158,8 +161,11 @@ void operate_ecu(int s)
 		/* operate_ecu(); */
 		macan_init(s);
 
-		send_sig(s, ENGINE, 55);
-		send_sig(s, BRAKE, 66);
+		if ((cnt % 100) == 0) {
+			send_sig(s, ENGINE, 55);
+			send_sig(s, BRAKE, 66);
+		}
+		cnt++;
 
 		//send_auth_req(s, NODE_OTHER, ENGINE, 0);
 #ifndef TC1798

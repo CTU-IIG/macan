@@ -28,6 +28,8 @@
 #define NODE_TS 1
 #define SIG_TIME 4
 #define TIME_DELTA 1000   /* tolerated time divergency from TS in usecs */
+#define TIME_DIV 5000
+#define TIME_TIMEOUT 5000000
 
 struct challenge {
 	uint8_t flags : 2;
@@ -82,6 +84,7 @@ struct macan_time {
    			        and TS time;
 				i.e. TS_time = Local_time + sync */
 	uint64_t chal_ts;    /* local timestamp when request for signed time was sent  */
+	uint8_t chg[6];
 };
 
 /*
@@ -102,7 +105,7 @@ int init();
 #if !defined(TC1798)
 void read_can_main(int s);
 #endif
-int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
+int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
 void receive_sig(struct can_frame *cf);
 void send_sig(int s,uint8_t sig_num,uint8_t signal);
@@ -111,7 +114,7 @@ int macan_write(int s,uint8_t dst_id,uint8_t sig_num,uint32_t signal);
 void receive_auth_req(struct can_frame *cf);
 void send_auth_req(int s,uint8_t dst_id,uint8_t sig_num,uint8_t prescaler);
 void receive_challenge(int s,struct can_frame *cf);
-void send_challenge(int s,uint8_t dst_id,uint8_t fwd_id,uint8_t *chg);
+void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg);
 int receive_skey(struct can_frame *cf);
 void gen_challenge(uint8_t *chal);
 extern uint8_t *key_ptr;
@@ -125,6 +128,7 @@ extern uint8_t skey[24];
 int write(int s,struct can_frame *cf,int len);
 #endif
 uint64_t read_time();
+uint64_t get_macan_time();
 void receive_time(int s, struct can_frame *cf);
 void receive_signed_time(int s, struct can_frame *cf);
 
