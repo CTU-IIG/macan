@@ -65,31 +65,17 @@ void can_recv_cb(int s, struct can_frame *cf);
 
 /* ToDo: implement SIG_TIME as standard signal */
 struct sig_spec macan_sig_spec[] = {
-        [ENGINE] = {0, 10, 2, 3, 5},
-        [BRAKE]  = {1, 11, 2, 3, 7},
-        [TRAMIS] = {2, 12, 3, 2, 5}
+	[TIME_DUMMY3] = {0, 0, NODE_TS, 3, 0}, /* ToDo: more recipients */
+	[TIME_DUMMY2] = {0, 0, NODE_TS, 2, 0},
+        [ENGINE]      = {0, 10, 2, 3, 5},
+        [BRAKE]       = {1, 11, 2, 3, 7},
 };
 
 extern uint8_t ltk[];
 
 /* ToDo: generate this table */
-#if NODE_ID == NODE_TS
-struct com_part cpart[] =
-{
-	[0]    = {{0}, 0, 0, 1 << NODE_ID},
-	[1]    = {{0}, 0, 0, 1 << NODE_ID},
-	[2]    = {{0}, 0, 0, 1 << NODE_ID},
-	[3]    = {{0}, 0, 0, 1 << NODE_ID}
-};
-#else
-struct com_part cpart[] =
-{
-	[0]    = {{0}, 0, 0, 1 << 0 | 1 << NODE_ID},
-	[1]    = {{0}, 0, 0,          1 << NODE_ID},
-	[2]    = {{0}, 0, 0, 1 << 2 | 1 << NODE_ID},
-	[3]    = {{0}, 0, 0, 1 << 3 | 1 << NODE_ID}
-};
-#endif
+uint32_t cpart_cnt;
+struct com_part *cpart[NODE_MAX] = {NULL};
 
 #define SIG_DONTSIGN -1
 #define SIG_SIGNONCE 0
@@ -107,52 +93,26 @@ uint32_t signal_cnt[] = {
 };
 
 /* ToDo: aggregate to struct */
-uint8_t g_chg[6];
 struct macan_time g_time = {0};
 
 /**
  * macan_init()
- *
- * Requests keys to all comunication partners. Returns 1 if all specified
- * keys are obtained.
  */
 int macan_init(int s)
 {
 	uint8_t src_id;
-	static int i = -2;
+	int i;
 
-	/* ToDo: remove this */
-	if (i == -2) {
-		static int buz = 0;
-		if (buz == 0) {
-			buz++;
-			send_challenge(s, NODE_KS, NODE_TS, g_chg);
-		}
-
-		if (cpart[NODE_TS].group_id & (1 << NODE_ID)) {
-			i++;
-		}
-		return 0;
-	}
-
-	if (i == SIG_MAX) {
-		return 1;
-	}
-
-	if (i != -1) {
+	for (i = 0; i < SIG_MAX; i++) {
 		src_id = macan_sig_spec[i].src_id;
-		if (!(cpart[src_id].group_id & (1 << NODE_ID)))
-			return 0;
-	}
-
-	for (i++; i < SIG_MAX; i++) {
-		src_id = macan_sig_spec[i].src_id;
-		if (macan_sig_spec[i].dst_id != NODE_ID ||
-			cpart[src_id].group_id & (1 << NODE_ID) )
+		if (macan_sig_spec[i].dst_id != NODE_ID)
 			continue;
 
-		send_challenge(s, NODE_KS, macan_sig_spec[i].src_id, g_chg);
-		return 0;
+		if (cpart[src_id] == NULL) {
+			cpart[src_id] = malloc(sizeof(struct com_part));
+			memset(cpart[src_id], 0, sizeof(struct com_part));
+			cpart[src_id]->wait_for = 1 << src_id | 1 << NODE_ID;
+		}
 	}
 
 	return 0;
@@ -166,15 +126,16 @@ int macan_assure_channel(int s, uint64_t *ack_time)
 
 	if (*ack_time + ACK_TIMEOUT > read_time())
 		return -1;
-
 	*ack_time = read_time();
 
-	for (i = 0; i < SIG_MAX; i++) {
-		src_id = macan_sig_spec[i].src_id;
-		if (macan_sig_spec[i].dst_id != NODE_ID)
+	for (i = 0; i < NODE_MAX; i++) {
+		if (cpart[i] == NULL)
 			continue;
 
-		if (!is_channel_ready(src_id)) {
+		if (!is_skey_ready(i))
+			continue;
+
+		if (!is_channel_ready(i)) {
 			r++;
 			send_ack(s, src_id);
 		}
@@ -322,8 +283,11 @@ void send_ack(int s, uint8_t dst_id)
 	struct can_frame cf;
 	volatile int res;
 
-	skey = cpart[dst_id].skey;
-	memcpy(&ack.group, &cpart[dst_id].group_id, 3);
+	if (!is_skey_ready(dst_id))
+		return;
+
+	skey = cpart[dst_id]->skey;
+	memcpy(&ack.group, &cpart[dst_id]->group_id, 3);
 	time = get_macan_time() / TIME_DIV;
 
 	memcpy(plain, &time, 4);
@@ -363,12 +327,15 @@ int receive_ack(struct can_frame *cf)
 	uint8_t *skey;
 
 	id = cf->can_id;
-	assert(id < (sizeof(cpart) / sizeof(struct com_part)));
+	assert(id < NODE_MAX);
 
 	/* ToDo: overflow check */
 	/* ToDo: what if ack contains me */
 	/* ToDo: add groups communication */
-	cp = &cpart[id];
+	if (cpart[id] == NULL)
+		return -1;
+
+	cp = cpart[id];
 	skey = cp->skey;
 
 	plain[4] = ack->dst_id;
@@ -409,8 +376,8 @@ void gen_challenge(uint8_t *chal)
  * receive_skey() - session key reception
  *
  * Processes one frame of the session key transmission protocol.
- * Returns node id if a complete key was sucessfully received, otherwise
- * returns -1.
+ * Returns node id if a complete key was sucessfully received. Returns 0
+ * if normal conditions. Returns -1 if key receive failed.
  */
 int receive_skey(struct can_frame *cf)
 {
@@ -434,22 +401,26 @@ int receive_skey(struct can_frame *cf)
 		unwrap_key(ltk, 32, skey, keywrap);
 		print_hexn(skey, 24);
 
-		if(!memchk(skey, g_chg, 6)) {
-			printf("receive session key \033[1;31mFAIL\033[0;0m\n");
+		fwd_id = skey[6];
+		if (fwd_id <= 0 || NODE_MAX <= fwd_id || cpart[fwd_id] == NULL) {
+			printf("receive session key \033[1;31mFAIL\033[0;0m: unexpected fwd_id\n");
 			return -1;
 		}
 
-		/* ToDo: check skey[6] */
-		fwd_id = skey[6];
-		memcpy(cpart[fwd_id].skey, skey + 8, 16);
-		cpart[fwd_id].group_id |= 1 << NODE_ID;
+		if(!memchk(skey, cpart[fwd_id]->chg, 6)) {
+			printf("receive session key \033[1;31mFAIL\033[0;0m: check cmac\n");
+			return -1;
+		}
+
+		cpart[fwd_id]->valid = read_time() + SKEY_TIMEOUT;
+		memcpy(cpart[fwd_id]->skey, skey + 8, 16);
+		cpart[fwd_id]->group_id |= 1 << NODE_ID;
 		printf("receive session key (%d->%d) \033[1;32mOK\033[0;0m\n", NODE_ID, fwd_id);
 
-		/* ToDo: redo - TS communication is not acked */
-		return (fwd_id == NODE_TS) ? -1 : fwd_id;
+		return fwd_id;
 	}
 
-	return -1;
+	return 0;
 }
 
 /**
@@ -485,11 +456,21 @@ void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
  */
 void receive_challenge(int s, struct can_frame *cf)
 {
-	assert(cf->can_id == NODE_KS);
-
+	uint8_t fwd_id;
 	struct challenge *ch = (struct challenge *)cf->data;
 
-	send_challenge(s, NODE_KS, ch->fwd_id, g_chg);
+	fwd_id = ch->fwd_id;
+	assert(0 < fwd_id && fwd_id < NODE_MAX);
+
+	if (cpart[fwd_id] == NULL) {
+		cpart[fwd_id] = malloc(sizeof(struct com_part));
+		memset(cpart[fwd_id], 0, sizeof(struct com_part));
+
+		cpart[fwd_id]->wait_for = 1 << fwd_id | 1 << NODE_ID;
+	}
+
+	cpart[fwd_id]->valid = read_time() + SKEY_CHG_TIMEOUT;
+	send_challenge(s, NODE_KS, ch->fwd_id, cpart[ch->fwd_id]->chg);
 }
 
 void receive_time(int s, struct can_frame *cf)
@@ -497,9 +478,8 @@ void receive_time(int s, struct can_frame *cf)
 	uint32_t time_ts;
 	uint64_t recent;
 
-	if (!is_channel_ready(NODE_TS)) {
+	if (!is_skey_ready(NODE_TS))
 		return;
-	}
 
 	memcpy(&time_ts, cf->data, 4);
 	recent = read_time() + g_time.sync;
@@ -507,9 +487,6 @@ void receive_time(int s, struct can_frame *cf)
 	if (g_time.chal_ts) {
 		if ((recent - g_time.chal_ts) < TIME_TIMEOUT)
 			return;
-		else
-			g_time.chal_ts = 0;
-
 	}
 
 	printf("time received = %u\n", time_ts);
@@ -531,12 +508,12 @@ void receive_signed_time(int s, struct can_frame *cf)
 	memcpy(&time_ts, cf->data, 4);
 	printf("signed time received = %u\n", time_ts);
 
-	if (!is_channel_ready(NODE_TS)) {
+	if (!is_skey_ready(NODE_TS)) {
 		g_time.chal_ts = 0;
 		return;
 	}
 
-	skey = cpart[NODE_TS].skey;
+	skey = cpart[NODE_TS]->skey;
 
 	memcpy(plain, g_time.chg, 6);
 	memcpy(plain + 6, &time_ts, 4);
@@ -562,7 +539,7 @@ void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 	struct sig_auth_req areq;
 
 	t = get_macan_time();
-	skey = cpart[dst_id].skey;
+	skey = cpart[dst_id]->skey;
 
 	memcpy(plain, &t, 4);
 	plain[4] = NODE_ID;
@@ -592,7 +569,7 @@ void receive_auth_req(struct can_frame *cf)
 
 	areq = (struct sig_auth_req *)cf->data;
 	/* ToDo: check */
-	skey = cpart[cf->can_id].skey;
+	skey = cpart[cf->can_id]->skey;
 
 	memcpy(plain, &t, 4);
 	plain[4] = cf->can_id;
@@ -621,7 +598,7 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 	if (!is_channel_ready(dst_id))
 		return -1;
 
-	skey = cpart[dst_id].skey;
+	skey = cpart[dst_id]->skey;
 	t = get_macan_time() / TIME_DIV;
 
 	memcpy(plain, &t, 4);
@@ -689,7 +666,7 @@ void receive_sig(struct can_frame *cf)
 	plain[5] = NODE_ID;
 	memcpy(plain + 6, sig->signal, 2);
 
-	skey = cpart[cf->can_id].skey;
+	skey = cpart[cf->can_id]->skey;
 
 #ifdef DEBUG_PRINT
 	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time()/TIME_DIV, *(uint32_t *)sig->cmac);
@@ -703,10 +680,21 @@ void receive_sig(struct can_frame *cf)
 	printf("received authorized sig=%i\n", sig->signal[0]);
 }
 
+int is_skey_ready(uint8_t dst_id)
+{
+	if (cpart[dst_id] == NULL)
+		return 0;
+
+	return (cpart[dst_id]->group_id & 1 << NODE_ID);
+}
+
 int is_channel_ready(uint8_t dst)
 {
-	uint32_t grp = (*((uint32_t *)&cpart[dst].group_id)) & 0x00ffffff;
-	uint32_t wf = (*((uint32_t *)&cpart[dst].wait_for)) & 0x00ffffff;
+	if (cpart[dst] == NULL)
+		return 0;
+
+	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_id)) & 0x00ffffff;
+	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & 0x00ffffff;
 
 	return ((grp & wf) == wf);
 }
@@ -760,6 +748,30 @@ uint64_t read_time()
 	return time;
 }
 #endif /* TC1798 */
+
+/**
+ * manage_key()
+ *
+ * Request keys to all comunication partners.
+ */
+void manage_key(int s)
+{
+	int i;
+
+	/* ToDo */
+	for (i = 0; i < NODE_MAX; i++) {
+		if (cpart[i] == NULL)
+			continue;
+
+		if (cpart[i]->valid > read_time())
+			continue;
+
+		send_challenge(s, NODE_KS, i, cpart[i]->chg);
+		cpart[i]->valid = read_time() + SKEY_CHG_TIMEOUT;
+	}
+
+	return;
+}
 
 uint64_t get_macan_time()
 {

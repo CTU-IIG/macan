@@ -30,6 +30,8 @@
 #define TIME_DELTA 1000   /* tolerated time divergency from TS in usecs */
 #define TIME_DIV 5000
 #define TIME_TIMEOUT 5000000
+#define SKEY_TIMEOUT 6000000000
+#define SKEY_CHG_TIMEOUT 10000000
 #define ACK_TIMEOUT 2000000
 
 struct challenge {
@@ -96,11 +98,14 @@ struct macan_time {
  */
 struct com_part {
 	uint8_t skey[16];
+	uint64_t valid;
+	uint8_t chg[6];
 	uint8_t flags;
 	uint32_t group_id;
 	uint32_t wait_for;
 };
 
+void manage_key(int s);
 int macan_init(int s);
 int macan_assure_channel(int s, uint64_t *ack_time);
 int init();
@@ -112,6 +117,7 @@ void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
 void receive_sig(struct can_frame *cf);
 void send_sig(int s,uint8_t sig_num,uint8_t signal);
 int is_channel_ready(uint8_t dst);
+int is_skey_ready(uint8_t dst_id);
 int macan_write(int s,uint8_t dst_id,uint8_t sig_num,uint32_t signal);
 void receive_auth_req(struct can_frame *cf);
 void send_auth_req(int s,uint8_t dst_id,uint8_t sig_num,uint8_t prescaler);

@@ -77,6 +77,7 @@
 #endif /* CAN_IF */
 
 uint8_t recv_skey_pending = 0;
+uint8_t g_fwd = 0;
 #define NODE_HAS_KEY 1
 
 uint8_t skey_queue[NODE_MAX + 1] = {0};
@@ -116,7 +117,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 	case 2:
 		if (cf->can_id == NODE_KS) {
 			fwd = receive_skey(cf);
-			if (fwd != -1) {
+			if (fwd > 1) {
 				send_ack(s, fwd);
 			}
 			break;
@@ -158,8 +159,8 @@ void operate_ecu(int s)
 #endif /* TC1798 */
 		read_signals();
 
+		manage_key(s);
 		/* operate_ecu(); */
-		macan_init(s);
 		macan_assure_channel(s, &ack_time);
 
 		if (signal_time + 1000000 < read_time()) {
@@ -180,6 +181,7 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = init();
+	macan_init(s);
 	operate_ecu(s);
 
 	return 0;

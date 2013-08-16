@@ -68,7 +68,7 @@
 
 #define TS_DIVER 500000
 uint64_t last_usec;
-extern struct com_part cpart[];
+extern struct com_part* cpart[];
 extern uint8_t g_chg[];
 
 /* ltk stands for long term key; it is a key shared with the key server */
@@ -96,13 +96,12 @@ int ts_receive_challenge(int s, struct can_frame *cf)
 
 	dst_id = cf->can_id;
 
-	/* ToDo: check if there is an effort to establish */
-	if (!is_channel_ready(dst_id)) {
-		printf("cannot send time, because no auth channel\n");
+	if (!is_skey_ready(dst_id)) {
+		printf("cannot send time, because dont have key\n");
 		return -1;
 	}
 
-	skey = cpart[dst_id].skey;
+	skey = cpart[dst_id]->skey;
 
 	memcpy(plain, ch->chg, 6);
 	memcpy(plain + 6, &last_usec, 4);
@@ -121,7 +120,6 @@ int ts_receive_challenge(int s, struct can_frame *cf)
 void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
-	int fwd;
 
 	/* ToDo: make sure all branch end ASAP */
 	/* ToDo: macan or plain can */
@@ -140,7 +138,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 		break;
 	case 2:
 		if (cf->can_id == NODE_KS) {
-			fwd = receive_skey(cf);
+			receive_skey(cf);
 			break;
 		}
 		break;
@@ -163,7 +161,6 @@ void broadcast_time(int s, uint64_t *bcast_time)
 {
 	struct can_frame cf;
 	uint64_t usec;
-	static int i = -1;
 
 	if (*bcast_time + 1000000 > read_time())
 		return;
@@ -186,6 +183,7 @@ void operate_ts(int s)
 
 	while(1) {
 		read_can_main(s);
+		manage_key(s);
 		broadcast_time(s, &bcast_time);
 
 		usleep(250);
@@ -196,10 +194,13 @@ void ts_init(int s)
 {
 	int i;
 
-	for (i = 2; i < NODE_MAX; i++)
-	{
-		send_challenge(s, NODE_KS, i, g_chg);
-		while (!(cpart[i].group_id & (1 << NODE_ID)))
+	for (i = 2; i < NODE_MAX; i++) {
+		cpart[i] = malloc(sizeof(struct com_part));
+		memset(cpart[i], 0, sizeof(struct com_part));
+		cpart[i]->wait_for = 1 << NODE_TS;
+
+		send_challenge(s, NODE_KS, i, cpart[i]->chg);
+		while (!(cpart[i]->group_id & (1 << NODE_ID)))
 			read_can_main(s);
 	}
 }
@@ -209,7 +210,7 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = init();
-	ts_init(s);
+	//ts_init(s);
 	operate_ts(s);
 
 	return 0;
