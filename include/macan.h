@@ -30,6 +30,7 @@
 #define TIME_DELTA 1000   /* tolerated time divergency from TS in usecs */
 #define TIME_DIV 5000
 #define TIME_TIMEOUT 5000000
+#define ACK_TIMEOUT 2000000
 
 struct challenge {
 	uint8_t flags : 2;
@@ -101,6 +102,7 @@ struct com_part {
 };
 
 int macan_init(int s);
+int macan_assure_channel(int s, uint64_t *ack_time);
 int init();
 #if !defined(TC1798)
 void read_can_main(int s);

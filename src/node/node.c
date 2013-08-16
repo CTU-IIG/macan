@@ -116,7 +116,6 @@ void can_recv_cb(int s, struct can_frame *cf)
 	case 2:
 		if (cf->can_id == NODE_KS) {
 			fwd = receive_skey(cf);
-
 			if (fwd != -1) {
 				send_ack(s, fwd);
 			}
@@ -124,7 +123,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 		}
 
 		/* ToDo: what if ack CMAC fails, there should be no response */
-		if (receive_ack(cf))
+		if (receive_ack(cf) == 1)
 			send_ack(s, cf->can_id);
 		break;
 	case 3:
@@ -150,7 +149,8 @@ void read_signals()
 
 void operate_ecu(int s)
 {
-	static uint32_t cnt = 0;
+	uint64_t signal_time = read_time();
+	uint64_t ack_time = read_time();
 
 	while(1) {
 #ifndef TC1798
@@ -160,12 +160,13 @@ void operate_ecu(int s)
 
 		/* operate_ecu(); */
 		macan_init(s);
+		macan_assure_channel(s, &ack_time);
 
-		if ((cnt % 100) == 0) {
+		if (signal_time + 1000000 < read_time()) {
+			signal_time = read_time();
 			send_sig(s, ENGINE, 55);
 			send_sig(s, BRAKE, 66);
 		}
-		cnt++;
 
 		//send_auth_req(s, NODE_OTHER, ENGINE, 0);
 #ifndef TC1798

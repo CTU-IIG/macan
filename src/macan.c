@@ -158,6 +158,31 @@ int macan_init(int s)
 	return 0;
 }
 
+int macan_assure_channel(int s, uint64_t *ack_time)
+{
+	int r = 0;
+	uint8_t src_id;
+	int i;
+
+	if (*ack_time + ACK_TIMEOUT > read_time())
+		return -1;
+
+	*ack_time = read_time();
+
+	for (i = 0; i < SIG_MAX; i++) {
+		src_id = macan_sig_spec[i].src_id;
+		if (macan_sig_spec[i].dst_id != NODE_ID)
+			continue;
+
+		if (!is_channel_ready(src_id)) {
+			r++;
+			send_ack(s, src_id);
+		}
+	}
+
+	return r;
+}
+
 /**
  * write() - sends a can frame
  * @s:   ignored

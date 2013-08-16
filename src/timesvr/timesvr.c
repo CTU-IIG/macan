@@ -158,18 +158,17 @@ void can_recv_cb(int s, struct can_frame *cf)
  * @s:    socket handle
  * @freq: broadcast frequency
  *
- * Sends a time message on the can bus. It sends the time on its first
- * execution and then every @freq-th execution.
  */
-void broadcast_time(int s, uint8_t freq)
+void broadcast_time(int s, uint64_t *bcast_time)
 {
 	struct can_frame cf;
 	uint64_t usec;
 	static int i = -1;
 
-	i++;
-	if (i % freq)
+	if (*bcast_time + 1000000 > read_time())
 		return;
+
+	*bcast_time = read_time();
 
 	usec = read_time() + TS_DIVER;
 	last_usec = usec;
@@ -183,11 +182,13 @@ void broadcast_time(int s, uint8_t freq)
 
 void operate_ts(int s)
 {
+	uint64_t bcast_time = read_time();
+
 	while(1) {
 		read_can_main(s);
-		broadcast_time(s, 5);
+		broadcast_time(s, &bcast_time);
 
-		usleep(500000);
+		usleep(250);
 	}
 }
 
