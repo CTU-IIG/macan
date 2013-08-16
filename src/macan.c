@@ -95,23 +95,35 @@ uint32_t signal_cnt[] = {
 /* ToDo: aggregate to struct */
 struct macan_time g_time = {0};
 
+void init_cpart(uint8_t i)
+{
+	cpart[i] = malloc(sizeof(struct com_part));
+	memset(cpart[i], 0, sizeof(struct com_part));
+	cpart[i]->wait_for = 1 << i | 1 << NODE_ID;
+}
+
 /**
  * macan_init()
  */
 int macan_init(int s)
 {
-	uint8_t src_id;
+	uint8_t cp;
 	int i;
 
 	for (i = 0; i < SIG_MAX; i++) {
-		src_id = macan_sig_spec[i].src_id;
-		if (macan_sig_spec[i].dst_id != NODE_ID)
-			continue;
+		if (macan_sig_spec[i].src_id == NODE_ID) {
+			cp = macan_sig_spec[i].dst_id;
 
-		if (cpart[src_id] == NULL) {
-			cpart[src_id] = malloc(sizeof(struct com_part));
-			memset(cpart[src_id], 0, sizeof(struct com_part));
-			cpart[src_id]->wait_for = 1 << src_id | 1 << NODE_ID;
+			if (cpart[cp] == NULL) {
+				init_cpart(cp);
+			}
+		}
+		if (macan_sig_spec[i].dst_id == NODE_ID) {
+			cp = macan_sig_spec[i].src_id;
+
+			if (cpart[cp] == NULL) {
+				init_cpart(cp);
+			}
 		}
 	}
 
@@ -121,14 +133,13 @@ int macan_init(int s)
 int macan_assure_channel(int s, uint64_t *ack_time)
 {
 	int r = 0;
-	uint8_t src_id;
 	int i;
 
 	if (*ack_time + ACK_TIMEOUT > read_time())
 		return -1;
 	*ack_time = read_time();
 
-	for (i = 0; i < NODE_MAX; i++) {
+	for (i = 2; i < NODE_MAX; i++) {
 		if (cpart[i] == NULL)
 			continue;
 
@@ -137,7 +148,7 @@ int macan_assure_channel(int s, uint64_t *ack_time)
 
 		if (!is_channel_ready(i)) {
 			r++;
-			send_ack(s, src_id);
+			send_ack(s, i);
 		}
 	}
 
