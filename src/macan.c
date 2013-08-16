@@ -769,7 +769,7 @@ void manage_key(int s)
 {
 	int i;
 
-	/* ToDo */
+	/* ToDo: key expiration */
 	for (i = 0; i < NODE_MAX; i++) {
 		if (cpart[i] == NULL)
 			continue;

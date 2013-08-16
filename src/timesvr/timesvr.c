@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = init();
-	//ts_init(s);
+	macan_init(s);
 	operate_ts(s);
 
 	return 0;
