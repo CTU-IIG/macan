@@ -153,7 +153,7 @@ void operate_ecu(int s)
 #endif /* TC1798 */
 		read_signals();
 
-		manage_key(s);
+		macan_request_keys(s);
 		/* operate_ecu(); */
 		macan_wait_for_key_acks(s, &ack_time);
 

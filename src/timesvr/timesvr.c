@@ -180,7 +180,7 @@ void operate_ts(int s)
 
 	while(1) {
 		read_can_main(s);
-		manage_key(s);
+		macan_request_keys(s);
 		broadcast_time(s, &bcast_time);
 
 		usleep(250);

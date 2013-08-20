@@ -46,16 +46,18 @@ struct macan_sig_spec {
 
 /* MaCAN API functions */
 
-int macan_init(int s, const struct macan_sig_spec *sig_spec);
+int  macan_init(int s, const struct macan_sig_spec *sig_spec);
+void macan_request_keys(int s);
+int  macan_wait_for_key_acks(int s, uint64_t *ack_time);
+int  macan_reg_callback(uint8_t sig_num, void (*fnc)(uint8_t sig_num, uint32_t sig_val));
 void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint8_t signal);
-int macan_wait_for_key_acks(int s, uint64_t *ack_time);
+int  macan_process_frame(const struct can_frame *cf, int s);
 
-void manage_key(int s);
+int  check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 int init();
 #if !defined(TC1798)
 void read_can_main(int s);
 #endif
-int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
 void receive_sig(struct can_frame *cf);
 int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal);

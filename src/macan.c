@@ -757,7 +757,7 @@ uint64_t read_time()
  *
  * Request keys to all comunication partners.
  */
-void manage_key(int s)
+void macan_request_keys(int s)
 {
 	int i;
 
