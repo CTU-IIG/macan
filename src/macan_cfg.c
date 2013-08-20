@@ -21,24 +21,13 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * can.h
- *
- *  Created on: 7.8.2013
- *      Author: win
- */
+#include <macan.h>
+#include <macan_config.h>
 
-#ifndef CAN_H_
-#define CAN_H_
-
-#ifdef TC1798
-struct can_frame {
-	uint32_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-	uint8_t can_dlc; /* data length code: 0 .. 8 */
-	uint8_t data[8];
+/* ToDo: implement SIG_TIME as standard signal */
+struct macan_sig_spec demo_sig_spec[] = {
+	[TIME_DUMMY3] = {0, 0, NODE_TS, 3, 0}, /* ToDo: more recipients */
+	[TIME_DUMMY2] = {0, 0, NODE_TS, 2, 0},
+        [ENGINE]      = {0, 10, 2, 3, 5},
+        [BRAKE]       = {1, 11, 2, 3, 7},
 };
-#else
-#include <linux/can.h>
-#endif
-
-#endif /* CAN_H_ */

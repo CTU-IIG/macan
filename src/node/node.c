@@ -80,8 +80,6 @@ uint8_t recv_skey_pending = 0;
 uint8_t g_fwd = 0;
 #define NODE_HAS_KEY 1
 
-uint8_t skey_queue[NODE_MAX + 1] = {0};
-
 /* ltk stands for long term key; it is a key shared with the key server */
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -136,7 +134,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 	}
 }
 
-uint32_t recv_signal_tab[SIG_MAX];
+uint32_t recv_signal_tab[SIG_COUNT];
 
 void recv_sig_cb(uint8_t sid, uint32_t sval)
 {
@@ -165,8 +163,8 @@ void operate_ecu(int s)
 
 		if (signal_time + 1000000 < read_time()) {
 			signal_time = read_time();
-			macan_send_sig(s, ENGINE, 55);
-			macan_send_sig(s, BRAKE, 66);
+			macan_send_sig(s, ENGINE, demo_sig_spec, 55);
+			macan_send_sig(s, BRAKE, demo_sig_spec, 66);
 		}
 
 		//send_auth_req(s, NODE_OTHER, ENGINE, 0);
@@ -181,7 +179,7 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = init();
-	macan_init(s);
+	macan_init(s, demo_sig_spec);
 	operate_ecu(s);
 
 	return 0;

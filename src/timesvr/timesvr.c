@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = init();
-	macan_init(s);
+	macan_init(s, demo_sig_spec);
 	operate_ts(s);
 
 	return 0;

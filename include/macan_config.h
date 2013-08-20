@@ -24,24 +24,25 @@
 #ifndef MACAN_CONFIG_H
 #define MACAN_CONFIG_H
 
+#include <macan.h>
+
 enum sig_id {
 	ENGINE,
 	BRAKE,
 	TRAMIS,
 	TIME_DUMMY2,
 	TIME_DUMMY3,
-	SIG_MAX
+	SIG_COUNT
 };
 
-#define NODE_MAX 4
-
-struct sig_spec {
-	uint8_t can_nsid;  /* can non-secured id */
-	uint8_t can_sid;   /* can secured id */
-	uint8_t src_id;    /* node dispathing this signal */
-	uint8_t dst_id;    /* node receiving this signal */
-	uint8_t presc;     /* prescaler */
+enum node_id {
+	KEY_SERVER,
+	TIME_SERVER,
+	NODE1,
+	NODE2,
+	NODE_COUNT
 };
+
+extern struct macan_sig_spec demo_sig_spec[];
 
 #endif /* MACAN_CONFIG_H */
-

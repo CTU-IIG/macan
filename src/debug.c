@@ -21,24 +21,17 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * can.h
- *
- *  Created on: 7.8.2013
- *      Author: win
- */
+#include <debug.h>
+#include <stdio.h>
+#include <stdarg.h>
 
-#ifndef CAN_H_
-#define CAN_H_
-
-#ifdef TC1798
-struct can_frame {
-	uint32_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
-	uint8_t can_dlc; /* data length code: 0 .. 8 */
-	uint8_t data[8];
-};
-#else
-#include <linux/can.h>
-#endif
-
-#endif /* CAN_H_ */
+void debug_printf(const char* format, ...)
+{
+    if (msg)
+    {
+        va_list argp;
+        va_start(argp, msg);
+        vfprintf(stderr, format, argp);
+        va_end(argp);
+    }
+}

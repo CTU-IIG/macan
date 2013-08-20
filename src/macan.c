@@ -63,19 +63,11 @@
 
 void can_recv_cb(int s, struct can_frame *cf);
 
-/* ToDo: implement SIG_TIME as standard signal */
-struct sig_spec macan_sig_spec[] = {
-	[TIME_DUMMY3] = {0, 0, NODE_TS, 3, 0}, /* ToDo: more recipients */
-	[TIME_DUMMY2] = {0, 0, NODE_TS, 2, 0},
-        [ENGINE]      = {0, 10, 2, 3, 5},
-        [BRAKE]       = {1, 11, 2, 3, 7},
-};
-
 extern uint8_t ltk[];
 
 /* ToDo: generate this table */
 uint32_t cpart_cnt;
-struct com_part *cpart[NODE_MAX] = {NULL};
+struct com_part *cpart[NODE_COUNT] = {NULL};
 
 #define SIG_DONTSIGN -1
 #define SIG_SIGNONCE 0
@@ -105,21 +97,21 @@ void init_cpart(uint8_t i)
 /**
  * macan_init()
  */
-int macan_init(int s)
+int macan_init(int s, const struct macan_sig_spec *sig_spec)
 {
 	uint8_t cp;
 	int i;
 
-	for (i = 0; i < SIG_MAX; i++) {
-		if (macan_sig_spec[i].src_id == NODE_ID) {
-			cp = macan_sig_spec[i].dst_id;
+	for (i = 0; i < SIG_COUNT; i++) {
+		if (sig_spec[i].src_id == NODE_ID) {
+			cp = sig_spec[i].dst_id;
 
 			if (cpart[cp] == NULL) {
 				init_cpart(cp);
 			}
 		}
-		if (macan_sig_spec[i].dst_id == NODE_ID) {
-			cp = macan_sig_spec[i].src_id;
+		if (sig_spec[i].dst_id == NODE_ID) {
+			cp = sig_spec[i].src_id;
 
 			if (cpart[cp] == NULL) {
 				init_cpart(cp);
@@ -139,7 +131,7 @@ int macan_wait_for_key_acks(int s, uint64_t *ack_time)
 		return -1;
 	*ack_time = read_time();
 
-	for (i = 2; i < NODE_MAX; i++) {
+	for (i = 2; i < NODE_COUNT; i++) {
 		if (cpart[i] == NULL)
 			continue;
 
@@ -338,7 +330,7 @@ int receive_ack(struct can_frame *cf)
 	uint8_t *skey;
 
 	id = cf->can_id;
-	assert(id < NODE_MAX);
+	assert(id < NODE_COUNT);
 
 	/* ToDo: overflow check */
 	/* ToDo: what if ack contains me */
@@ -413,7 +405,7 @@ int receive_skey(struct can_frame *cf)
 		print_hexn(skey, 24);
 
 		fwd_id = skey[6];
-		if (fwd_id <= 0 || NODE_MAX <= fwd_id || cpart[fwd_id] == NULL) {
+		if (fwd_id <= 0 || NODE_COUNT <= fwd_id || cpart[fwd_id] == NULL) {
 			printf("receive session key \033[1;31mFAIL\033[0;0m: unexpected fwd_id\n");
 			return -1;
 		}
@@ -471,7 +463,7 @@ void receive_challenge(int s, struct can_frame *cf)
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
 
 	fwd_id = ch->fwd_id;
-	assert(0 < fwd_id && fwd_id < NODE_MAX);
+	assert(0 < fwd_id && fwd_id < NODE_COUNT);
 
 	if (cpart[fwd_id] == NULL) {
 		cpart[fwd_id] = malloc(sizeof(struct com_part));
@@ -634,11 +626,11 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 	return 0;
 }
 
-void macan_send_sig(int s, uint8_t sig_num, uint8_t signal)
+void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint8_t signal)
 {
 	uint8_t dst_id;
 
-	dst_id = macan_sig_spec[sig_num].dst_id;
+	dst_id = sig_spec[sig_num].dst_id;
 
 	if (is_channel_ready(dst_id)) {
 		macan_write(s, dst_id, sig_num, signal);
@@ -770,7 +762,7 @@ void manage_key(int s)
 	int i;
 
 	/* ToDo: key expiration */
-	for (i = 0; i < NODE_MAX; i++) {
+	for (i = 0; i < NODE_COUNT; i++) {
 		if (cpart[i] == NULL)
 			continue;
 
@@ -823,9 +815,10 @@ int init()
 		return -1;
 	}
 
+#if 0
 	int loopback = 0; /* 0 = disabled, 1 = enabled (default) */
 	setsockopt(s, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &loopback, sizeof(loopback));
-
+#endif
 	strcpy(ifr.ifr_name, ifname);
 	ioctl(s, SIOCGIFINDEX, &ifr);
 
