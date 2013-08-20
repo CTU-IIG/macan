@@ -62,9 +62,6 @@
 
 #define NODE_ID NODE_TS
 /* ToDo: if NODE_ID OTHER error check */
-#ifndef CAN_IF
-# error CAN_IF not specified
-#endif /* CAN_IF */
 
 #define TS_DIVER 500000
 uint64_t last_usec;

@@ -16,16 +16,16 @@ debug:
 	$(MAKE) DEBUG=-DDEBUG all
 
 node2:
-	gcc -Wall -ggdb ${DEBUG} -o${OUTDIR}node2 -DCAN_IF=\"can2\" -DNODE_ID=2 ${INC} ${LIB} src/node/node.c $(LIB_SRC)
+	gcc -Wall -ggdb ${DEBUG} -o${OUTDIR}node2 -DNODE_ID=2 ${INC} ${LIB} src/node/node.c $(LIB_SRC)
 
 node3:
-	gcc -Wall -ggdb ${DEBUG} -o${OUTDIR}node3 -DCAN_IF=\"can3\" -DNODE_ID=3 ${INC} ${LIB} src/node/node.c $(LIB_SRC)
+	gcc -Wall -ggdb ${DEBUG} -o${OUTDIR}node3 -DNODE_ID=3 ${INC} ${LIB} src/node/node.c $(LIB_SRC)
 
 keysvr:
-	gcc -Wall -ggdb -o${OUTDIR}keysvr -DCAN_IF=\"can0\" -DNODE_ID=NODE_KS ${INC} ${LIB} src/keysvr/keysvr.c $(LIB_SRC)
+	gcc -Wall -ggdb -o${OUTDIR}keysvr -DNODE_ID=NODE_KS ${INC} ${LIB} src/keysvr/keysvr.c $(LIB_SRC)
 
 timesvr:
-	gcc -Wall -ggdb -o${OUTDIR}timesvr -DCAN_IF=\"can1\" -DNODE_ID=NODE_TS -DNODE_OTHER=3 ${INC} ${LIB} -lrt src/timesvr/timesvr.c $(LIB_SRC)
+	gcc -Wall -ggdb -o${OUTDIR}timesvr -DNODE_ID=NODE_TS -DNODE_OTHER=3 ${INC} ${LIB} -lrt src/timesvr/timesvr.c $(LIB_SRC)
 
 test:
 # 	gcc -Wall -ggdb -o${OUTDIR}/test_timesvr -DCAN_IF=\"can2\" -DNODE_ID=3 -DNODE_OTHER=2 ${INC} ${LIB} -lrt test/test_timesvr.c $(LIB_SRC)

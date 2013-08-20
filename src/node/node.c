@@ -63,7 +63,6 @@
 #ifdef TC1798
 # define NODE_ID 3
 # define NODE_OTHER 2
-# define CAN_IF 2 /* Hth on TC1798, iface name on pc */
 #endif
 
 #define WRITE_DELAY 0.5
@@ -72,9 +71,6 @@
 #ifndef NODE_ID
 # error NODE_TS or NODE_OTHER not defined
 #endif /* NODE_ID */
-#ifndef CAN_IF
-# error CAN_IF not specified
-#endif /* CAN_IF */
 
 uint8_t recv_skey_pending = 0;
 uint8_t g_fwd = 0;

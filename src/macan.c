@@ -801,7 +801,7 @@ int init()
 	int s;
 	int r;
 	struct ifreq ifr;
-	char *ifname = CAN_IF;
+	char *ifname = "can0";
 	struct sockaddr_can addr;
 
 	if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
