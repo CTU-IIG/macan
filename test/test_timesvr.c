@@ -531,7 +531,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 			read_time(&recent);
 			recent += macan_time_sync;
 			if (abs(recent - usec) > time_delta) {
-				printf("error: time out of sync (%u = %u - %u)\n", abs(recent - usec), recent, usec);
+				printf("error: time out of sync (%u = %lu - %u)\n", abs(recent - usec), recent, usec);
 
 				ts_chal_time = recent;
 				ts_last_usec = usec;
@@ -793,4 +793,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-

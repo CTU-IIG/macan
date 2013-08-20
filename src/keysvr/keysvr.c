@@ -103,7 +103,7 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 	uint8_t plain[24];
 	uint8_t *key;
 	struct can_frame cf;
-	struct sess_key skey;
+	struct macan_sess_key skey;
 	int i;
 
 	/* ToDo: solve name inconsistency - key */
@@ -149,12 +149,12 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 void ks_receive_challenge(int s, struct can_frame *cf)
 {
 	struct aes_ctx cipher;
-	struct challenge *chal;
+	struct macan_challenge *chal;
 	uint8_t dst_id, fwd_id;
 	uint8_t *chg;
 
 	aes_set_encrypt_key(&cipher, 16, ltk);
-	chal = (struct challenge *)cf->data;
+	chal = (struct macan_challenge *)cf->data;
 
 	dst_id = cf->can_id;
 	fwd_id = chal->fwd_id;
@@ -165,7 +165,7 @@ void ks_receive_challenge(int s, struct can_frame *cf)
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
-	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
+	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
 	/* ToDo: do some filter here */
 	if (cf->can_id == SIG_TIME)
@@ -191,4 +191,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-

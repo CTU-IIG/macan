@@ -28,20 +28,22 @@
 #define NODE_TS 1
 #define SIG_TIME 4
 #define TIME_DELTA 1000   /* tolerated time divergency from TS in usecs */
-#define TIME_DIV 5000
-#define TIME_TIMEOUT 5000000
-#define SKEY_TIMEOUT 6000000000
-#define SKEY_CHG_TIMEOUT 10000000
-#define ACK_TIMEOUT 2000000
+#define TIME_DIV 5000	  /* usec */
+#define TIME_TIMEOUT 5000000	/* usec */
+#define SKEY_TIMEOUT 6000000000	/* usec */
+#define SKEY_CHG_TIMEOUT 10000000 /* usec */
+#define ACK_TIMEOUT 2000000	  /* usec */
 
-struct challenge {
+/* MaCAN message definitions */
+
+struct macan_challenge {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
 	uint8_t fwd_id : 8;
 	uint8_t chg[6];
 };
 
-struct sess_key {
+struct macan_sess_key {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
 	uint8_t seq : 4;
@@ -49,19 +51,19 @@ struct sess_key {
 	uint8_t data[6];
 };
 
-struct ack {
+struct macan_ack {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
 	uint8_t group[3];
 	uint8_t cmac[4];
 };
 
-struct crypt_frame {
+struct macan_crypt_frame {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
 };
 
-struct sig_auth_req {
+struct macan_sig_auth_req {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
 	uint8_t sig_num;
@@ -69,12 +71,12 @@ struct sig_auth_req {
 	uint8_t cmac[4];
 };
 
-struct signal {
+struct macan_signal {
 	uint8_t sig[4];
 	uint8_t cmac[4];
 };
 
-struct signal_ex {
+struct macan_signal_ex {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
 	uint8_t sig_num;
@@ -82,10 +84,14 @@ struct signal_ex {
 	uint8_t cmac[4];
 };
 
+/**
+ * Timekeeping structure
+ */
+
 struct macan_time {
-	uint64_t sync;       /* contains the time difference between local time
+	uint64_t offs;       /* contains the time difference between local time
    			        and TS time;
-				i.e. TS_time = Local_time + sync */
+				i.e. TS_time = Local_time + offs */
 	uint64_t chal_ts;    /* local timestamp when request for signed time was sent  */
 	uint8_t chg[6];
 };
@@ -141,4 +147,3 @@ void receive_time(int s, struct can_frame *cf);
 void receive_signed_time(int s, struct can_frame *cf);
 
 #endif /* MACAN_H */
-

@@ -90,7 +90,7 @@ uint8_t ltk[] = {
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
-	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
+	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 	int fwd;
 
 	/* ToDo: make sure all branch end ASAP */
@@ -186,4 +186,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-

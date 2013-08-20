@@ -89,7 +89,7 @@ uint8_t ltk[] = {
 int ts_receive_challenge(int s, struct can_frame *cf)
 {
 	struct can_frame canf;
-	struct challenge *ch = (struct challenge *)cf->data;
+	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
 	uint8_t *skey;
 	uint8_t plain[10];
 	uint8_t dst_id;
@@ -119,7 +119,7 @@ int ts_receive_challenge(int s, struct can_frame *cf)
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
-	struct crypt_frame *cryf = (struct crypt_frame *)cf->data;
+	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
 	/* ToDo: make sure all branch end ASAP */
 	/* ToDo: macan or plain can */
@@ -215,4 +215,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-

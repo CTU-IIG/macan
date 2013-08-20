@@ -287,7 +287,7 @@ void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 
 void send_ack(int s, uint8_t dst_id)
 {
-	struct ack ack = {2, dst_id, {0}, {0}};
+	struct macan_ack ack = {2, dst_id, {0}, {0}};
 	uint8_t plain[8] = {0};
 	uint32_t time;
 	uint8_t *skey;
@@ -333,7 +333,7 @@ int receive_ack(struct can_frame *cf)
 {
 	uint8_t id;
 	struct com_part *cp;
-	struct ack *ack = (struct ack *)cf->data;
+	struct macan_ack *ack = (struct macan_ack *)cf->data;
 	uint8_t plain[8];
 	uint8_t *skey;
 
@@ -392,13 +392,13 @@ void gen_challenge(uint8_t *chal)
  */
 int receive_skey(struct can_frame *cf)
 {
-	struct sess_key *sk;
+	struct macan_sess_key *sk;
 	uint8_t fwd_id;
 	static uint8_t keywrap[32];
 	uint8_t skey[24];
 	uint8_t seq, len;
 
-	sk = (struct sess_key *)cf->data;
+	sk = (struct macan_sess_key *)cf->data;
 	seq = sk->seq;
 	len = sk->len;
 
@@ -449,7 +449,7 @@ int receive_skey(struct can_frame *cf)
 void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 {
 	struct can_frame cf;
-	struct challenge chal = {1, dst_id, fwd_id, {0}};
+	struct macan_challenge chal = {1, dst_id, fwd_id, {0}};
 
 	if (chg) {
 		gen_challenge(chg);
@@ -458,7 +458,7 @@ void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 
 	cf.can_id = NODE_ID;
 	cf.can_dlc = 8;
-	memcpy(cf.data, &chal, sizeof(struct challenge));
+	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
 	write(s, &cf, sizeof(struct can_frame));
 }
 
@@ -468,7 +468,7 @@ void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 void receive_challenge(int s, struct can_frame *cf)
 {
 	uint8_t fwd_id;
-	struct challenge *ch = (struct challenge *)cf->data;
+	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
 
 	fwd_id = ch->fwd_id;
 	assert(0 < fwd_id && fwd_id < NODE_MAX);
@@ -493,7 +493,7 @@ void receive_time(int s, struct can_frame *cf)
 		return;
 
 	memcpy(&time_ts, cf->data, 4);
-	recent = read_time() + g_time.sync;
+	recent = read_time() + g_time.offs;
 
 	if (g_time.chal_ts) {
 		if ((recent - g_time.chal_ts) < TIME_TIMEOUT)
@@ -503,7 +503,7 @@ void receive_time(int s, struct can_frame *cf)
 	printf("time received = %u\n", time_ts);
 
 	if (abs(recent - time_ts) > TIME_DELTA) {
-		printf("error: time out of sync (%u = %llu - %u)\n", abs(recent - time_ts), recent, time_ts);
+		printf("error: time out of sync (%u = %lu - %u)\n", abs(recent - time_ts), recent, time_ts);
 
 		g_time.chal_ts = recent;
 		send_challenge(s, NODE_TS, 0, g_time.chg);
@@ -534,7 +534,7 @@ void receive_signed_time(int s, struct can_frame *cf)
 	}
 	printf("CMAC OK\n");
 
-	g_time.sync += (time_ts - g_time.chal_ts);
+	g_time.offs += (time_ts - g_time.chal_ts);
 	g_time.chal_ts = 0;
 }
 
@@ -547,7 +547,7 @@ void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 	uint8_t plain[8];
 	uint8_t *skey;
 	struct can_frame cf;
-	struct sig_auth_req areq;
+	struct macan_sig_auth_req areq;
 
 	t = get_macan_time();
 	skey = cpart[dst_id]->skey;
@@ -576,9 +576,9 @@ void receive_auth_req(struct can_frame *cf)
 	uint32_t t;
 	uint8_t *skey;
 	uint8_t plain[8];
-	struct sig_auth_req *areq;
+	struct macan_sig_auth_req *areq;
 
-	areq = (struct sig_auth_req *)cf->data;
+	areq = (struct macan_sig_auth_req *)cf->data;
 	/* ToDo: check */
 	skey = cpart[cf->can_id]->skey;
 
@@ -602,7 +602,7 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 	uint8_t plain[8];
 	uint32_t t;
 	uint8_t *skey;
-	struct signal_ex sig = {
+	struct macan_signal_ex sig = {
 		3, dst_id, sig_num, {0}, {0}
 	};
 
@@ -667,11 +667,11 @@ void send_sig(int s, uint8_t sig_num, uint8_t signal)
 
 void receive_sig(struct can_frame *cf)
 {
-	struct signal_ex *sig;
+	struct macan_signal_ex *sig;
 	uint8_t plain[8];
 	uint8_t *skey;
 
-	sig = (struct signal_ex *)cf->data;
+	sig = (struct macan_signal_ex *)cf->data;
 
 	plain[4] = cf->can_id;
 	plain[5] = NODE_ID;
@@ -687,7 +687,7 @@ void receive_sig(struct can_frame *cf)
 		return;
 	}
 
-	sig = (struct signal_ex *)cf->data;
+	sig = (struct macan_signal_ex *)cf->data;
 	printf("received authorized sig=%i\n", sig->signal[0]);
 }
 
@@ -786,7 +786,7 @@ void manage_key(int s)
 
 uint64_t get_macan_time()
 {
-	return read_time() + g_time.sync;
+	return read_time() + g_time.offs;
 }
 
 /* ToDo: check for init return in all usages */
@@ -842,4 +842,3 @@ int init()
 	return s;
 }
 #endif
-
