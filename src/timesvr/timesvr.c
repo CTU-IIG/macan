@@ -190,21 +190,6 @@ void operate_ts(int s)
 	}
 }
 
-void ts_init(int s)
-{
-	int i;
-
-	for (i = 2; i < NODE_MAX; i++) {
-		cpart[i] = malloc(sizeof(struct com_part));
-		memset(cpart[i], 0, sizeof(struct com_part));
-		cpart[i]->wait_for = 1 << NODE_TS;
-
-		send_challenge(s, NODE_KS, i, cpart[i]->chg);
-		while (!(cpart[i]->group_id & (1 << NODE_ID)))
-			read_can_main(s);
-	}
-}
-
 int main(int argc, char *argv[])
 {
 	int s;

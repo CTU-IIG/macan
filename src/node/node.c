@@ -161,12 +161,12 @@ void operate_ecu(int s)
 
 		manage_key(s);
 		/* operate_ecu(); */
-		macan_assure_channel(s, &ack_time);
+		macan_wait_for_key_acks(s, &ack_time);
 
 		if (signal_time + 1000000 < read_time()) {
 			signal_time = read_time();
-			send_sig(s, ENGINE, 55);
-			send_sig(s, BRAKE, 66);
+			macan_send_sig(s, ENGINE, 55);
+			macan_send_sig(s, BRAKE, 66);
 		}
 
 		//send_auth_req(s, NODE_OTHER, ENGINE, 0);

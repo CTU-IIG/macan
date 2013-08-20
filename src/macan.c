@@ -130,7 +130,7 @@ int macan_init(int s)
 	return 0;
 }
 
-int macan_assure_channel(int s, uint64_t *ack_time)
+int macan_wait_for_key_acks(int s, uint64_t *ack_time)
 {
 	int r = 0;
 	int i;
@@ -298,7 +298,7 @@ void send_ack(int s, uint8_t dst_id)
 		return;
 
 	skey = cpart[dst_id]->skey;
-	memcpy(&ack.group, &cpart[dst_id]->group_id, 3);
+	memcpy(&ack.group, &cpart[dst_id]->group_field, 3);
 	time = get_macan_time() / TIME_DIV;
 
 	memcpy(plain, &time, 4);
@@ -367,7 +367,7 @@ int receive_ack(struct can_frame *cf)
 	memcpy(&ack_group, ack->group, 3);
 
 	is_present &= ack_group;
-	cp->group_id |= ack_group;
+	cp->group_field |= ack_group;
 
 	if (is_present)
 		return 0;
@@ -423,9 +423,9 @@ int receive_skey(struct can_frame *cf)
 			return -1;
 		}
 
-		cpart[fwd_id]->valid = read_time() + SKEY_TIMEOUT;
+		cpart[fwd_id]->valid_until = read_time() + SKEY_TIMEOUT;
 		memcpy(cpart[fwd_id]->skey, skey + 8, 16);
-		cpart[fwd_id]->group_id |= 1 << NODE_ID;
+		cpart[fwd_id]->group_field |= 1 << NODE_ID;
 		printf("receive session key (%d->%d) \033[1;32mOK\033[0;0m\n", NODE_ID, fwd_id);
 
 		return fwd_id;
@@ -480,7 +480,7 @@ void receive_challenge(int s, struct can_frame *cf)
 		cpart[fwd_id]->wait_for = 1 << fwd_id | 1 << NODE_ID;
 	}
 
-	cpart[fwd_id]->valid = read_time() + SKEY_CHG_TIMEOUT;
+	cpart[fwd_id]->valid_until = read_time() + SKEY_CHG_TIMEOUT;
 	send_challenge(s, NODE_KS, ch->fwd_id, cpart[ch->fwd_id]->chg);
 }
 
@@ -634,7 +634,7 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 	return 0;
 }
 
-void send_sig(int s, uint8_t sig_num, uint8_t signal)
+void macan_send_sig(int s, uint8_t sig_num, uint8_t signal)
 {
 	uint8_t dst_id;
 
@@ -696,7 +696,7 @@ int is_skey_ready(uint8_t dst_id)
 	if (cpart[dst_id] == NULL)
 		return 0;
 
-	return (cpart[dst_id]->group_id & 1 << NODE_ID);
+	return (cpart[dst_id]->group_field & 1 << NODE_ID);
 }
 
 int is_channel_ready(uint8_t dst)
@@ -704,7 +704,7 @@ int is_channel_ready(uint8_t dst)
 	if (cpart[dst] == NULL)
 		return 0;
 
-	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_id)) & 0x00ffffff;
+	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_field)) & 0x00ffffff;
 	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & 0x00ffffff;
 
 	return ((grp & wf) == wf);
@@ -774,11 +774,11 @@ void manage_key(int s)
 		if (cpart[i] == NULL)
 			continue;
 
-		if (cpart[i]->valid > read_time())
+		if (cpart[i]->valid_until > read_time())
 			continue;
 
 		send_challenge(s, NODE_KS, i, cpart[i]->chg);
-		cpart[i]->valid = read_time() + SKEY_CHG_TIMEOUT;
+		cpart[i]->valid_until = read_time() + SKEY_CHG_TIMEOUT;
 	}
 
 	return;

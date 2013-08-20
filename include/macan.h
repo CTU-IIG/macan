@@ -96,24 +96,31 @@ struct macan_time {
 	uint8_t chg[6];
 };
 
-/*
- * struct com_part - communication partner
- * @id:    6-bit id
- * @skey:  wrapped key or consequently session key
- * @stat:  comunication channel status
+/**
+ * Communication partner
+ *
+ * Stores run-time information about a communication partner.
+ *
+ * @param id    6-bit id
+ * @param skey  wrapped key or consequently session key
+ * @param stat  comunication channel status
  */
 struct com_part {
-	uint8_t skey[16];
-	uint64_t valid;
-	uint8_t chg[6];
+	uint8_t skey[16];	/* Session key (from key server) */
+	uint64_t valid_until;	/* Local time of key expiration */
+	uint8_t chg[6];		/* Challenge for communication with key server */
 	uint8_t flags;
-	uint32_t group_id;
-	uint32_t wait_for;
+	uint32_t group_field;	/* Bitmask of known key sharing */
+	uint32_t wait_for;	/* The value of group_field we are waiting for  */
 };
 
-void manage_key(int s);
+/* MaCAN API functions */
+
 int macan_init(int s);
-int macan_assure_channel(int s, uint64_t *ack_time);
+void macan_send_sig(int s,uint8_t sig_num,uint8_t signal);
+int macan_wait_for_key_acks(int s, uint64_t *ack_time);
+
+void manage_key(int s);
 int init();
 #if !defined(TC1798)
 void read_can_main(int s);
@@ -121,10 +128,9 @@ void read_can_main(int s);
 int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
 void receive_sig(struct can_frame *cf);
-void send_sig(int s,uint8_t sig_num,uint8_t signal);
+int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal);
 int is_channel_ready(uint8_t dst);
 int is_skey_ready(uint8_t dst_id);
-int macan_write(int s,uint8_t dst_id,uint8_t sig_num,uint32_t signal);
 void receive_auth_req(struct can_frame *cf);
 void send_auth_req(int s,uint8_t dst_id,uint8_t sig_num,uint8_t prescaler);
 void receive_challenge(int s,struct can_frame *cf);
