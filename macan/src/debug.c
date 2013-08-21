@@ -27,10 +27,10 @@
 
 void debug_printf(const char* format, ...)
 {
-    if (msg)
+    if (format)
     {
         va_list argp;
-        va_start(argp, msg);
+        va_start(argp, format);
         vfprintf(stderr, format, argp);
         va_end(argp);
     }
