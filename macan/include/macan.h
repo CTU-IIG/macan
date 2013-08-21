@@ -38,19 +38,19 @@ struct macan_sig_spec {
 #define NODE_TS 1
 #define SIG_TIME 4
 #define TIME_DELTA 1000   /* tolerated time divergency from TS in usecs */
-#define TIME_DIV 5000	  /* usec */
+#define TIME_DIV 5000
 #define TIME_TIMEOUT 5000000	/* usec */
-#define SKEY_TIMEOUT 6000000000	/* usec */
-#define SKEY_CHG_TIMEOUT 10000000 /* usec */
+#define SKEY_TIMEOUT 6000000000u /* usec */
+#define SKEY_CHG_TIMEOUT 30000000u /* usec */
 #define ACK_TIMEOUT 2000000	  /* usec */
 
 /* MaCAN API functions */
 
 int  macan_init(int s, const struct macan_sig_spec *sig_spec);
 void macan_request_keys(int s);
-int  macan_wait_for_key_acks(int s, uint64_t *ack_time);
+int  macan_wait_for_key_acks(int s, const struct macan_sig_spec *sig_spec, uint64_t *ack_time);
 int  macan_reg_callback(uint8_t sig_num, void (*fnc)(uint8_t sig_num, uint32_t sig_val));
-void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint8_t signal);
+void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint16_t signal);
 int  macan_process_frame(const struct can_frame *cf, int s);
 
 int  check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);

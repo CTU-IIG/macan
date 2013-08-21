@@ -31,3 +31,4 @@ struct macan_sig_spec demo_sig_spec[] = {
         [ENGINE]      = {0, 10, 2, 3, 5},
         [BRAKE]       = {1, 11, 2, 3, 7},
 };
+

@@ -107,6 +107,12 @@ struct com_part {
 	uint32_t wait_for;	/* The value of group_field we are waiting for  */
 };
 
-
+struct sig_handle {
+	int presc;
+	uint8_t presc_cnt;
+	uint8_t flags;
+	void (*cback)(uint8_t sig_num, uint32_t sig_val);
+};
 
 #endif
+

@@ -90,6 +90,8 @@ void can_recv_cb(int s, struct can_frame *cf)
 	/* ToDo: make sure all branch end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
+	if(cf->can_id == NODE_ID)
+		return;
 	if (cf->can_id == SIG_TIME) {
 		switch(cf->can_dlc) {
 		case 4:
@@ -154,8 +156,7 @@ void operate_ecu(int s)
 		read_signals();
 
 		macan_request_keys(s);
-		/* operate_ecu(); */
-		macan_wait_for_key_acks(s, &ack_time);
+		macan_wait_for_key_acks(s, demo_sig_spec, &ack_time);
 
 		if (signal_time + 1000000 < read_time()) {
 			signal_time = read_time();

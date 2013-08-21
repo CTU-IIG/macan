@@ -61,30 +61,19 @@
 # define CAN_IF 2 /* Hth on TC1798, iface name on pc */
 #endif
 
+#define SIG_DONTSIGN -1
+#define SIG_SIGNONCE 0
+
+#define AUTHREQ_SENT 1
+
 void can_recv_cb(int s, struct can_frame *cf);
 
 extern uint8_t ltk[];
 
-/* ToDo: generate this table */
+/* ToDo: avoid globals */
 uint32_t cpart_cnt;
 struct com_part *cpart[NODE_COUNT] = {NULL};
-
-#define SIG_DONTSIGN -1
-#define SIG_SIGNONCE 0
-
-int signal_sign[] = {
-	[ENGINE] = SIG_DONTSIGN,
-	[BRAKE]  = SIG_DONTSIGN,
-	[TRAMIS] = SIG_DONTSIGN,
-};
-
-uint32_t signal_cnt[] = {
-	[ENGINE] = 0,
-	[BRAKE] = 0,
-	[TRAMIS] = 0,
-};
-
-/* ToDo: aggregate to struct */
+struct sig_handle sighand[SIG_COUNT];
 struct macan_time g_time = {0};
 
 void init_cpart(uint8_t i)
@@ -117,14 +106,21 @@ int macan_init(int s, const struct macan_sig_spec *sig_spec)
 				init_cpart(cp);
 			}
 		}
+
+		sighand[i].presc = SIG_DONTSIGN;
+		sighand[i].presc_cnt = 0;
+		sighand[i].flags = 0;
+		sighand[i].cback = NULL;
 	}
 
 	return 0;
 }
 
-int macan_wait_for_key_acks(int s, uint64_t *ack_time)
+/* ToDo: reconsider name or move signal requests */
+int macan_wait_for_key_acks(int s, const struct macan_sig_spec *sig_spec, uint64_t *ack_time)
 {
 	int r = 0;
+	uint8_t cp, presc;
 	int i;
 
 	if (*ack_time + ACK_TIMEOUT > read_time())
@@ -141,6 +137,24 @@ int macan_wait_for_key_acks(int s, uint64_t *ack_time)
 		if (!is_channel_ready(i)) {
 			r++;
 			send_ack(s, i);
+			continue;
+		}
+	}
+
+	/* If all channels ready, then request signals */
+	for (i = 0; i < SIG_COUNT; i++) {
+		if (sig_spec[i].dst_id != NODE_ID)
+			continue;
+
+		cp = sig_spec[i].src_id;
+		presc = sig_spec[i].presc;
+
+		if (!is_channel_ready(cp))
+			continue;
+
+		if (!(sighand[i].flags & AUTHREQ_SENT)) {
+			sighand[i].flags |= AUTHREQ_SENT;
+			send_auth_req(s, cp, i, presc);
 		}
 	}
 
@@ -535,13 +549,13 @@ void receive_signed_time(int s, struct can_frame *cf)
  */
 void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 {
-	uint32_t t;
+	uint64_t t;
 	uint8_t plain[8];
 	uint8_t *skey;
 	struct can_frame cf;
 	struct macan_sig_auth_req areq;
 
-	t = get_macan_time();
+	t = get_macan_time() / TIME_DIV;
 	skey = cpart[dst_id]->skey;
 
 	memcpy(plain, &t, 4);
@@ -565,27 +579,31 @@ void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 
 void receive_auth_req(struct can_frame *cf)
 {
-	uint32_t t;
 	uint8_t *skey;
 	uint8_t plain[8];
+	uint8_t sig_num;
 	struct macan_sig_auth_req *areq;
 
+	if (cpart[cf->can_id] == NULL)
+		return;
+
 	areq = (struct macan_sig_auth_req *)cf->data;
-	/* ToDo: check */
 	skey = cpart[cf->can_id]->skey;
 
-	memcpy(plain, &t, 4);
 	plain[4] = cf->can_id;
 	plain[5] = NODE_ID;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
 
-	if (!check_cmac(skey, areq->cmac, plain, NULL, sizeof(plain))) {
+	if (!check_cmac(skey, areq->cmac, plain, plain, sizeof(plain))) {
 		printf("error: sig_auth cmac is incorrect\n");
 	}
 
+	sig_num = areq->sig_num;
+
 	/* ToDo: assert sig_num range */
-	signal_sign[areq->sig_num] = areq->prescaler;
+	sighand[sig_num].presc = areq->prescaler;
+	sighand[sig_num].presc_cnt = areq->prescaler - 1;
 }
 
 int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
@@ -626,35 +644,31 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 	return 0;
 }
 
-void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint8_t signal)
+/* ToDo: return result */
+void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint16_t signal)
 {
 	uint8_t dst_id;
 
 	dst_id = sig_spec[sig_num].dst_id;
+	if (!is_channel_ready(dst_id))
+		return;
 
-	if (is_channel_ready(dst_id)) {
-		macan_write(s, dst_id, sig_num, signal);
-	} else
-	{
-		/* ToDo: send standard can */
-	}
-
-	/* ToDo: prescaler counting
+	switch (sighand[sig_num].presc) {
 	case SIG_DONTSIGN:
 		break;
 	case SIG_SIGNONCE:
 		macan_write(s, dst_id, sig_num, signal);
-		signal_sign[sig_num] = SIG_DONTSIGN;
+		sighand[sig_num].presc = SIG_DONTSIGN;
 		break;
 	default:
-		if (signal_cnt[sig_num] == signal_sign[sig_num]) {
-			signal_cnt[sig_num] = 0;
+		if (sighand[sig_num].presc_cnt > 0) {
+			sighand[sig_num].presc_cnt--;
 		} else {
-			signal_cnt[sig_num]++;
+			macan_write(s, dst_id, sig_num, signal);
+			sighand[sig_num].presc_cnt = sighand[sig_num].presc - 1;
 		}
 		break;
 	}
-	*/
 }
 
 void receive_sig(struct can_frame *cf)
@@ -743,8 +757,18 @@ uint64_t read_time()
 {
 	uint64_t time;
 	struct timespec ts;
+	static struct timespec buz;
+	static uint8_t once = 0;
+
+	/* ToDo: redo this */
+	if (once == 0) {
+		once = 1;
+		clock_gettime(CLOCK_MONOTONIC_RAW, &buz);
+	}
 
 	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+	ts.tv_sec -= buz.tv_sec;
+	ts.tv_nsec -= buz.tv_nsec;
 	time = ts.tv_sec * 1000000;
 	time += ts.tv_nsec / 1000;
 
@@ -753,15 +777,12 @@ uint64_t read_time()
 #endif /* TC1798 */
 
 /**
- * manage_key()
- *
  * Request keys to all comunication partners.
  */
 void macan_request_keys(int s)
 {
 	int i;
 
-	/* ToDo: key expiration */
 	for (i = 0; i < NODE_COUNT; i++) {
 		if (cpart[i] == NULL)
 			continue;
@@ -835,3 +856,4 @@ int init()
 	return s;
 }
 #endif
+

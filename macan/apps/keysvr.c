@@ -168,6 +168,8 @@ void can_recv_cb(int s, struct can_frame *cf)
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
 	/* ToDo: do some filter here */
+	if (cf->can_id == NODE_KS)
+		return;
 	if (cf->can_id == SIG_TIME)
 		return;
 	if (cryf->dst_id != NODE_KS)

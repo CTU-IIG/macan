@@ -118,9 +118,11 @@ void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
-	/* ToDo: make sure all branch end ASAP */
+	/* ToDo: make sure all branches end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
+	if (cf->can_id == NODE_ID)
+		return;
 	if (cryf->dst_id != NODE_ID)
 		return;
 
