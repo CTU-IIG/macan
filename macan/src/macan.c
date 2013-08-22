@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <inttypes.h>
 #include "common.h"
 #include "aes_keywrap.h"
 #ifdef TC1798
@@ -67,7 +68,7 @@
 
 void can_recv_cb(int s, struct can_frame *cf);
 
-extern uint8_t ltk[];
+static uint8_t ltk[16] = {0};
 
 /* ToDo: avoid globals */
 uint32_t cpart_cnt;
@@ -113,6 +114,11 @@ int macan_init(int s, const struct macan_sig_spec *sig_spec)
 	}
 
 	return 0;
+}
+
+void macan_set_ltk(uint8_t *key)
+{
+	memcpy(ltk, key, 16);
 }
 
 /* ToDo: reconsider name or move signal requests */
@@ -192,7 +198,7 @@ int write(int s, struct can_frame *cf, int len)
  * The function computes CMAC of the given plain text and compares
  * it against cmac4. Returns 1 if CMACs matches.
  */
-int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
+int check_cmac(uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
 #ifdef TC1798
 {
 	uint8_t cmac[16];
@@ -297,6 +303,8 @@ void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 int macan_reg_callback(uint8_t sig_num, sig_cback fnc)
 {
 	sighand[sig_num].cback = fnc;
+
+	return 0;
 }
 
 void send_ack(int s, uint8_t dst_id)
@@ -343,7 +351,7 @@ void send_ack(int s, uint8_t dst_id)
  * Returns 1 if the incoming ack does not contain this node in its
  * group field. Therefore, the updated ack should be broadcasted.
  */
-int receive_ack(struct can_frame *cf)
+int receive_ack(const struct can_frame *cf)
 {
 	uint8_t id;
 	struct com_part *cp;
@@ -410,7 +418,7 @@ void gen_challenge(uint8_t *chal)
  * Returns node id if a complete key was sucessfully received. Returns 0
  * if normal conditions. Returns -1 if key receive failed.
  */
-int receive_skey(struct can_frame *cf)
+int receive_skey(const struct can_frame *cf)
 {
 	struct macan_sess_key *sk;
 	uint8_t fwd_id;
@@ -485,7 +493,7 @@ void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 /**
  * receive_challenge() - responds to REQ_CHALLENGE from KS
  */
-void receive_challenge(int s, struct can_frame *cf)
+void receive_challenge(int s, const struct can_frame *cf)
 {
 	uint8_t fwd_id;
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
@@ -504,7 +512,7 @@ void receive_challenge(int s, struct can_frame *cf)
 	send_challenge(s, NODE_KS, ch->fwd_id, cpart[ch->fwd_id]->chg);
 }
 
-void receive_time(int s, struct can_frame *cf)
+void receive_time(int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
 	uint64_t recent;
@@ -523,14 +531,14 @@ void receive_time(int s, struct can_frame *cf)
 	printf("time received = %u\n", time_ts);
 
 	if (abs(recent - time_ts) > TIME_DELTA) {
-		printf("error: time out of sync (%u = %lu - %u)\n", abs(recent - time_ts), recent, time_ts);
+		printf("error: time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu32")\n", (uint64_t)abs(recent - time_ts), recent, time_ts);
 
 		g_time.chal_ts = recent;
 		send_challenge(s, NODE_TS, 0, g_time.chg);
 	}
 }
 
-void receive_signed_time(int s, struct can_frame *cf)
+void receive_signed_time(int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
 	uint8_t plain[10];
@@ -591,7 +599,7 @@ void send_auth_req(int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 	write(s, &cf, sizeof(cf));
 }
 
-void receive_auth_req(struct can_frame *cf)
+void receive_auth_req(const struct can_frame *cf)
 {
 	uint8_t *skey;
 	uint8_t plain[8];
@@ -686,7 +694,7 @@ void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spe
 }
 
 /* ToDo: receive signal frame with 32bits */
-void receive_sig(struct can_frame *cf)
+void receive_sig(const struct can_frame *cf)
 {
 	struct macan_signal_ex *sig;
 	uint8_t plain[8];
@@ -735,28 +743,6 @@ int is_channel_ready(uint8_t dst)
 
 	return ((grp & wf) == wf);
 }
-
-#ifndef TC1798
-void read_can_main(int s)
-{
-	struct can_frame cf;
-	int rbyte;
-
-	rbyte = read(s, &cf, sizeof(struct can_frame));
-	if (rbyte == -1 && errno == EAGAIN) {
-		return;
-	}
-
-	if (rbyte != 16) {
-		printf("ERROR recv not 16 bytes");
-		exit(0);
-	}
-
-	printf("RECV ");
-	print_hexn(&cf, sizeof(struct can_frame));
-	can_recv_cb(s, &cf);
-}
-#endif
 
 #define f_STM 100000000
 #define TIME_USEC (f_STM / 1000000)
@@ -821,58 +807,55 @@ uint64_t get_macan_time()
 	return read_time() + g_time.offs;
 }
 
-/* ToDo: check for init return in all usages */
-int init()
-#ifdef TC1798
+int macan_process_frame(int s, const struct can_frame *cf)
 {
-	Can_SetControllerMode(CAN_CONTROLLER0, CAN_T_START);
-	//Can_SetControllerMode(CAN_CONTROLLER1, CAN_T_START);
+	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
+	int fwd;
 
-	/* activate SHE */
-	/* ToDo: revisit */
-	SHE_CLC &= ~(0x1);
-	while (SHE_CLC & 0x2) {};
-	wait_until_done();
+	/* ToDo: make sure all branches end ASAP */
+	/* ToDo: macan or plain can */
+	/* ToDo: crypto frame or else */
+	if(cf->can_id == NODE_ID)
+		return 1;
+	if (cf->can_id == SIG_TIME) {
+		switch(cf->can_dlc) {
+		case 4:
+			receive_time(s, cf);
+			return 1;
+		case 8:
+			receive_signed_time(s, cf);
+			return 1;
+		}
+	}
+
+	if (cryf->dst_id != NODE_ID)
+		return 1;
+
+	switch (cryf->flags) {
+	case 1:
+		receive_challenge(s, cf);
+		break;
+	case 2:
+		if (cf->can_id == NODE_KS) {
+			fwd = receive_skey(cf);
+			if (fwd > 1) {
+				send_ack(s, fwd);
+			}
+			break;
+		}
+
+		/* ToDo: what if ack CMAC fails, there should be no response */
+		if (receive_ack(cf) == 1)
+			send_ack(s, cf->can_id);
+		break;
+	case 3:
+		if (cf->can_dlc == 7)
+			receive_auth_req(cf);
+		else
+			receive_sig(cf);
+		break;
+	}
 
 	return 0;
 }
-#else
-{
-	int s;
-	int r;
-	struct ifreq ifr;
-	char *ifname = "can0";
-	struct sockaddr_can addr;
-
-	if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-		perror("Error while opening socket");
-		return -1;
-	}
-
-	r = fcntl(s, F_SETFL, O_NONBLOCK);
-	if (r != 0) {
-		perror("ioctl fail");
-		return -1;
-	}
-
-#if 0
-	int loopback = 0; /* 0 = disabled, 1 = enabled (default) */
-	setsockopt(s, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &loopback, sizeof(loopback));
-#endif
-	strcpy(ifr.ifr_name, ifname);
-	ioctl(s, SIOCGIFINDEX, &ifr);
-
-	addr.can_family  = AF_CAN;
-	addr.can_ifindex = ifr.ifr_ifindex;
-
-	printf("%s at index %d\n", ifname, ifr.ifr_ifindex);
-
-	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-		perror("Error in socket bind");
-		return -2;
-	}
-
-	return s;
-}
-#endif
 

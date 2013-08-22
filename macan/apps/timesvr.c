@@ -52,6 +52,7 @@
 #include <nettle/aes.h>
 #include "aes_cmac.h"
 #endif /* TC1798 */
+#include "helper.h"
 #include "macan.h"
 #include "macan_config.h"
 
@@ -181,7 +182,7 @@ void operate_ts(int s)
 	uint64_t bcast_time = read_time();
 
 	while(1) {
-		read_can_main(s);
+		helper_read_can(s, can_recv_cb);
 		macan_request_keys(s);
 		broadcast_time(s, &bcast_time);
 
@@ -193,8 +194,9 @@ int main(int argc, char *argv[])
 {
 	int s;
 
-	s = init();
+	s = helper_init();
 	macan_init(s, demo_sig_spec);
+	macan_set_ltk(ltk);
 	operate_ts(s);
 
 	return 0;

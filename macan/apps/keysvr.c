@@ -36,6 +36,7 @@
 #include <linux/can/raw.h>
 #include <nettle/aes.h>
 #include "common.h"
+#include "helper.h"
 #include "aes_keywrap.h"
 #include "macan.h"
 
@@ -182,13 +183,15 @@ int main(int argc, char *argv[])
 {
 	int s;
 
-	s = init();
+	s = helper_init();
+	macan_set_ltk(ltk);
 
 	while (1) {
-		read_can_main(s);
+		helper_read_can(s, can_recv_cb);
 
 		usleep(250);
 	}
 
 	return 0;
 }
+

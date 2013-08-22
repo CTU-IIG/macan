@@ -53,6 +53,7 @@
 #include <nettle/aes.h>
 #include "aes_cmac.h"
 #endif /* TC1798 */
+#include "helper.h"
 #include "macan.h"
 #include "macan_config.h"
 
@@ -84,64 +85,7 @@ uint8_t ltk[] = {
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
-	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
-	int fwd;
-
-	/* ToDo: make sure all branches end ASAP */
-	/* ToDo: macan or plain can */
-	/* ToDo: crypto frame or else */
-	if(cf->can_id == NODE_ID)
-		return;
-	if (cf->can_id == SIG_TIME) {
-		switch(cf->can_dlc) {
-		case 4:
-			receive_time(s, cf);
-			return;
-		case 8:
-			receive_signed_time(s, cf);
-			return;
-		}
-	}
-
-	if (cryf->dst_id != NODE_ID)
-		return;
-
-	switch (cryf->flags) {
-	case 1:
-		receive_challenge(s, cf);
-		break;
-	case 2:
-		if (cf->can_id == NODE_KS) {
-			fwd = receive_skey(cf);
-			if (fwd > 1) {
-				send_ack(s, fwd);
-			}
-			break;
-		}
-
-		/* ToDo: what if ack CMAC fails, there should be no response */
-		if (receive_ack(cf) == 1)
-			send_ack(s, cf->can_id);
-		break;
-	case 3:
-		if (cf->can_dlc == 7)
-			receive_auth_req(cf);
-		else
-			receive_sig(cf);
-		break;
-	}
-}
-
-uint32_t recv_signal_tab[SIG_COUNT];
-
-void recv_sig_cb(uint8_t sid, uint32_t sval)
-{
-	recv_signal_tab[sid] = sval;
-}
-
-void read_signals()
-{
-
+	macan_process_frame(s, cf);
 }
 
 void operate_ecu(int s)
@@ -153,10 +97,8 @@ void operate_ecu(int s)
 #ifdef TC1798
 		poll_can_fifo();
 #else
-		read_can_main(s);
+		helper_read_can(s, can_recv_cb);
 #endif /* TC1798 */
-		read_signals();
-
 		macan_request_keys(s);
 		macan_wait_for_key_acks(s, demo_sig_spec, &ack_time);
 
@@ -182,11 +124,13 @@ int main(int argc, char *argv[])
 {
 	int s;
 
-	s = init();
+	s = helper_init();
 	macan_init(s, demo_sig_spec);
+	macan_set_ltk(ltk);
 	macan_reg_callback(ENGINE, sig_callback);
 	macan_reg_callback(BRAKE, sig_callback);
 	operate_ecu(s);
 
 	return 0;
 }
+

@@ -21,16 +21,11 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef HELPER_H
+#define HELER_H
+struct can_frame;
 
-#define print_hex(key) print_hexn(key, 16)
-#define check128(a, b) memchk(a, b, 16)
-
-void eval(const char *tname,int b);
-int memchk(const uint8_t *a, const uint8_t *b, size_t len);
-void print_hexn(void *data, size_t len);
-void memcpy_bw(void *dst, const void *src, size_t len);
-
-#endif /* COMMON_H */
+int helper_init();
+void helper_read_can(int s, void (*cback)(int s, struct can_frame *cf));
+#endif
 

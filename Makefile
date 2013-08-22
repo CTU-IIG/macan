@@ -5,7 +5,7 @@ LIB=-lnettle -lrt
 #DEBUG=-DDEBUG_PRINT
 .PHONY: test node2 node3
 
-LIB_SRC=macan/src/aes_keywrap.c macan/src/common.c macan/src/aes_cmac.c macan/src/macan.c demo/macan_cfg.c
+LIB_SRC=macan/src/aes_keywrap.c macan/src/common.c macan/src/aes_cmac.c macan/src/macan.c demo/macan_cfg.c macan/src/helper.c
 
 all: clean chk_build_folder node2 node3 keysvr timesvr test
 
