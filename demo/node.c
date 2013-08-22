@@ -62,14 +62,13 @@
 
 #ifdef TC1798
 # define NODE_ID 3
-# define NODE_OTHER 2
 #endif
 
 #define WRITE_DELAY 0.5
 #define NODE_KS 0
 #define NODE_TS 1
 #ifndef NODE_ID
-# error NODE_TS or NODE_OTHER not defined
+# error NODE_TS not defined
 #endif /* NODE_ID */
 
 uint8_t recv_skey_pending = 0;
@@ -87,7 +86,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 	int fwd;
 
-	/* ToDo: make sure all branch end ASAP */
+	/* ToDo: make sure all branches end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
 	if(cf->can_id == NODE_ID)
@@ -150,7 +149,9 @@ void operate_ecu(int s)
 	uint64_t ack_time = read_time();
 
 	while(1) {
-#ifndef TC1798
+#ifdef TC1798
+		poll_can_fifo();
+#else
 		read_can_main(s);
 #endif /* TC1798 */
 		read_signals();

@@ -133,7 +133,6 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 		memcpy(cf.data, &skey, 8);
 
 		/* ToDo: check all writes for success */
-		usleep(WRITE_DELAY);
 		write(s, &cf, sizeof(struct can_frame));
 	}
 }

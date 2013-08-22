@@ -56,8 +56,8 @@ void aes_wrap(uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src)
 	uint8_t b[16];
 	size_t block_size = 16;
 	uint32_t t, n;
-	uint32_t *af;
-	int i, j;
+	uint32_t bs;
+	int i, j, k;
 
 	assert((length % 8) == 0);
 
@@ -72,8 +72,10 @@ void aes_wrap(uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src)
 
 			memcpy(a, b, 8);
 			t = (n*j) + i;
-			af = (uint32_t *)(a + 4);
-			*af = *af ^ bswap32(t);
+			t = bswap32(t);
+			for (k = 0; k < 4; k++) {
+				*(a + 4 + k) = *(a + 4 + k) ^ *(((uint8_t *)&t) + k);
+			}
 
 			memcpy(dst + (8 * i), b + 8, 8);   /* ToDo: write to dst */
 		}
@@ -101,7 +103,7 @@ int aes_unwrap(uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t 
 	size_t block_size = 16;
 	uint32_t t, n;
 	uint32_t *af;
-	int i, j;
+	int i, j, k;
 
 	assert((length % 8) == 0 && length > 0);
 
@@ -111,8 +113,10 @@ int aes_unwrap(uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t 
 	for (j = 5; j >= 0; j--) {
 		for (i = n; i > 0; i--) {
 			t = (n*j) + i;
-			af = (uint32_t *)(tmp + 4);
-			*af = *af ^ bswap32(t);
+			t = bswap32(t);
+			for (k = 0; k < 4; k++) {
+				*(tmp + 4 + k) = *(tmp + 4 + k) ^ *(((uint8_t *)&t) + k);
+			}
 
 			memcpy(b, tmp, 8);
 			memcpy(b + 8, tmp + (8 * i), 8);

@@ -57,8 +57,7 @@
 
 #ifdef TC1798
 # define NODE_ID 3
-# define NODE_OTHER 2
-# define CAN_IF 2 /* Hth on TC1798, iface name on pc */
+# define CAN_IF 1 /* Hth on TC1798, iface name on pc */
 #endif
 
 #define SIG_DONTSIGN -1
@@ -141,7 +140,6 @@ int macan_wait_for_key_acks(int s, const struct macan_sig_spec *sig_spec, uint64
 		}
 	}
 
-	/* If all channels ready, then request signals */
 	for (i = 0; i < SIG_COUNT; i++) {
 		if (sig_spec[i].dst_id != NODE_ID)
 			continue;
@@ -176,6 +174,10 @@ int write(int s, struct can_frame *cf, int len)
 	Can_PduType pdu_info = {17, cf->can_dlc, cf->can_id, cf->data};
 	Can_Write(CAN_IF, &pdu_info);
 
+	/* ToDo: redo */
+	uint64_t wait = read_time();
+	while (wait + 1000 > read_time()) {};
+
 	return 16;
 }
 #endif
@@ -194,7 +196,7 @@ int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time
 #ifdef TC1798
 {
 	uint8_t cmac[16];
-	uint32_t time;
+	uint64_t time;
 	uint32_t *ftime = (uint32_t *)fill_time;
 	int i;
 
@@ -220,7 +222,7 @@ int check_cmac(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time
 {
 	struct aes_ctx cipher;
 	uint8_t cmac[16];
-	uint32_t time;
+	uint64_t time;
 	uint32_t *ftime = (uint32_t *)fill_time;
 	int i;
 
@@ -311,7 +313,7 @@ void send_ack(int s, uint8_t dst_id)
 	plain[4] = ack.dst_id;
 	memcpy(plain + 5, ack.group, 3);
 
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_TS
 	memcpy(ack.cmac, &time, 4);
 #else
 	sign(skey, ack.cmac, plain, sizeof(plain));
@@ -358,8 +360,15 @@ int receive_ack(struct can_frame *cf)
 	plain[4] = ack->dst_id;
 	memcpy(plain + 5, ack->group, 3);
 
-#ifdef DEBUG_PRINT
-	printf("time check: (local=%d, in msg=%d)\n", get_macan_time()/TIME_DIV, *(uint32_t *)ack->cmac);
+#ifdef DEBUG_TS
+#ifdef TC1798
+	uint32_t cmac;
+	memcpy_bw(&cmac, ack->cmac, 4);
+	printf("printf: ack->cmac=%u\n", cmac);
+	printf("time check: (local=%llu, in msg=%u)\n", get_macan_time() / TIME_DIV, cmac);
+#else
+	printf("time check: (local=%llu, in msg=%u)\n", get_macan_time() / TIME_DIV, *(uint32_t *)ack->cmac);
+#endif
 #endif
 
 	/* ToDo: make difference between wrong CMAC and not having the key */
@@ -628,7 +637,7 @@ int macan_write(int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 	memcpy(plain + 6, &signal, 2);
 
 	memcpy(&sig.signal, &signal, 2);
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_TS
 	memcpy(sig.cmac, &time, 4);
 #else
 	sign(skey, sig.cmac, plain, sizeof(plain));
@@ -685,7 +694,7 @@ void receive_sig(struct can_frame *cf)
 
 	skey = cpart[cf->can_id]->skey;
 
-#ifdef DEBUG_PRINT
+#ifdef DEBUG_TS
 	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time()/TIME_DIV, *(uint32_t *)sig->cmac);
 #endif
 	if (!check_cmac(skey, sig->cmac, plain, plain, sizeof(plain))) {

@@ -37,12 +37,12 @@ struct macan_sig_spec {
 #define NODE_KS 0
 #define NODE_TS 1
 #define SIG_TIME 4
-#define TIME_DELTA 1000   /* tolerated time divergency from TS in usecs */
-#define TIME_DIV 5000
+#define TIME_DELTA 2000   /* tolerated time divergency from TS in usecs */
+#define TIME_DIV 500000
 #define TIME_TIMEOUT 5000000	/* usec */
 #define SKEY_TIMEOUT 6000000000u /* usec */
 #define SKEY_CHG_TIMEOUT 30000000u /* usec */
-#define ACK_TIMEOUT 2000000	  /* usec */
+#define ACK_TIMEOUT 7000000	  /* usec */
 
 /* MaCAN API functions */
 
