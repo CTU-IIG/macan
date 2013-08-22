@@ -293,6 +293,12 @@ void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 }
 #endif /* TC1798 */
 
+
+int macan_reg_callback(uint8_t sig_num, sig_cback fnc)
+{
+	sighand[sig_num].cback = fnc;
+}
+
 void send_ack(int s, uint8_t dst_id)
 {
 	struct macan_ack ack = {2, dst_id, {0}, {0}};
@@ -364,7 +370,6 @@ int receive_ack(struct can_frame *cf)
 #ifdef TC1798
 	uint32_t cmac;
 	memcpy_bw(&cmac, ack->cmac, 4);
-	printf("printf: ack->cmac=%u\n", cmac);
 	printf("time check: (local=%llu, in msg=%u)\n", get_macan_time() / TIME_DIV, cmac);
 #else
 	printf("time check: (local=%llu, in msg=%u)\n", get_macan_time() / TIME_DIV, *(uint32_t *)ack->cmac);
@@ -680,10 +685,13 @@ void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spe
 	}
 }
 
+/* ToDo: receive signal frame with 32bits */
 void receive_sig(struct can_frame *cf)
 {
 	struct macan_signal_ex *sig;
 	uint8_t plain[8];
+	uint8_t sig_num;
+	uint32_t sig_val = 0;
 	uint8_t *skey;
 
 	sig = (struct macan_signal_ex *)cf->data;
@@ -695,15 +703,18 @@ void receive_sig(struct can_frame *cf)
 	skey = cpart[cf->can_id]->skey;
 
 #ifdef DEBUG_TS
-	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time()/TIME_DIV, *(uint32_t *)sig->cmac);
+	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time() / TIME_DIV, *(uint32_t *)sig->cmac);
 #endif
 	if (!check_cmac(skey, sig->cmac, plain, plain, sizeof(plain))) {
 		printf("signal CMAC \033[1;31merror\033[0;0m");
 		return;
 	}
 
-	sig = (struct macan_signal_ex *)cf->data;
-	printf("received authorized sig=%i\n", sig->signal[0]);
+	sig_num = sig->sig_num;
+	memcpy(&sig_val, sig->signal, 2);
+
+	if (sighand[sig_num].cback)
+		sighand[sig_num].cback(sig_num, sig_val);
 }
 
 int is_skey_ready(uint8_t dst_id)
@@ -747,7 +758,6 @@ void read_can_main(int s)
 }
 #endif
 
-/* ToDo: what if overflow? */
 #define f_STM 100000000
 #define TIME_USEC (f_STM / 1000000)
 

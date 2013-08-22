@@ -44,12 +44,14 @@ struct macan_sig_spec {
 #define SKEY_CHG_TIMEOUT 30000000u /* usec */
 #define ACK_TIMEOUT 7000000	  /* usec */
 
+typedef void (*sig_cback)(uint8_t sig_num, uint32_t sig_val);
+
 /* MaCAN API functions */
 
 int  macan_init(int s, const struct macan_sig_spec *sig_spec);
 void macan_request_keys(int s);
 int  macan_wait_for_key_acks(int s, const struct macan_sig_spec *sig_spec, uint64_t *ack_time);
-int  macan_reg_callback(uint8_t sig_num, void (*fnc)(uint8_t sig_num, uint32_t sig_val));
+int  macan_reg_callback(uint8_t sig_num, sig_cback fnc);
 void macan_send_sig(int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint16_t signal);
 int  macan_process_frame(const struct can_frame *cf, int s);
 

@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <inttypes.h>
 #include "common.h"
 #include "aes_keywrap.h"
 #ifdef TC1798
@@ -172,12 +173,19 @@ void operate_ecu(int s)
 	}
 }
 
+void sig_callback(uint8_t sig_num, uint32_t sig_val)
+{
+	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
+}
+
 int main(int argc, char *argv[])
 {
 	int s;
 
 	s = init();
 	macan_init(s, demo_sig_spec);
+	macan_reg_callback(ENGINE, sig_callback);
+	macan_reg_callback(BRAKE, sig_callback);
 	operate_ecu(s);
 
 	return 0;
