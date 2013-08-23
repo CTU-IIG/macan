@@ -34,32 +34,10 @@ struct macan_sig_spec {
 	uint8_t presc;     /* prescaler */
 };
 
-struct macan_ctx {
-	const struct macan_sig_spec *sigspec;
-	struct com_part **cpart;
-	struct sig_handle **sighand;
-	uint8_t ltk[16];
-	struct macan_time time;
-	uint64_t timeout_ack;
-};
-
-#define SIG_TIME 4
-#define TIME_DELTA 2000   /* tolerated time divergency from TS in usecs */
-#define TIME_DIV 500000
-#define TIME_TIMEOUT 5000000	/* usec */
-#define SKEY_TIMEOUT 6000000000u /* usec */
-#define SKEY_CHG_TIMEOUT 30000000u /* usec */
-#define ACK_TIMEOUT 10000000	  /* usec */
-
-#define SIG_DONTSIGN -1
-#define SIG_SIGNONCE 0
-
-#define AUTHREQ_SENT 1
-
+/* signal callback signature */
 typedef void (*sig_cback)(uint8_t sig_num, uint32_t sig_val);
 
 /* MaCAN API functions */
-
 int  macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec);
 void macan_set_ltk(struct macan_ctx *ctx, uint8_t *key);
 void macan_request_keys(struct macan_ctx *ctx, int s);
@@ -68,33 +46,5 @@ int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc);
 void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint16_t signal);
 int  macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 
-void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
-int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
-int init();
-void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
-void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf);
-int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal);
-int is_channel_ready(struct macan_ctx *ctx, uint8_t dst);
-int is_skey_ready(struct macan_ctx *ctx, uint8_t dst_id);
-void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf);
-void send_auth_req(struct macan_ctx *ctx, int s,uint8_t dst_id,uint8_t sig_num,uint8_t prescaler);
-void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf);
-void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg);
-int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf);
-void gen_challenge(uint8_t *chal);
-extern uint8_t *key_ptr;
-extern uint8_t keywrap[32];
-extern uint8_t g_chg[6];
-extern uint8_t seq;
-void send_ack(struct macan_ctx *ctx, int s,uint8_t dst_id);
-int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf);
-extern uint8_t skey[24];
-#if defined(TC1798)
-int write(int s, struct can_frame *cf, int len);
-#endif
-uint64_t read_time();
-uint64_t get_macan_time();
-void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
-void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
-
 #endif /* MACAN_H */
+

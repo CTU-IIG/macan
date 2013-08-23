@@ -54,7 +54,7 @@
 #include "aes_cmac.h"
 #endif /* __CPU_TC1798__ */
 #include "macan_config.h"
-#include "macan.h"
+#include "macan_private.h"
 
 void init_cpart(struct com_part **cpart, uint8_t i)
 {
