@@ -83,29 +83,29 @@ uint8_t ltk[] = {
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
 
-void can_recv_cb(int s, struct can_frame *cf)
+void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
-	macan_process_frame(s, cf);
+	macan_process_frame(ctx, s, cf);
 }
 
-void operate_ecu(int s)
+void operate_ecu(struct macan_ctx *ctx, int s)
 {
 	uint64_t signal_time = read_time();
 	uint64_t ack_time = read_time();
 
 	while(1) {
 #ifdef TC1798
-		poll_can_fifo();
+		poll_can_fifo(ctx, can_recv_cb);
 #else
-		helper_read_can(s, can_recv_cb);
+		helper_read_can(ctx, s, can_recv_cb);
 #endif /* TC1798 */
-		macan_request_keys(s);
-		macan_wait_for_key_acks(s, demo_sig_spec, &ack_time);
+		macan_request_keys(ctx, s);
+		macan_wait_for_key_acks(ctx, s, demo_sig_spec, &ack_time);
 
 		if (signal_time + 1000000 < read_time()) {
 			signal_time = read_time();
-			macan_send_sig(s, ENGINE, demo_sig_spec, 55);
-			macan_send_sig(s, BRAKE, demo_sig_spec, 66);
+			macan_send_sig(ctx, s, ENGINE, demo_sig_spec, 55);
+			macan_send_sig(ctx, s, BRAKE, demo_sig_spec, 66);
 		}
 
 		//send_auth_req(s, NODE_OTHER, ENGINE, 0);
@@ -123,13 +123,14 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 int main(int argc, char *argv[])
 {
 	int s;
+	struct macan_ctx ctx;
 
 	s = helper_init();
-	macan_init(s, demo_sig_spec);
-	macan_set_ltk(ltk);
-	macan_reg_callback(ENGINE, sig_callback);
-	macan_reg_callback(BRAKE, sig_callback);
-	operate_ecu(s);
+	macan_init(&ctx, demo_sig_spec);
+	macan_set_ltk(&ctx, ltk);
+	macan_reg_callback(&ctx, ENGINE, sig_callback);
+	macan_reg_callback(&ctx, BRAKE, sig_callback);
+	operate_ecu(&ctx, s);
 
 	return 0;
 }

@@ -62,12 +62,9 @@
  */
 
 #define NODE_ID NODE_TS
-/* ToDo: if NODE_ID OTHER error check */
+#define TS_TEST_ERR 500000
 
-#define TS_DIVER 500000
 uint64_t last_usec;
-extern struct com_part* cpart[];
-extern uint8_t g_chg[];
 
 /* ltk stands for long term key; it is a key shared with the key server */
 uint8_t ltk[] = {
@@ -84,17 +81,19 @@ uint8_t ltk[] = {
  * request for a signed time). It prepares a message containing the recent time
  * and signs it. Subsequently, the message is sent.
  */
-int ts_receive_challenge(int s, struct can_frame *cf)
+int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
 	struct can_frame canf;
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
 	uint8_t *skey;
 	uint8_t plain[10];
 	uint8_t dst_id;
+	struct com_part **cpart;
 
+	cpart = ctx->cpart;
 	dst_id = cf->can_id;
 
-	if (!is_skey_ready(dst_id)) {
+	if (!is_skey_ready(ctx, dst_id)) {
 		printf("cannot send time, because dont have key\n");
 		return -1;
 	}
@@ -115,7 +114,7 @@ int ts_receive_challenge(int s, struct can_frame *cf)
 	return 0;
 }
 
-void can_recv_cb(int s, struct can_frame *cf)
+void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
@@ -130,23 +129,23 @@ void can_recv_cb(int s, struct can_frame *cf)
 	switch (cryf->flags) {
 	case 1:
 		if (cf->can_id == NODE_KS) {
-			receive_challenge(s, cf);
+			receive_challenge(ctx, s, cf);
 		} else
 		{
-			ts_receive_challenge(s, cf);
+			ts_receive_challenge(ctx, s, cf);
 		}
 		break;
 	case 2:
 		if (cf->can_id == NODE_KS) {
-			receive_skey(cf);
+			receive_skey(ctx, cf);
 			break;
 		}
 		break;
 	case 3:
 		if (cf->can_dlc == 7)
-			receive_auth_req(cf);
+			receive_auth_req(ctx, cf);
 		else
-			receive_sig(cf);
+			receive_sig(ctx, cf);
 		break;
 	}
 }
@@ -167,7 +166,7 @@ void broadcast_time(int s, uint64_t *bcast_time)
 
 	*bcast_time = read_time();
 
-	usec = read_time() + TS_DIVER;
+	usec = read_time() + TS_TEST_ERR;
 	last_usec = usec;
 
 	cf.can_id = SIG_TIME;
@@ -177,13 +176,13 @@ void broadcast_time(int s, uint64_t *bcast_time)
 	write(s, &cf, sizeof(cf));
 }
 
-void operate_ts(int s)
+void operate_ts(struct macan_ctx *ctx, int s)
 {
 	uint64_t bcast_time = read_time();
 
 	while(1) {
-		helper_read_can(s, can_recv_cb);
-		macan_request_keys(s);
+		helper_read_can(ctx, s, can_recv_cb);
+		macan_request_keys(ctx, s);
 		broadcast_time(s, &bcast_time);
 
 		usleep(250);
@@ -192,12 +191,14 @@ void operate_ts(int s)
 
 int main(int argc, char *argv[])
 {
+	struct macan_ctx ctx;
 	int s;
 
 	s = helper_init();
-	macan_init(s, demo_sig_spec);
-	macan_set_ltk(ltk);
-	operate_ts(s);
+	macan_init(&ctx, demo_sig_spec);
+	macan_set_ltk(&ctx, ltk);
+	operate_ts(&ctx, s);
 
 	return 0;
 }
+

@@ -46,3 +46,4 @@ enum node_id {
 extern struct macan_sig_spec demo_sig_spec[];
 
 #endif /* MACAN_CONFIG_H */
+

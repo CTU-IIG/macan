@@ -43,9 +43,10 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #endif /* TC1798 */
+#include <helper.h>
 
 #ifndef TC1798
-void helper_read_can(int s, void (*cback)(int s, struct can_frame *cf))
+void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ctx *ctx, int s, struct can_frame *cf))
 {
 	struct can_frame cf;
 	int rbyte;
@@ -63,7 +64,7 @@ void helper_read_can(int s, void (*cback)(int s, struct can_frame *cf))
 	printf("RECV ");
 	print_hexn(&cf, sizeof(struct can_frame));
 
-	cback(s, &cf);
+	cback(ctx, s, &cf);
 }
 #endif /* TC1798 */
 

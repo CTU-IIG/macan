@@ -24,8 +24,9 @@
 #ifndef HELPER_H
 #define HELER_H
 struct can_frame;
+struct macan_ctx;
 
 int helper_init();
-void helper_read_can(int s, void (*cback)(int s, struct can_frame *cf));
+void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ctx *ctx, int s, struct can_frame *cf));
 #endif
 

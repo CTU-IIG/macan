@@ -39,14 +39,7 @@
 #include "helper.h"
 #include "aes_keywrap.h"
 #include "macan.h"
-
-/**
- * ToDo
- *   redo assertions, they should not stop the program
- */
-
-/* ToDo: this should be moved to some config .h */
-#define WRITE_DELAY 500000
+#include "macan_config.h"
 
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -163,7 +156,7 @@ void ks_receive_challenge(int s, struct can_frame *cf)
 	send_skey(s, &cipher, dst_id, fwd_id, chg);
 }
 
-void can_recv_cb(int s, struct can_frame *cf)
+void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
@@ -184,10 +177,9 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = helper_init();
-	macan_set_ltk(ltk);
 
 	while (1) {
-		helper_read_can(s, can_recv_cb);
+		helper_read_can(NULL, s, can_recv_cb);
 
 		usleep(250);
 	}

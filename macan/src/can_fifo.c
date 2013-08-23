@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <can.h>
+#include <can_frame.h>
 #include <CanIf_Cbk.h>
 
 struct Can_HardwareObject
@@ -40,24 +41,26 @@ struct Can_HardwareObject
 #define CAN_HWOBJ ((struct Can_HardwareObject volatile *)(void*) &CAN_MOFCR0)
 #define CAN_MOAR_ID_STD_SHIFT  (18U)
 
-void poll_can_fifo()
+void poll_can_fifo(struct macan_ctx *ctx, void (*cback)(struct macan_ctx *ctx, struct can_frame *cf))
 {
 	uint32_t i;
-	Can_IdType mid;
+	Can_IdType can_id;
+	struct can_frame cf;
 
 	i = CAN_MOFGPR0.B.SEL - 1;
 
 	/* ToDo: free MOs, i.e. avoid MSGLOST */
 	while (i != CAN_MOFGPR0.B.CUR) {
 		if (CAN_HWOBJ[i].MOAR.B.IDE)
-			mid = CAN_HWOBJ[i].MOAR.B.ID | CAN_EXTENDED_MSB_SET;
+			can_id = CAN_HWOBJ[i].MOAR.B.ID | CAN_EXTENDED_MSB_SET;
 		else
-			mid = CAN_HWOBJ[i].MOAR.B.ID >> CAN_MOAR_ID_STD_SHIFT;
+			can_id = CAN_HWOBJ[i].MOAR.B.ID >> CAN_MOAR_ID_STD_SHIFT;
 
-		CanIf_RxIndication(0,
-				mid,
-				CAN_HWOBJ[i].MOFCR.B.DLC,
-				(uint8 *) CAN_HWOBJ[i].MODAT);
+		cf.can_id = can_id;
+		cf.can_dlc = CAN_HWOBJ[i].MOFCR.B.DLC;
+		memcpy(cf.data, (uint8 *) CAN_HWOBJ[i].MODAT, 8);
+
+		cback(ctx, &cf);
 
 		i++;
 		if (i > 32) {
