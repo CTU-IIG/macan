@@ -35,10 +35,12 @@ struct macan_sig_spec {
 };
 
 struct macan_ctx {
+	const struct macan_sig_spec *sigspec;
 	struct com_part **cpart;
 	struct sig_handle **sighand;
 	uint8_t ltk[16];
 	struct macan_time time;
+	uint64_t timeout_ack;
 };
 
 #define SIG_TIME 4
@@ -47,7 +49,7 @@ struct macan_ctx {
 #define TIME_TIMEOUT 5000000	/* usec */
 #define SKEY_TIMEOUT 6000000000u /* usec */
 #define SKEY_CHG_TIMEOUT 30000000u /* usec */
-#define ACK_TIMEOUT 7000000	  /* usec */
+#define ACK_TIMEOUT 10000000	  /* usec */
 
 #define SIG_DONTSIGN -1
 #define SIG_SIGNONCE 0
@@ -58,12 +60,12 @@ typedef void (*sig_cback)(uint8_t sig_num, uint32_t sig_val);
 
 /* MaCAN API functions */
 
-int  macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sig_spec);
+int  macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec);
 void macan_set_ltk(struct macan_ctx *ctx, uint8_t *key);
 void macan_request_keys(struct macan_ctx *ctx, int s);
-int  macan_wait_for_key_acks(struct macan_ctx *ctx, int s, const struct macan_sig_spec *sig_spec, uint64_t *ack_time);
+int  macan_wait_for_key_acks(struct macan_ctx *ctx, int s);
 int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc);
-void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint16_t signal);
+void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint16_t signal);
 int  macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 
 void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);

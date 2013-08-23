@@ -66,26 +66,29 @@ void init_cpart(struct com_part **cpart, uint8_t i)
 /**
  * macan_init()
  */
-int macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sig_spec)
+int macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec)
 {
-	uint8_t cp;
 	int i;
+	uint8_t cp;
 
+	memset(ctx, 0, sizeof(struct macan_ctx));
 	ctx->cpart = malloc(NODE_COUNT * sizeof(struct com_part *));
 	memset(ctx->cpart, 0, NODE_COUNT * sizeof(struct com_part *));
 	ctx->sighand = malloc(SIG_COUNT * sizeof(struct sig_handle *));
 	memset(ctx->sighand, 0, SIG_COUNT * sizeof(struct sig_handle *));
 
+	ctx->sigspec = sigspec;
+
 	for (i = 0; i < SIG_COUNT; i++) {
-		if (sig_spec[i].src_id == NODE_ID) {
-			cp = sig_spec[i].dst_id;
+		if (sigspec[i].src_id == NODE_ID) {
+			cp = sigspec[i].dst_id;
 
 			if (ctx->cpart[cp] == NULL) {
 				init_cpart(ctx->cpart, cp);
 			}
 		}
-		if (sig_spec[i].dst_id == NODE_ID) {
-			cp = sig_spec[i].src_id;
+		if (sigspec[i].dst_id == NODE_ID) {
+			cp = sigspec[i].src_id;
 
 			if (ctx->cpart[cp] == NULL) {
 				init_cpart(ctx->cpart, cp);
@@ -108,20 +111,22 @@ void macan_set_ltk(struct macan_ctx *ctx, uint8_t *key)
 }
 
 /* ToDo: reconsider name or move signal requests */
-int macan_wait_for_key_acks(struct macan_ctx *ctx, int s, const struct macan_sig_spec *sig_spec, uint64_t *ack_time)
+int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 {
 	int i;
 	int r = 0;
 	uint8_t cp, presc;
 	struct com_part **cpart;
 	struct sig_handle **sighand;
+	const struct macan_sig_spec *sigspec;
 
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
+	sigspec = ctx->sigspec;
 
-	if (*ack_time + ACK_TIMEOUT > read_time())
+	if (ctx->timeout_ack > read_time())
 		return -1;
-	*ack_time = read_time();
+	ctx->timeout_ack = read_time() + ACK_TIMEOUT;
 
 	for (i = 2; i < NODE_COUNT; i++) {
 		if (cpart[i] == NULL)
@@ -137,12 +142,13 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s, const struct macan_sig
 		}
 	}
 
+	/* ToDo: repeat auth_req for the case the signal source will restart */
 	for (i = 0; i < SIG_COUNT; i++) {
-		if (sig_spec[i].dst_id != NODE_ID)
+		if (sigspec[i].dst_id != NODE_ID)
 			continue;
 
-		cp = sig_spec[i].src_id;
-		presc = sig_spec[i].presc;
+		cp = sigspec[i].src_id;
+		presc = sigspec[i].presc;
 
 		if (!is_channel_ready(ctx, cp))
 			continue;
@@ -546,14 +552,16 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 }
 
 /* ToDo: return result */
-void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint16_t signal)
+void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint16_t signal)
 {
 	uint8_t dst_id;
 	struct sig_handle **sighand;
+	const struct macan_sig_spec *sigspec;
 
 	sighand = ctx->sighand;
+	sigspec = ctx->sigspec;
 
-	dst_id = sig_spec[sig_num].dst_id;
+	dst_id = sigspec[sig_num].dst_id;
 	if (!is_channel_ready(ctx, dst_id))
 		return;
 

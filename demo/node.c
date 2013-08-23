@@ -57,6 +57,8 @@
 #include "macan.h"
 #include "macan_config.h"
 
+#define TIME_EMIT_SIG 1000000
+
 /* ltk stands for long term key; it is a key shared with the key server */
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -70,8 +72,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 
 void operate_ecu(struct macan_ctx *ctx, int s)
 {
-	uint64_t signal_time = read_time();
-	uint64_t ack_time = read_time();
+	uint64_t signal_time = 0;
 
 	while(1) {
 #ifdef __CPU_TC1798__
@@ -81,12 +82,12 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 #endif /* __CPU_TC1798__ */
 
 		macan_request_keys(ctx, s);
-		macan_wait_for_key_acks(ctx, s, demo_sig_spec, &ack_time);
+		macan_wait_for_key_acks(ctx, s);
 
-		if (signal_time + 1000000 < read_time()) {
-			signal_time = read_time();
-			macan_send_sig(ctx, s, ENGINE, demo_sig_spec, 55);
-			macan_send_sig(ctx, s, BRAKE, demo_sig_spec, 66);
+		if (signal_time < read_time()) {
+			signal_time = read_time() + TIME_EMIT_SIG;
+			macan_send_sig(ctx, s, ENGINE, 55);
+			macan_send_sig(ctx, s, BRAKE, 66);
 		}
 
 #ifndef __CPU_TC1798__
@@ -114,3 +115,4 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
