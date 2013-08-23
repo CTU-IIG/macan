@@ -30,6 +30,11 @@
 
 /* MaCAN message definitions */
 
+struct macan_crypt_frame {
+	uint8_t flags : 2;
+	uint8_t dst_id : 6;
+};
+
 struct macan_challenge {
 	uint8_t flags : 2;
 	uint8_t dst_id : 6;
@@ -50,11 +55,6 @@ struct macan_ack {
 	uint8_t dst_id : 6;
 	uint8_t group[3];
 	uint8_t cmac[4];
-};
-
-struct macan_crypt_frame {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
 };
 
 struct macan_sig_auth_req {
@@ -81,13 +81,12 @@ struct macan_signal_ex {
 /**
  * Timekeeping structure
  */
-
 struct macan_time {
 	uint64_t offs;       /* contains the time difference between local time
    			        and TS time;
 				i.e. TS_time = Local_time + offs */
 	uint64_t chal_ts;    /* local timestamp when request for signed time was sent  */
-	uint8_t chg[6];
+	uint8_t chg[6];      /* challenge to the time server */
 };
 
 /**
@@ -108,10 +107,17 @@ struct com_part {
 	uint32_t wait_for;	/* The value of group_field we are waiting for  */
 };
 
+/**
+ * Signal handle.
+ *
+ * Keeps a signal prescaler and a signal callback function.
+ */
 struct sig_handle {
-	int presc;
-	uint8_t presc_cnt;
-	uint8_t flags;
+	int presc;            /* prescaler settings for the signal, note the macros
+	                         SIG_DONTSIGN and SIG_SIGNONCE */
+	uint8_t presc_cnt;    /* prescaler counter counts the signal transmit attempts down and
+	                         allows the transmit to happen only if presc_cnt == 0 */
+	uint8_t flags;        /* mark AUTHREQ_SENT if signal request AUTH_REQ was sent */
 	void (*cback)(uint8_t sig_num, uint32_t sig_val);
 };
 
@@ -120,13 +126,18 @@ struct sig_handle {
 
 #define AUTHREQ_SENT 1
 
+/**
+ * MaCAN context
+ *
+ * Omnipresent structure representing the state of the MaCAN library.
+ */
 struct macan_ctx {
-	const struct macan_sig_spec *sigspec;
-	struct com_part **cpart;
-	struct sig_handle **sighand;
-	uint8_t ltk[16];
-	struct macan_time time;
-	uint64_t timeout_ack;
+	const struct macan_sig_spec *sigspec;  /* static configuration given, see demo */
+	struct com_part **cpart;               /* vector of communication partners, e.g. stores keys */
+	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
+	uint8_t ltk[16];                       /* key shared with the key server */
+	struct macan_time time;                /* used to manage time of the protocol */
+	uint64_t timeout_ack;                  /* timeout for sending ACK messages */
 };
 
 void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
@@ -150,7 +161,7 @@ extern uint8_t seq;
 void send_ack(struct macan_ctx *ctx, int s,uint8_t dst_id);
 int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf);
 extern uint8_t skey[24];
-#if defined(TC1798)
+#ifdef __CPU_TC1798__
 int write(int s, struct can_frame *cf, int len);
 #endif
 uint64_t read_time();
