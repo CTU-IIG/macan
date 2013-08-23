@@ -56,6 +56,12 @@
 #include "macan_config.h"
 #include "macan_private.h"
 
+/**
+ * Initialize communication partner.
+ *
+ * Allocates com_part and sets it to the default value, i.e. wait
+ * for this node and its counterpart to share the key.
+ */
 void init_cpart(struct com_part **cpart, uint8_t i)
 {
 	cpart[i] = malloc(sizeof(struct com_part));
@@ -64,7 +70,10 @@ void init_cpart(struct com_part **cpart, uint8_t i)
 }
 
 /**
- * macan_init()
+ * Initialize MaCAN context.
+ *
+ * This function fills the macan_ctx structure. This function should be
+ * called before using the MaCAN library.
  */
 int macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec)
 {
@@ -105,11 +114,21 @@ int macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec)
 	return 0;
 }
 
+/**
+ * Set the key shared with the key server.
+ */
 void macan_set_ltk(struct macan_ctx *ctx, uint8_t *key)
 {
 	memcpy(ctx->ltk, key, 16);
 }
 
+/**
+ * Establishes authenticated channel.
+ *
+ * The ACK messages are broadcasted in order to create the authenticated
+ * communication channel. Once there is such a channel the AUTH_REQ is
+ * send.
+ */
 /* ToDo: reconsider name or move signal requests */
 int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 {
@@ -162,6 +181,14 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 	return r;
 }
 
+/**
+ * Register a callback function.
+ *
+ * The callback should serve signal reception.
+ *
+ * @param sig_num  signal id number
+ * @param fnc      pointer to the signal callback function
+ */
 int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc)
 {
 	ctx->sighand[sig_num]->cback = fnc;
@@ -169,6 +196,9 @@ int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc)
 	return 0;
 }
 
+/**
+ * Sends an ACK message.
+ */
 void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 {
 	struct macan_ack ack = {2, dst_id, {0}, {0}};
@@ -211,7 +241,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 }
 
 /**
- * receive_ack()
+ * Receives an ACK message.
  *
  * Returns 1 if the incoming ack does not contain this node in its
  * group field. Therefore, the updated ack should be broadcasted.
@@ -280,11 +310,13 @@ void gen_challenge(uint8_t *chal)
 }
 
 /**
- * receive_skey() - session key reception
+ * Receive a session key.
  *
  * Processes one frame of the session key transmission protocol.
- * Returns node id if a complete key was sucessfully received. Returns 0
- * if normal conditions. Returns -1 if key receive failed.
+ * Returns node id if a complete key was sucessfully received.
+ *
+ * @return -1 if key receive failed. ID of the node the key is shared
+ * with. Or 0 if the reception process is in progress.
  */
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 {
@@ -384,6 +416,12 @@ void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	send_challenge(s, KEY_SERVER, ch->fwd_id, cpart[ch->fwd_id]->chg);
 }
 
+/**
+ * Receive unsigned time.
+ *
+ * Receives time and checks whether local clock is in sync. If local clock
+ * is out of sync, it sends a request for signed time.
+ */
 void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
@@ -410,6 +448,11 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	}
 }
 
+/**
+ * Receive signed time.
+ *
+ * Receives time and sets local clock according to it.
+ */
 void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
@@ -442,7 +485,13 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 }
 
 /**
- * send_auth_req() - send authorization request
+ * Send authorization request.
+ *
+ * Requests an authorized signal from communication partner.
+ *
+ * @param dst_id   com. partner id, the signal source
+ * @param sig_num  signal id
+ * @param prescaler
  */
 void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
 {
@@ -510,6 +559,11 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	sighand[sig_num]->presc_cnt = areq->prescaler - 1;
 }
 
+/**
+ * Send MaCAN signal frame.
+ *
+ * Signs signal using CMAC and transmits it.
+ */
 int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 {
 	struct can_frame cf;
@@ -551,6 +605,15 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 	return 0;
 }
 
+/**
+ * Dispatch a signal.
+ *
+ * The prescaler settings are considered and the signal is send.
+ *
+ * @param s        socket handle
+ * @param sig_num  signal id
+ * @param signal   signal value
+ */
 /* ToDo: return result */
 void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint16_t signal)
 {
@@ -583,6 +646,11 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint16_t sign
 	}
 }
 
+/**
+ * Receive signal.
+ *
+ * Receives signal, checks its CMAC and calls appropriate callback.
+ */
 /* ToDo: receive signal frame with 32bits */
 void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf)
 {
@@ -619,6 +687,12 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf)
 		sighand[sig_num]->cback(sig_num, sig_val);
 }
 
+/**
+ * Check if has the session key.
+ *
+ * @param dst_id  id of a node to whom check if has the key
+ * @return        1 if has the key, otherwise 0
+ */
 int is_skey_ready(struct macan_ctx *ctx, uint8_t dst_id)
 {
 	if (ctx->cpart[dst_id] == NULL)
@@ -627,6 +701,12 @@ int is_skey_ready(struct macan_ctx *ctx, uint8_t dst_id)
 	return (ctx->cpart[dst_id]->group_field & 1 << NODE_ID);
 }
 
+/**
+ * Check if has the authorized channel.
+ *
+ * Checks if has the session key and if the communication partner
+ * has acknowledged the communication with an ACK message.
+ */
 int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 {
 	struct com_part **cpart;
@@ -644,6 +724,8 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 
 /**
  * Request keys to all comunication partners.
+ *
+ * Requests keys and repeats until success.
  */
 void macan_request_keys(struct macan_ctx *ctx, int s)
 {
@@ -666,11 +748,20 @@ void macan_request_keys(struct macan_ctx *ctx, int s)
 	return;
 }
 
+/**
+ * Get time of the MaCAN protocol.
+ */
 uint64_t get_macan_time(struct macan_ctx *ctx)
 {
 	return read_time() + ctx->time.offs;
 }
 
+/**
+ * Process can frame.
+ *
+ * This function should be called for incoming can frames. It extracts MaCAN messages
+ * and operates the MaCAN library.
+ */
 int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
@@ -722,3 +813,4 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 
 	return 0;
 }
+
