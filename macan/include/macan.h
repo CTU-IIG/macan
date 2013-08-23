@@ -41,8 +41,6 @@ struct macan_ctx {
 	struct macan_time time;
 };
 
-#define NODE_KS 0
-#define NODE_TS 1
 #define SIG_TIME 4
 #define TIME_DELTA 2000   /* tolerated time divergency from TS in usecs */
 #define TIME_DIV 500000
@@ -50,6 +48,11 @@ struct macan_ctx {
 #define SKEY_TIMEOUT 6000000000u /* usec */
 #define SKEY_CHG_TIMEOUT 30000000u /* usec */
 #define ACK_TIMEOUT 7000000	  /* usec */
+
+#define SIG_DONTSIGN -1
+#define SIG_SIGNONCE 0
+
+#define AUTHREQ_SENT 1
 
 typedef void (*sig_cback)(uint8_t sig_num, uint32_t sig_val);
 
@@ -63,6 +66,7 @@ int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc);
 void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, const struct macan_sig_spec *sig_spec, uint16_t signal);
 int  macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 
+void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
 int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 int init();
 void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);

@@ -32,7 +32,7 @@
 #include <inttypes.h>
 #include "common.h"
 #include "aes_keywrap.h"
-#ifdef TC1798
+#ifdef __CPU_TC1798__
 #include "can_frame.h"
 #include "Std_Types.h"
 #include "Mcu.h"
@@ -52,30 +52,10 @@
 #include <linux/can/raw.h>
 #include <nettle/aes.h>
 #include "aes_cmac.h"
-#endif /* TC1798 */
+#endif /* __CPU_TC1798__ */
 #include "helper.h"
 #include "macan.h"
 #include "macan_config.h"
-
-/* ToDo
- *   implement groups
- *   some error processing
- */
-
-#ifdef TC1798
-# define NODE_ID 3
-#endif
-
-#define WRITE_DELAY 0.5
-#define NODE_KS 0
-#define NODE_TS 1
-#ifndef NODE_ID
-# error NODE_TS not defined
-#endif /* NODE_ID */
-
-uint8_t recv_skey_pending = 0;
-uint8_t g_fwd = 0;
-#define NODE_HAS_KEY 1
 
 /* ltk stands for long term key; it is a key shared with the key server */
 uint8_t ltk[] = {
@@ -94,11 +74,12 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 	uint64_t ack_time = read_time();
 
 	while(1) {
-#ifdef TC1798
+#ifdef __CPU_TC1798__
 		poll_can_fifo(ctx, can_recv_cb);
 #else
 		helper_read_can(ctx, s, can_recv_cb);
-#endif /* TC1798 */
+#endif /* __CPU_TC1798__ */
+
 		macan_request_keys(ctx, s);
 		macan_wait_for_key_acks(ctx, s, demo_sig_spec, &ack_time);
 
@@ -108,10 +89,9 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 			macan_send_sig(ctx, s, BRAKE, demo_sig_spec, 66);
 		}
 
-		//send_auth_req(s, NODE_OTHER, ENGINE, 0);
-#ifndef TC1798
+#ifndef __CPU_TC1798__
 		usleep(250);
-#endif /* TC1798 */
+#endif /* __CPU_TC1798__ */
 	}
 }
 
@@ -134,4 +114,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-

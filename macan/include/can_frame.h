@@ -21,17 +21,10 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * can.h
- *
- *  Created on: 7.8.2013
- *      Author: win
- */
-
 #ifndef CAN_H_
 #define CAN_H_
 
-#ifdef TC1798
+#ifdef __CPU_TC1798__
 struct can_frame {
 	uint32_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
 	uint8_t can_dlc; /* data length code: 0 .. 8 */
@@ -39,6 +32,6 @@ struct can_frame {
 };
 #else
 #include <linux/can.h>
-#endif
+#endif /* __CPU_TC1798__ */
 
 #endif /* CAN_H_ */

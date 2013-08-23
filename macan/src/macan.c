@@ -32,7 +32,7 @@
 #include <inttypes.h>
 #include "common.h"
 #include "aes_keywrap.h"
-#ifdef TC1798
+#ifdef __CPU_TC1798__
 #include "can_frame.h"
 #include "Std_Types.h"
 #include "Mcu.h"
@@ -52,19 +52,9 @@
 #include <linux/can/raw.h>
 #include <nettle/aes.h>
 #include "aes_cmac.h"
-#endif /* TC1798 */
+#endif /* __CPU_TC1798__ */
 #include "macan_config.h"
 #include "macan.h"
-
-#ifdef TC1798
-# define NODE_ID 3
-# define CAN_IF 1 /* Hth on TC1798, iface name on pc */
-#endif
-
-#define SIG_DONTSIGN -1
-#define SIG_SIGNONCE 0
-
-#define AUTHREQ_SENT 1
 
 void init_cpart(struct com_part **cpart, uint8_t i)
 {
@@ -166,141 +156,6 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s, const struct macan_sig
 	return r;
 }
 
-/**
- * write() - sends a can frame
- * @s:   ignored
- * @cf:  a can frame
- * @len: ignored
- *
- * write implemented on top of AUTOSAR functions.
- */
-#ifdef TC1798
-int write(int s, struct can_frame *cf, int len)
-{
-	/* ToDo: consider some use of PduIdType */
-	Can_PduType pdu_info = {17, cf->can_dlc, cf->can_id, cf->data};
-	Can_Write(CAN_IF, &pdu_info);
-
-	/* ToDo: redo */
-	uint64_t wait = read_time();
-	while (wait + 1000 > read_time()) {};
-
-	return 16;
-}
-#endif
-
-/**
- * check_cmac() - checks a message authenticity
- * @skey:  128-bit session key
- * @cmac4: points to CMAC message part, i.e. 4 bytes CMAC
- * @plain: plain text to be CMACked and checked against
- * @len:   length of plain text in bytes
- *
- * The function computes CMAC of the given plain text and compares
- * it against cmac4. Returns 1 if CMACs matches.
- */
-int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
-#ifdef TC1798
-{
-	uint8_t cmac[16];
-	uint64_t time;
-	uint32_t *ftime = (uint32_t *)fill_time;
-	int i;
-
-	if (!fill_time) {
-		aes_cmac(skey, len, cmac, plain);
-
-		return memchk(cmac4, cmac, 4);
-	}
-
-	time = get_macan_time(ctx) / TIME_DIV;
-
-	for (i = 0; i >= -1; i--) {
-		*ftime = time + i;
-		aes_cmac(skey, len, cmac, plain);
-
-		if (memchk(cmac4, cmac, 4) == 1)
-			return 1;
-	}
-
-	return 0;
-}
-#else
-{
-	struct aes_ctx cipher;
-	uint8_t cmac[16];
-	uint64_t time;
-	uint32_t *ftime = (uint32_t *)fill_time;
-	int i;
-
-	aes_set_encrypt_key(&cipher, 16, skey);
-
-	if (!fill_time) {
-		aes_cmac(&cipher, len, cmac, plain);
-
-		return memchk(cmac4, cmac, 4);
-	}
-
-	time = get_macan_time(ctx) / TIME_DIV;
-
-	for (i = 0; i >= -1; i--) {
-		*ftime = time + i;
-		aes_cmac(&cipher, len, cmac, plain);
-
-		if (memchk(cmac4, cmac, 4) == 1)
-			return 1;
-	}
-
-	return 0;
-}
-#endif /* TC1798 */
-
-/**
- * sign() - signs a message with CMAC
- * @skey:  128-bit session key
- * @cmac4: 4 bytes of the CMAC signature will be written to
- * @plain: a plain text to sign
- * @len:   length of the plain text
- */
-void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
-#ifdef TC1798
-{
-	uint8_t cmac[16];
-	aes_cmac(skey, len, cmac, plain);
-
-	memcpy(cmac4, cmac, 4);
-}
-#else
-{
-	struct aes_ctx cipher;
-	uint8_t cmac[16];
-
-	aes_set_encrypt_key(&cipher, 16, skey);
-	aes_cmac(&cipher, len, cmac, plain);
-
-	memcpy(cmac4, cmac, 4);
-}
-#endif /* TC1798 */
-
-/**
- * unwrap_key() - deciphers AES-WRAPed key
- */
-void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
-#ifdef TC1798
-{
-	aes_set_key(key);
-	aes_unwrap(key, len, dst, src, src);
-}
-#else
-{
-	struct aes_ctx cipher;
-
-	aes_set_decrypt_key(&cipher, 16, key);
-	aes_unwrap(&cipher, len, dst, src, src);
-}
-#endif /* TC1798 */
-
-
 int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc)
 {
 	ctx->sighand[sig_num]->cback = fnc;
@@ -382,13 +237,13 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	memcpy(plain + 5, ack->group, 3);
 
 #ifdef DEBUG_TS
-#ifdef TC1798
+#ifdef __CPU_TC1798__
 	uint32_t cmac;
 	memcpy_bw(&cmac, ack->cmac, 4);
 	printf("time check: (local=%llu, in msg=%u)\n", get_macan_time(ctx) / TIME_DIV, cmac);
 #else
 	printf("time check: (local=%llu, in msg=%u)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)ack->cmac);
-#endif
+#endif /* __CPU_TC1798__ */
 #endif
 
 	/* ToDo: make difference between wrong CMAC and not having the key */
@@ -520,7 +375,7 @@ void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	}
 
 	cpart[fwd_id]->valid_until = read_time() + SKEY_CHG_TIMEOUT;
-	send_challenge(s, NODE_KS, ch->fwd_id, cpart[ch->fwd_id]->chg);
+	send_challenge(s, KEY_SERVER, ch->fwd_id, cpart[ch->fwd_id]->chg);
 }
 
 void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
@@ -528,7 +383,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	uint32_t time_ts;
 	uint64_t recent;
 
-	if (!is_skey_ready(ctx, NODE_TS))
+	if (!is_skey_ready(ctx, TIME_SERVER))
 		return;
 
 	memcpy(&time_ts, cf->data, 4);
@@ -545,7 +400,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 		printf("error: time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu32")\n", (uint64_t)abs(recent - time_ts), recent, time_ts);
 
 		ctx->time.chal_ts = recent;
-		send_challenge(s, NODE_TS, 0, ctx->time.chg);
+		send_challenge(s, TIME_SERVER, 0, ctx->time.chg);
 	}
 }
 
@@ -561,12 +416,12 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	memcpy(&time_ts, cf->data, 4);
 	printf("signed time received = %u\n", time_ts);
 
-	if (!is_skey_ready(ctx, NODE_TS)) {
+	if (!is_skey_ready(ctx, TIME_SERVER)) {
 		ctx->time.chal_ts = 0;
 		return;
 	}
 
-	skey = cpart[NODE_TS]->skey;
+	skey = cpart[TIME_SERVER]->skey;
 
 	memcpy(plain, ctx->time.chg, 6);
 	memcpy(plain + 6, &time_ts, 4);
@@ -745,7 +600,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf)
 	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)sig->cmac);
 #endif
 	if (!check_cmac(ctx, skey, sig->cmac, plain, plain, sizeof(plain))) {
-		printf("signal CMAC \033[1;31merror\033[0;0m");
+		printf("signal CMAC \033[1;31merror\033[0;0m\n");
 		return;
 	}
 
@@ -779,43 +634,6 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 	return ((grp & wf) == wf);
 }
 
-#define f_STM 100000000
-#define TIME_USEC (f_STM / 1000000)
-
-uint64_t read_time()
-#ifdef TC1798
-{
-	uint64_t time;
-	uint32_t *time32 = (uint32_t *)&time;
-	time32[0] = STM_TIM0.U;
-	time32[1] = STM_TIM6.U;
-	time /= TIME_USEC;
-
-	return time;
-}
-#else
-{
-	uint64_t time;
-	struct timespec ts;
-	static struct timespec buz;
-	static uint8_t once = 0;
-
-	/* ToDo: redo this */
-	if (once == 0) {
-		once = 1;
-		clock_gettime(CLOCK_MONOTONIC_RAW, &buz);
-	}
-
-	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-	ts.tv_sec -= buz.tv_sec;
-	ts.tv_nsec -= buz.tv_nsec;
-	time = ts.tv_sec * 1000000;
-	time += ts.tv_nsec / 1000;
-
-	return time;
-}
-#endif /* TC1798 */
-
 /**
  * Request keys to all comunication partners.
  */
@@ -833,7 +651,7 @@ void macan_request_keys(struct macan_ctx *ctx, int s)
 		if (cpart[i]->valid_until > read_time())
 			continue;
 
-		send_challenge(s, NODE_KS, i, cpart[i]->chg);
+		send_challenge(s, KEY_SERVER, i, cpart[i]->chg);
 		cpart[i]->valid_until = read_time() + SKEY_CHG_TIMEOUT;
 	}
 
@@ -874,7 +692,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		receive_challenge(ctx, s, cf);
 		break;
 	case 2:
-		if (cf->can_id == NODE_KS) {
+		if (cf->can_id == KEY_SERVER) {
 			fwd = receive_skey(ctx, cf);
 			if (fwd > 1) {
 				send_ack(ctx, s, fwd);

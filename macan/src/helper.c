@@ -31,7 +31,7 @@
 #include <inttypes.h>
 #include "common.h"
 #include "aes_keywrap.h"
-#ifdef TC1798
+#ifdef __CPU_TC1798__
 #include "Can.h"
 #include "she.h"
 #else
@@ -42,10 +42,10 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#endif /* TC1798 */
+#endif /* __CPU_TC1798__ */
 #include <helper.h>
 
-#ifndef TC1798
+#ifndef __CPU_TC1798__
 void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ctx *ctx, int s, struct can_frame *cf))
 {
 	struct can_frame cf;
@@ -66,13 +66,12 @@ void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ct
 
 	cback(ctx, s, &cf);
 }
-#endif /* TC1798 */
+#endif /* __CPU_TC1798__ */
 
 int helper_init()
-#ifdef TC1798
+#ifdef __CPU_TC1798__
 {
 	Can_SetControllerMode(CAN_CONTROLLER0, CAN_T_START);
-	//Can_SetControllerMode(CAN_CONTROLLER1, CAN_T_START);
 
 	/* activate SHE */
 	/* ToDo: revisit */
@@ -120,5 +119,4 @@ int helper_init()
 
 	return s;
 }
-#endif
-
+#endif /* __CPU_TC1798__ */

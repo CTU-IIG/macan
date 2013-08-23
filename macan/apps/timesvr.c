@@ -61,7 +61,6 @@
  *   some error processing
  */
 
-#define NODE_ID NODE_TS
 #define TS_TEST_ERR 500000
 
 uint64_t last_usec;
@@ -121,14 +120,14 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	/* ToDo: make sure all branches end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
-	if (cf->can_id == NODE_ID)
+	if (cf->can_id == TIME_SERVER)
 		return;
-	if (cryf->dst_id != NODE_ID)
+	if (cryf->dst_id != TIME_SERVER)
 		return;
 
 	switch (cryf->flags) {
 	case 1:
-		if (cf->can_id == NODE_KS) {
+		if (cf->can_id == KEY_SERVER) {
 			receive_challenge(ctx, s, cf);
 		} else
 		{
@@ -136,7 +135,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 		}
 		break;
 	case 2:
-		if (cf->can_id == NODE_KS) {
+		if (cf->can_id == KEY_SERVER) {
 			receive_skey(ctx, cf);
 			break;
 		}

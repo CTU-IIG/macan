@@ -24,6 +24,7 @@
 #ifndef MACAN_PRIVATE_H
 #define MACAN_PRIVATE_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <can_frame.h>
 

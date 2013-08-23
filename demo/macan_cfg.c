@@ -24,10 +24,10 @@
 #include <macan.h>
 #include <macan_config.h>
 
-/* ToDo: implement SIG_TIME as standard signal */
+/* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
-	[TIME_DUMMY3] = {.can_nsid = 0, .can_sid = 0, .src_id = NODE_TS, .dst_id = 3, .presc = 0}, /* ToDo: more recipients */
-	[TIME_DUMMY2] = {0, 0, NODE_TS, 2, 0},
+	[TIME_DUMMY3] = {.can_nsid = 0, .can_sid = 0, .src_id = TIME_SERVER, .dst_id = 3, .presc = 0},
+	[TIME_DUMMY2] = {0, 0, TIME_SERVER, 2, 0},
         [ENGINE]      = {0, 10, 2, 3, 5},
         [BRAKE]       = {1, 11, 2, 3, 7},
 };

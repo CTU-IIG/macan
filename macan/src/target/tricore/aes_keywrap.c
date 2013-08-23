@@ -56,7 +56,6 @@ void aes_wrap(uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src)
 	uint8_t b[16];
 	size_t block_size = 16;
 	uint32_t t, n;
-	uint32_t bs;
 	int i, j, k;
 
 	assert((length % 8) == 0);

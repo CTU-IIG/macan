@@ -46,8 +46,7 @@ uint8_t ltk[] = {
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
 
-#define NODE_TOTAL 4
-uint8_t skey_map[NODE_TOTAL - 1][NODE_TOTAL][16] = {
+uint8_t skey_map[NODE_COUNT - 1][NODE_COUNT][16] = {
 	{{0},{0},{0},{0}},
 	{{0},{0},{0},{0}},
 	{{0},{0},{0},{0}},
@@ -117,7 +116,7 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 	skey.flags = 2;
 	skey.dst_id = dst_id;
 
-	cf.can_id = NODE_KS;
+	cf.can_id = KEY_SERVER;
 	cf.can_dlc = 8;
 
 	for (i = 0; i < 6; i++) {
@@ -161,11 +160,11 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
 	/* ToDo: do some filter here */
-	if (cf->can_id == NODE_KS)
+	if (cf->can_id == KEY_SERVER)
 		return;
 	if (cf->can_id == SIG_TIME)
 		return;
-	if (cryf->dst_id != NODE_KS)
+	if (cryf->dst_id != KEY_SERVER)
 		return;
 
 	/* ToDo: do some check on challenge message, the only message recepted by KS */
