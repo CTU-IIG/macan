@@ -26,6 +26,17 @@
 
 #include <macan_private.h>
 
+/*
+ * Frame types for sending signals:
+ * - Standard frame without signature (max 64 bit signals) - ID = can_nsid
+ * - Standard frame with signature (max 32 bit signals) - ID = can_sid
+ * - Crypt frame (max 16 bit signals) - ID CAN_ID(src-id)
+ *
+ * !can_nsid && !can_sid => crypt frame
+ * !can_nsid && can_sid => std. frame w. sign
+ * can_nsid && !can_sid => std. frame wo. sign + crypt frame (depending on presc value)
+ * can_nsid && can_sid => std. frame wo. sign + std. frame w. sign (depending on presc value)
+ */
 struct macan_sig_spec {
 	uint8_t can_nsid;  /* can non-secured id */
 	uint8_t can_sid;   /* can secured id */
@@ -47,4 +58,3 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint16_t sign
 int  macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 
 #endif /* MACAN_H */
-
