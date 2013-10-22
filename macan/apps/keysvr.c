@@ -40,30 +40,38 @@
 #include "aes_keywrap.h"
 #include "macan.h"
 #include "macan_config.h"
+#include <stdbool.h>
 
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
 
-uint8_t skey_map[NODE_COUNT - 1][NODE_COUNT][16] = {
+struct sess_key {
+	bool valid;
+	uint8_t key[16];
+};
+
+struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {
 	{{0},{0},{0},{0}},
 	{{0},{0},{0},{0}},
 	{{0},{0},{0},{0}},
 };
 
-void generate_skey(uint8_t *skey)
+void generate_skey(struct sess_key *skey)
 {
 	int i;
+
+	skey->valid = true;
 
 	for (i = 0; i < 16; i++)
-		skey[i] = rand();
+		skey->key[i] = rand(); /* FIXME: Does this use /dev/random? Probably not - it should. */
 }
 
-uint8_t lookup_skey(uint8_t src, uint8_t dst, uint8_t **skey)
+uint8_t lookup_skey(uint8_t src, uint8_t dst, struct sess_key **key_ret)
 {
-	int i;
 	uint8_t tmp;
+	struct sess_key *key;
 
 	assert(src != dst);
 
@@ -73,20 +81,13 @@ uint8_t lookup_skey(uint8_t src, uint8_t dst, uint8_t **skey)
 		dst = tmp;
 	}
 
-	*skey = skey_map[src][dst];
+	key = &skey_map[src][dst];
+	*key_ret = key;
 
-	/* ToDo: something faster? */
-	for (i = 0; i < 16; i++) {
-		if ((*skey)[i]) {
-			break;
-		}
-	}
-
-	if (i == 16) {
-		generate_skey(*skey);
+	if (!key->valid) {
+		generate_skey(key);
 		return 1;
 	}
-
 	return 0;
 }
 
@@ -94,7 +95,7 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
-	uint8_t *key;
+	struct sess_key *key;
 	struct can_frame cf;
 	struct macan_sess_key skey;
 	int i;
