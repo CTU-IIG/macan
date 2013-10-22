@@ -41,6 +41,7 @@
 #include "macan.h"
 #include "macan_config.h"
 #include <stdbool.h>
+#include <time.h>
 
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
@@ -175,7 +176,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 int main(int argc, char *argv[])
 {
 	int s;
-
+	srand(time(NULL));
 	s = helper_init();
 
 	while (1) {
@@ -186,4 +187,3 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-
