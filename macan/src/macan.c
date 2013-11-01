@@ -530,6 +530,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	uint8_t *skey;
 	uint8_t plain[8];
 	uint8_t sig_num;
+    int can_sid,can_nsid;
 	struct macan_sig_auth_req *areq;
 	struct com_part **cpart;
 	struct sig_handle **sighand;
@@ -553,10 +554,21 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	}
 
 	sig_num = areq->sig_num;
+    
+    can_sid = ctx->sigspec[sig_num].can_sid;
+    can_nsid = ctx->sigspec[sig_num].can_nsid;
+    
+    if((can_nsid == 0 && can_sid == 0) ||
+       (can_nsid == 0 && can_sid != 0)) {
+        // ignore prescaler
+        sighand[sig_num]->presc = 1;
+        sighand[sig_num]->presc_cnt = 0;
+    } else {
+        /* ToDo: assert sig_num range */
+        sighand[sig_num]->presc = areq->prescaler;
+        sighand[sig_num]->presc_cnt = areq->prescaler - 1;
+    }
 
-	/* ToDo: assert sig_num range */
-	sighand[sig_num]->presc = areq->prescaler;
-	sighand[sig_num]->presc_cnt = areq->prescaler - 1;
 }
 
 /**
@@ -567,13 +579,12 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 {
 	struct can_frame cf;
-	uint8_t plain[8];
+	uint8_t plain[10],sig[8];
+    int plain_length;
 	uint32_t t;
 	uint8_t *skey;
+    uint8_t *cmac;
 	struct com_part **cpart;
-	struct macan_signal_ex sig = {
-		3, dst_id, sig_num, {0}, {0}
-	};
 
 	cpart = ctx->cpart;
 
@@ -586,16 +597,33 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 	memcpy(plain, &t, 4);
 	plain[4] = NODE_ID;
 	plain[5] = dst_id;
-	memcpy(plain + 6, &signal, 2);
 
-	memcpy(&sig.signal, &signal, 2);
+    if(is_32bit_signal(ctx,sig_num)) {
+        struct macan_signal *sig32 = (struct macan_signal *) sig;
+        memcpy(plain + 6, &signal, 4);
+        memcpy(sig32->sig, &signal, 4);
+        cf.can_id = ctx->sigspec[sig_num].can_sid;
+        plain_length = 10;
+        cmac = sig32->cmac;
+    } else {
+        struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
+        sig16->flags = 3;
+        sig16->dst_id = dst_id;
+        sig16->sig_num = sig_num;
+        memcpy(plain + 6, &signal, 2);
+        memcpy(&sig16->signal, &signal, 2);
+        cf.can_id = NODE_ID;
+        plain_length = 8;
+        cmac = sig16->cmac;
+    }
+
+
 #ifdef DEBUG_TS
-	memcpy(sig.cmac, &time, 4);
+	memcpy(cmac, &time, 4);
 #else
-	sign(skey, sig.cmac, plain, sizeof(plain));
+	sign(skey, cmac, plain, plain_length);
 #endif
 
-	cf.can_id = NODE_ID;
 	cf.can_dlc = 8;
 	memcpy(&cf.data, &sig, 8);
 
@@ -615,7 +643,7 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
  * @param signal   signal value
  */
 /* ToDo: return result */
-void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint16_t signal)
+void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t signal)
 {
 	uint8_t dst_id;
 	struct sig_handle **sighand;
@@ -652,36 +680,54 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint16_t sign
  * Receives signal, checks its CMAC and calls appropriate callback.
  */
 /* ToDo: receive signal frame with 32bits */
-void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf)
+void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_num)
 {
-	struct macan_signal_ex *sig;
 	uint8_t plain[8];
-	uint8_t sig_num;
+    uint8_t sig_num;
 	uint32_t sig_val = 0;
 	uint8_t *skey;
+    uint8_t *cmac;
 	struct com_part **cpart;
 	struct sig_handle **sighand;
+    int plain_length;
 
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
-	sig = (struct macan_signal_ex *)cf->data;
 
-	plain[4] = cf->can_id;
+    
+    if(sig32_num >= 0) {
+        // we have received 32 bit signal
+        struct macan_signal *sig32 = (struct macan_signal *)cf->data;
+        sig_num = sig32_num;
+        plain[4] = ctx->sigspec[sig_num].src_id;
+        memcpy(plain + 6, sig32->sig, 4);
+        skey = cpart[ctx->sigspec[sig_num].src_id]->skey;
+        plain_length = 10;
+        cmac = sig32->cmac;
+        memcpy(&sig_val, sig32->sig, 4);
+        
+    } else {
+        // we have received 16 bit signal
+	    struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
+	    plain[4] = cf->can_id;
+	    memcpy(plain + 6, sig16->signal, 2);
+        skey = cpart[cf->can_id]->skey;
+        plain_length = 8;
+        cmac = sig16->cmac;
+        sig_num = sig16->sig_num;
+        memcpy(&sig_val, sig16->signal, 2);
+    }
+
 	plain[5] = NODE_ID;
-	memcpy(plain + 6, sig->signal, 2);
 
-	skey = cpart[cf->can_id]->skey;
 
 #ifdef DEBUG_TS
 	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)sig->cmac);
 #endif
-	if (!check_cmac(ctx, skey, sig->cmac, plain, plain, sizeof(plain))) {
+	if (!check_cmac(ctx, skey, cmac, plain, plain, plain_length)) {
 		printf("signal CMAC \033[1;31merror\033[0;0m\n");
 		return;
 	}
-
-	sig_num = sig->sig_num;
-	memcpy(&sig_val, sig->signal, 2);
 
 	if (sighand[sig_num]->cback)
 		sighand[sig_num]->cback(sig_num, sig_val);
@@ -764,6 +810,15 @@ uint64_t get_macan_time(struct macan_ctx *ctx)
  */
 int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
+    
+    // test if can_id is can_sid of any signal
+    int sig32_num = can_sid_to_sig_num(ctx,cf->can_id);
+    if(sig32_num >= 0) {
+        // received frame is 32bit signal frame
+        receive_sig(ctx,cf,sig32_num);    
+        return 1;
+    }
+
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 	int fwd;
 
@@ -807,10 +862,37 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		if (cf->can_dlc == 7)
 			receive_auth_req(ctx, cf);
 		else
-			receive_sig(ctx, cf);
+			receive_sig(ctx, cf, -1);
 		break;
 	}
 
 	return 0;
+}
+
+int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num) {
+    int can_nsid, can_sid;
+
+    can_nsid = ctx->sigspec[sig_num].can_nsid;
+    can_sid = ctx->sigspec[sig_num].can_sid;
+
+    if((can_nsid == 0 && can_sid != 0) ||
+       (can_nsid != 0 && can_sid != 0)) {
+        return 1;
+    }
+    return 0;
+}
+int can_sid_to_sig_num(struct macan_ctx *ctx, uint8_t can_id) {
+    int i;
+   
+    if(can_id == 0)
+       return -1; 
+
+    for(i = 0; i < SIG_COUNT; i++) {
+       if(ctx->sigspec[i].can_sid == can_id) {
+           return i;
+       }
+    } 
+    return -1;
+
 }
 

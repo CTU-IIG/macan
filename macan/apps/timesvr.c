@@ -144,7 +144,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 		if (cf->can_dlc == 7)
 			receive_auth_req(ctx, cf);
 		else
-			receive_sig(ctx, cf);
+			receive_sig(ctx, cf, -1);
 		break;
 	}
 }
