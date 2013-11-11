@@ -1,0 +1,5 @@
+bin_PROGRAMS = keysvr
+keysvr_SOURCES = keysvr.c
+
+bin_PROGRAMS = timesvr
+timesvr_SOURCES = timesvr.c
