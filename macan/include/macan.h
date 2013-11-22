@@ -45,11 +45,17 @@ struct macan_sig_spec {
 	uint8_t presc;     /* prescaler */
 };
 
+/* Node specification */
+struct macan_node_spec {
+    uint16_t can_id; /* CAN-ID node uses for its frames */
+    uint8_t ecu_id; /* ECU-ID used for addressing in MaCAN protocol (crypt_id in JSON config from VW) */
+};
+
 /* signal callback signature */
 typedef void (*sig_cback)(uint8_t sig_num, uint32_t sig_val);
 
 /* MaCAN API functions */
-int  macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec);
+int  macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec, const struct macan_node_spec *nodespec);
 void macan_set_ltk(struct macan_ctx *ctx, uint8_t *key);
 void macan_request_keys(struct macan_ctx *ctx, int s);
 int  macan_wait_for_key_acks(struct macan_ctx *ctx, int s);

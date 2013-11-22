@@ -92,7 +92,7 @@ uint8_t lookup_skey(uint8_t src, uint8_t dst, struct sess_key **key_ret)
 	return 0;
 }
 
-void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, uint8_t *chal)
+void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, uint8_t *chal)
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
@@ -103,7 +103,7 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 
 	/* ToDo: solve name inconsistency - key */
 	if (lookup_skey(dst_id, fwd_id, &key))
-		send_challenge(s, fwd_id, dst_id, NULL);
+		send_challenge(ctx, s, fwd_id, dst_id, NULL);
 
 	memcpy(plain, chal, 6);
 	plain[6] = fwd_id;
@@ -140,7 +140,7 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
  * This function responds with session key to the challenge sender
  * and also sends REQ_CHALLENGE to communication partner of the sender.
  */
-void ks_receive_challenge(int s, struct can_frame *cf)
+void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
 	struct aes_ctx cipher;
 	struct macan_challenge *chal;
@@ -154,7 +154,7 @@ void ks_receive_challenge(int s, struct can_frame *cf)
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
-	send_skey(s, &cipher, dst_id, fwd_id, chg);
+	send_skey(ctx, s, &cipher, dst_id, fwd_id, chg);
 }
 
 void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
@@ -170,7 +170,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 		return;
 
 	/* ToDo: do some check on challenge message, the only message recepted by KS */
-	ks_receive_challenge(s, cf);
+	ks_receive_challenge(ctx,s, cf);
 }
 
 int main(int argc, char *argv[])

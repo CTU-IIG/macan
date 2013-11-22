@@ -75,7 +75,7 @@ void init_cpart(struct com_part **cpart, uint8_t i)
  * This function fills the macan_ctx structure. This function should be
  * called before using the MaCAN library.
  */
-int macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec)
+int macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec, const struct macan_node_spec *nodespec)
 {
 	int i;
 	uint8_t cp;
@@ -87,6 +87,7 @@ int macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec)
 	memset(ctx->sighand, 0, SIG_COUNT * sizeof(struct sig_handle *));
 
 	ctx->sigspec = sigspec;
+    ctx->nodespec = nodespec;
 
 	for (i = 0; i < SIG_COUNT; i++) {
 		if (sigspec[i].src_id == NODE_ID) {
@@ -329,13 +330,19 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	cpart = ctx->cpart;
 	sk = (struct macan_sess_key *)cf->data;
-	seq = sk->seq;
-	len = sk->len;
 
+    /* it reads wrong values, dirty hack to read directly from CAN frame 
+     * bytes are in reverse order! */
+	seq = (*((uint16_t *) cf->data) & 0xF000) >> 12; 
+	len = (*((uint16_t *) cf->data) & 0xF00) >> 8;
+
+    /* this is because of VW macan sends len 6 in last key packet */
+    if(seq == 5) len = 2;
+    
 	assert(0 <= seq && seq <= 5);
 	assert((seq != 5 && len == 6) || (seq == 5 && len == 2));
 
-	memcpy(keywrap + 6 * seq, sk->data, sk->len);
+	memcpy(keywrap + 6 * seq, sk->data, len);
 
 	if (seq == 5) {
 		print_hexn(keywrap, 32);
@@ -376,7 +383,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
  * This function sends the CHALLENGE message to the socket s. It is
  * used to request a key from KS or to request a signed time from TS.
  */
-void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
+void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 {
 	struct can_frame cf;
 	struct macan_challenge chal = {1, dst_id, fwd_id, {0}};
@@ -386,9 +393,15 @@ void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 		memcpy(chal.chg, chg, 6);
 	}
 
-	cf.can_id = NODE_ID;
+    /* There is problem with first byte, flags are not correct
+     * This is dirty hack to fix it */
+    *((uint8_t *) &chal) = 0x40 | (dst_id & 0x3F);
+
+	cf.can_id = ctx->nodespec[NODE_ID].can_id;
 	cf.can_dlc = 8;
 	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
+    printf("Sending CHALLENGE (dst_id: 0x%X, fwd_id: 0x%X)\n",dst_id,fwd_id);
+    printf("0x%X\n",*((uint8_t *)&chal));
 	write(s, &cf, sizeof(struct can_frame));
 }
 
@@ -413,7 +426,7 @@ void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	}
 
 	cpart[fwd_id]->valid_until = read_time() + SKEY_CHG_TIMEOUT;
-	send_challenge(s, KEY_SERVER, ch->fwd_id, cpart[ch->fwd_id]->chg);
+	send_challenge(ctx, s, KEY_SERVER, ch->fwd_id, cpart[ch->fwd_id]->chg);
 }
 
 /**
@@ -427,8 +440,10 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	uint32_t time_ts;
 	uint64_t recent;
 
-	if (!is_skey_ready(ctx, TIME_SERVER))
+	if (!is_skey_ready(ctx, TIME_SERVER)) {
+        printf("plain time, but don't have key for timeserver\n");
 		return;
+    }
 
 	memcpy(&time_ts, cf->data, 4);
 	recent = read_time() + ctx->time.offs;
@@ -438,13 +453,13 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 			return;
 	}
 
-	printf("time received = %u\n", time_ts);
+	printf("plain time received = %u\n", time_ts);
 
 	if (abs(recent - time_ts) > TIME_DELTA) {
 		printf("error: time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu32")\n", (uint64_t)abs(recent - time_ts), recent, time_ts);
 
 		ctx->time.chal_ts = recent;
-		send_challenge(s, TIME_SERVER, 0, ctx->time.chg);
+		send_challenge(ctx, s, TIME_SERVER, 0, ctx->time.chg);
 	}
 }
 
@@ -787,7 +802,7 @@ void macan_request_keys(struct macan_ctx *ctx, int s)
 		if (cpart[i]->valid_until > read_time())
 			continue;
 
-		send_challenge(s, KEY_SERVER, i, cpart[i]->chg);
+		send_challenge(ctx, s, ctx->nodespec[KEY_SERVER].ecu_id, ctx->nodespec[i].ecu_id, cpart[i]->chg);
 		cpart[i]->valid_until = read_time() + SKEY_CHG_TIMEOUT;
 	}
 
@@ -810,7 +825,6 @@ uint64_t get_macan_time(struct macan_ctx *ctx)
  */
 int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
-    
     // test if can_id is can_sid of any signal
     int sig32_num = can_sid_to_sig_num(ctx,cf->can_id);
     if(sig32_num >= 0) {
@@ -819,15 +833,15 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
         return 1;
     }
 
-	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
+	//struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 	int fwd;
 
 	/* ToDo: make sure all branches end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
-	if(cf->can_id == NODE_ID)
+	if(cf->can_id == ctx->nodespec[NODE_ID].can_id)
 		return 1;
-	if (cf->can_id == SIG_TIME) {
+	if (cf->can_id == ctx->nodespec[TIME_SERVER].can_id) {
 		switch(cf->can_dlc) {
 		case 4:
 			receive_time(ctx, s, cf);
@@ -838,15 +852,23 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		}
 	}
 
-	if (cryf->dst_id != NODE_ID)
-		return 1;
+    /* Reading ctx->flags and ctx->dst_id from structure returns
+     * wrong values, dont't know why. 
+     * Dirty hack to read directly from CAN frame */
+    uint8_t flags = (*((uint8_t *)&cf->data) & 0xB0) >> 6;
+    uint8_t dst_id = *((uint8_t *)&cf->data) & 0x3F;
+    //printf("dst_id is: 0x%X, flags is: 0x%X, ecu_id is 0x%X\n",flags,dst_id,ctx->nodespec[NODE_ID].ecu_id);
+    
+	if (dst_id != ctx->nodespec[NODE_ID].ecu_id) 
+        return 1;
 
-	switch (cryf->flags) {
+
+	switch (flags) {
 	case 1:
 		receive_challenge(ctx, s, cf);
 		break;
 	case 2:
-		if (cf->can_id == KEY_SERVER) {
+		if (cf->can_id == ctx->nodespec[KEY_SERVER].can_id) {
 			fwd = receive_skey(ctx, cf);
 			if (fwd > 1) {
 				send_ack(ctx, s, fwd);

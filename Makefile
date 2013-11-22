@@ -4,10 +4,10 @@ KW=../keywrap/
 INC=-Imacan/include -I$(DEMO_PATH)
 LIB=-lnettle -lrt
 #DEBUG=-DDEBUG_PRINT
-.PHONY: all demo01 demo02 node2 node3 chk_build_folder debug keysvr timesvr test clean
+.PHONY: all demo01 demo02 demo03 node2 node3 chk_build_folder debug keysvr timesvr test clean
 LIB_SRC=macan/src/target/linux/aes_keywrap.c macan/src/common.c macan/src/target/linux/aes_cmac.c $(DEMO_PATH)/macan_config.c macan/src/macan.c macan/src/helper.c macan/src/target/linux/linux_macan.c
 
-all: clean demo01 demo02
+all: clean demo01 demo02 demo03
 
 ### DEMO 01 ###
 
@@ -41,6 +41,19 @@ demo02_all:
 	gcc -Wall -ggdb -o${OUTDIR}timesvr -DNODE_ID=TIME_SERVER ${INC} ${LIB} -lrt macan/apps/timesvr.c $(LIB_SRC)
 
 demo02_chk_build_folder:
+	mkdir -p ${OUTDIR}
+
+### DEMO 03 ###
+
+demo03: DEMO = demo03
+demo03: demo03_chk_build_folder demo03_all 
+
+demo03_all:
+	gcc -Wall -ggdb ${DEBUG} -o${OUTDIR}node_ctu -DNODE_ID=3 ${INC} ${LIB} ${DEMO_PATH}/node.c $(LIB_SRC)
+	gcc -Wall -ggdb -o${OUTDIR}keysvr -DNODE_ID=KEY_SERVER ${INC} ${LIB} macan/apps/keysvr.c $(LIB_SRC)
+	gcc -Wall -ggdb -o${OUTDIR}timesvr -DNODE_ID=TIME_SERVER ${INC} ${LIB} -lrt macan/apps/timesvr.c $(LIB_SRC)
+
+demo03_chk_build_folder:
 	mkdir -p ${OUTDIR}
 
 ### COMMON ###

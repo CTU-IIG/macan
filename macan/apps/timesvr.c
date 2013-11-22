@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = helper_init();
-	macan_init(&ctx, demo_sig_spec);
+	macan_init(&ctx, demo_sig_spec, demo_node_spec);
 	macan_set_ltk(&ctx, ltk);
 	operate_ts(&ctx, s);
 

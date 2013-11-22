@@ -132,12 +132,13 @@ struct sig_handle {
  * Omnipresent structure representing the state of the MaCAN library.
  */
 struct macan_ctx {
-	const struct macan_sig_spec *sigspec;  /* static configuration given, see demo */
-	struct com_part **cpart;               /* vector of communication partners, e.g. stores keys */
-	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
-	uint8_t ltk[16];                       /* key shared with the key server */
-	struct macan_time time;                /* used to manage time of the protocol */
-	uint64_t timeout_ack;                  /* timeout for sending ACK messages */
+	const struct macan_sig_spec *sigspec;      /* static signal configuration given, see demo */
+    const struct macan_node_spec *nodespec;    /* static node configuration */ 
+	struct com_part **cpart;                   /* vector of communication partners, e.g. stores keys */
+	struct sig_handle **sighand;               /* stores signals settings, e.g prescaler, callback */
+	uint8_t ltk[16];                           /* key shared with the key server */
+	struct macan_time time;                    /* used to manage time of the protocol */
+	uint64_t timeout_ack;                      /* timeout for sending ACK messages */
 };
 
 void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
@@ -151,7 +152,7 @@ int is_skey_ready(struct macan_ctx *ctx, uint8_t dst_id);
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf);
 void send_auth_req(struct macan_ctx *ctx, int s,uint8_t dst_id,uint8_t sig_num,uint8_t prescaler);
 void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf);
-void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg);
+void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg);
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf);
 void gen_challenge(uint8_t *chal);
 extern uint8_t *key_ptr;
