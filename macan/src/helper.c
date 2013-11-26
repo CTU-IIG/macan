@@ -61,8 +61,8 @@ void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ct
 		exit(0);
 	}
 
-	printf("RECV ");
-	print_hexn(&cf, sizeof(struct can_frame));
+	//printf("RECV ");
+	//print_hexn(&cf, sizeof(struct can_frame));
 
 	cback(ctx, s, &cf);
 }
