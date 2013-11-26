@@ -27,9 +27,18 @@
 #define print_hex(key) print_hexn(key, 16)
 #define check128(a, b) memchk(a, b, 16)
 
+/* color definitions for output */
+#define ANSI_COLOR_RED     "\033[1;31m"
+#define ANSI_COLOR_GREEN   "\033[1;32m"
+#define ANSI_COLOR_YELLOW  "\033[1;33m"
+#define ANSI_COLOR_BLUE    "\033[1;34m"
+#define ANSI_COLOR_MAGENTA "\033[1;35m"
+#define ANSI_COLOR_CYAN    "\033[1;36m"
+#define ANSI_COLOR_RESET   "\033[0;0m"
+
 void eval(const char *tname,int b);
 int memchk(const uint8_t *a, const uint8_t *b, size_t len);
-void print_hexn(void *data, size_t len);
+void print_hexn(const void *data, size_t len);
 void memcpy_bw(void *dst, const void *src, size_t len);
 
 #endif /* COMMON_H */
