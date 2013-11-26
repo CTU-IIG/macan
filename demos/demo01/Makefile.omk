@@ -1,3 +1,8 @@
-bin_PROGRAMS = node2
+bin_PROGRAMS = node2 node3
+
+lib_LOADLIBES = macan
 
 node2_SOURCES = node.c
+node2_CPPFLAGS = -DNODE_ID=2
+node3_SOURCES = node.c
+node3_CPPFLAGS = -DNODE_ID=3
