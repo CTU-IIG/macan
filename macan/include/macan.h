@@ -49,6 +49,7 @@ struct macan_sig_spec {
 struct macan_node_spec {
     uint16_t can_id; /* CAN-ID node uses for its frames */
     uint8_t ecu_id; /* ECU-ID used for addressing in MaCAN protocol (crypt_id in JSON config from VW) */
+    char *name;
 };
 
 /* signal callback signature */

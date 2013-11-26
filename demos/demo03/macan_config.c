@@ -26,15 +26,15 @@
 
 /* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
-//	[TIME_DUMMY3] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_VW,  .presc = 0},
-//	[TIME_DUMMY2] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_CTU, .presc = 0},
-	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0xC1,  .src_id = NODE_VW,     .dst_id = NODE_CTU, .presc = 0}, // signal 1
-	[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 0xD1,  .src_id = NODE_CTU,    .dst_id = NODE_VW,  .presc = 0}, // signal 2
+//	[TIME_DUMMY2] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_VW,  .presc = 0},
+	[TIME_DUMMY3] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_CTU, .presc = 0},
+//	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0xC1,  .src_id = NODE_VW,     .dst_id = NODE_CTU, .presc = 0}, // signal 1
+//	[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 0xD1,  .src_id = NODE_CTU,    .dst_id = NODE_VW,  .presc = 0}, // signal 2
 };
 
 struct macan_node_spec demo_node_spec[] = {
-    [KEY_SERVER]  = {.can_id = 0x101, .ecu_id = 0x1},
-    [TIME_SERVER] = {.can_id = 0x102, .ecu_id = 0x2},
-    [NODE_VW]     = {.can_id = 0x103, .ecu_id = 0x3},
-    [NODE_CTU]    = {.can_id = 0x104, .ecu_id = 0x4},
+    [KEY_SERVER]  = {.can_id = 0x101, .ecu_id = 0x1, .name = "ks"},
+    [TIME_SERVER] = {.can_id = 0x102, .ecu_id = 0x2, .name = "ts"}, 
+    [NODE_VW]     = {.can_id = 0x103, .ecu_id = 0x3, .name = "node_vw"},
+    [NODE_CTU]    = {.can_id = 0x104, .ecu_id = 0x4, .name = "node_ctu"},
 };
