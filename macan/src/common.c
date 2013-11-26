@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <stdint.h>
 
-void print_hexn(void *data, size_t len)
+void print_hexn(const void *data, size_t len)
 {
 	int i;
-	uint8_t *d = data;
+	const uint8_t *d = data;
 
 	for (i = 0; i < len; i++) {
 		printf("%02x", d[i]);
