@@ -1,1 +1,2 @@
 LN_HEADERS=y
+CFLAGS = -g -O0 -Wall
