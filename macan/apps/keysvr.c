@@ -99,7 +99,7 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 	uint8_t wrap[32];
 	uint8_t plain[24];
 	struct sess_key *key;
-	struct can_frame cf;
+	struct can_frame cf = {0};
 	struct macan_sess_key skey;
 	int i;
 

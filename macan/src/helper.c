@@ -107,6 +107,7 @@ int helper_init()
 	strcpy(ifr.ifr_name, ifname);
 	ioctl(s, SIOCGIFINDEX, &ifr);
 
+	memset(&addr, 0, sizeof(addr));
 	addr.can_family  = AF_CAN;
 	addr.can_ifindex = ifr.ifr_ifindex;
 

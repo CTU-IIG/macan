@@ -97,7 +97,7 @@ int aes_unwrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, uint8_t *src, u
 
 	assert((length % 8) == 0 && length > 0);
 
-	memcpy(tmp, src, length);
+	memmove(tmp, src, length);
 	n = length / 8 - 1;
 
 	for (j = 5; j >= 0; j--) {
@@ -121,4 +121,3 @@ int aes_unwrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, uint8_t *src, u
 
 	return 0;
 }
-

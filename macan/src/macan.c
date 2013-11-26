@@ -198,7 +198,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	uint8_t plain[8] = {0};
 	uint32_t time;
 	uint8_t *skey;
-	struct can_frame cf;
+	struct can_frame cf = {0};
 	volatile int res;
 	struct com_part **cpart;
 
@@ -371,7 +371,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
  */
 void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 {
-	struct can_frame cf;
+	struct can_frame cf = {0};
 	struct macan_challenge chal = {1, dst_id, fwd_id, {0}};
 
 	if (chg) {
@@ -491,7 +491,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num
 	uint64_t t;
 	uint8_t plain[8];
 	uint8_t *skey;
-	struct can_frame cf;
+	struct can_frame cf = {0};
 	struct macan_sig_auth_req areq;
 	struct com_part **cpart;
 
@@ -571,7 +571,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
  */
 int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
 {
-	struct can_frame cf;
+	struct can_frame cf = {0};
 	uint8_t plain[10],sig[8];
     int plain_length;
 	uint32_t t;

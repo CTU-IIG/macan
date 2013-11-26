@@ -152,7 +152,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
  */
 void broadcast_time(struct macan_ctx *ctx, int s, uint64_t *bcast_time)
 {
-	struct can_frame cf;
+	struct can_frame cf = {0};
 	uint64_t usec;
 
 	if (*bcast_time + 1000000 > read_time())
