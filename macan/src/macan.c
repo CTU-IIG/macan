@@ -457,13 +457,17 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
 	uint64_t recent;
+   
+	memcpy(&time_ts, cf->data, 4);
+
+    printf(ANSI_COLOR_CYAN "RECV plain time\n" ANSI_COLOR_RESET);  
+	printf("plain time = %d (0x%X)\n", time_ts,time_ts);
 
 	if (!is_skey_ready(ctx, TIME_SERVER)) {
-        printf("plain time, but don't have key for timeserver\n");
+        printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": ignoring, we don't have key for timeserver\n");
 		return;
     }
 
-	memcpy(&time_ts, cf->data, 4);
 	recent = read_time() + ctx->time.offs;
 
 	if (ctx->time.chal_ts) {
@@ -471,13 +475,11 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 			return;
 	}
 
-	printf("plain time received = %u\n", time_ts);
-
 	if (abs(recent - time_ts) > TIME_DELTA) {
-		printf("error: time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu32")\n", (uint64_t)abs(recent - time_ts), recent, time_ts);
+		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu32")\n", (uint64_t)abs(recent - time_ts), recent, time_ts);
 
 		ctx->time.chal_ts = recent;
-		send_challenge(ctx, s, TIME_SERVER, 0, ctx->time.chg);
+		send_challenge(ctx, s, ctx->nodespec[TIME_SERVER].ecu_id, 0, ctx->time.chg);
 	}
 }
 
@@ -489,14 +491,15 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
-	uint8_t plain[10];
+	uint8_t plain[12];
 	uint8_t *skey;
 	struct com_part **cpart;
+
+    printf(ANSI_COLOR_CYAN "RECV signed time\n" ANSI_COLOR_RESET);  
 
 	cpart = ctx->cpart;
 
 	memcpy(&time_ts, cf->data, 4);
-	printf("signed time received = %u\n", time_ts);
 
 	if (!is_skey_ready(ctx, TIME_SERVER)) {
 		ctx->time.chal_ts = 0;
@@ -504,14 +507,15 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	}
 
 	skey = cpart[TIME_SERVER]->skey;
+	memcpy(plain, &time_ts, 4); // received time
+	memcpy(plain + 4, ctx->time.chg, 6); // challenge
+    memcpy(plain + 10, &(ctx->nodespec[TIME_SERVER].can_id),2); // can_id of ts
 
-	memcpy(plain, ctx->time.chg, 6);
-	memcpy(plain + 6, &time_ts, 4);
 	if (!check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
-		printf("CMAC \033[1;31merror\033[0;0m\n");
+		printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": check cmac\n");
 		return;
 	}
-	printf("CMAC OK\n");
+	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ", signed time = %d (0x%X)\n",time_ts,time_ts);
 
 	ctx->time.offs += (time_ts - ctx->time.chal_ts);
 	ctx->time.chal_ts = 0;
