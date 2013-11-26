@@ -238,7 +238,7 @@ void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
 }
 #endif /* TC1798 */
 
-void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
+void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 #ifdef TC1798
 {
 	aes_set_key(key);

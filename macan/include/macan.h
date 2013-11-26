@@ -45,11 +45,28 @@ struct macan_sig_spec {
 	uint8_t presc;     /* prescaler */
 };
 
+struct macan_config {
+	uint8_t node_id;		       /* Our ECU-ID (0-63) */
+	uint8_t ltk[16];                       /* Long-term key shared with the key server */
+	uint32_t sig_count;		       /* Number of sinals in sig_spec */
+	const struct macan_sig_spec *sigspec;
+	uint8_t node_count;		       /* Number of nodes in our network */
+	uint8_t key_server_id;		       /* ECU-ID of the key server */
+	uint8_t time_server_id;		       /* ECU-ID of the time server */
+	uint32_t can_id_time;		       /* CAN-ID of time signal (both authenticated and non-auth.) */
+	uint32_t time_div;		       /* Number of microseconds in one MaCAN time unit */
+	uint32_t ack_timeout;		       /* Timeout in microseconds for waiting for key acknowledge */
+	uint64_t skey_validity;		       /* Session key expiration time in microseconds */
+	uint32_t skey_chg_timeout;	       /* ??? when to change the session key (microseconds) ??? */
+	uint32_t time_timeout;		       /* ??? how long is time valid (microseconds) ??? */
+	uint32_t time_delta;		       /* When our estimated time differs from timerserver time by this number of microseconds, we ask for authenticated time */
+};
+
 /* signal callback signature */
 typedef void (*sig_cback)(uint8_t sig_num, uint32_t sig_val);
 
 /* MaCAN API functions */
-int  macan_init(struct macan_ctx *ctx, const struct macan_sig_spec *sigspec);
+int  macan_init(struct macan_ctx *ctx, const struct macan_config *config);
 void macan_set_ltk(struct macan_ctx *ctx, uint8_t *key);
 void macan_request_keys(struct macan_ctx *ctx, int s);
 int  macan_wait_for_key_acks(struct macan_ctx *ctx, int s);

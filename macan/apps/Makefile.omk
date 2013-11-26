@@ -1,5 +1,8 @@
-bin_PROGRAMS = keysvr
+bin_PROGRAMS = keysvr timesvr
 keysvr_SOURCES = keysvr.c
+keysvr_LIBS = macan
 
-bin_PROGRAMS = timesvr
 timesvr_SOURCES = timesvr.c
+timesvr_LIBS = macan
+
+lib_LOADLIBES = nettle rt

@@ -22,7 +22,7 @@
  */
 
 #include <macan.h>
-#include <macan_config.h>
+#include "macan_config.h"
 
 /* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {

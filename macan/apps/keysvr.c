@@ -38,15 +38,17 @@
 #include "common.h"
 #include "helper.h"
 #include "aes_keywrap.h"
-#include "macan.h"
-#include "macan_config.h"
+#include <macan.h>
 #include <stdbool.h>
 #include <time.h>
+
+#define NODE_COUNT 64
 
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
+uint8_t key_server_id = 0;
 
 struct sess_key {
 	bool valid;
@@ -102,8 +104,10 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 	int i;
 
 	/* ToDo: solve name inconsistency - key */
-	if (lookup_skey(dst_id, fwd_id, &key))
-		send_challenge(s, fwd_id, dst_id, NULL);
+	if (lookup_skey(dst_id, fwd_id, &key)) {
+		/* FIXME: For send_challenge to work, we need valid context, which we do not have */
+		//send_challenge(ctx, s, fwd_id, dst_id, NULL);
+	}
 
 	memcpy(plain, chal, 6);
 	plain[6] = fwd_id;
@@ -118,7 +122,7 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
 	skey.flags = 2;
 	skey.dst_id = dst_id;
 
-	cf.can_id = KEY_SERVER;
+	cf.can_id = key_server_id; /* FIXME: EDU to CAN ID mapping */
 	cf.can_dlc = 8;
 
 	for (i = 0; i < 6; i++) {
@@ -140,7 +144,7 @@ void send_skey(int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, u
  * This function responds with session key to the challenge sender
  * and also sends REQ_CHALLENGE to communication partner of the sender.
  */
-void ks_receive_challenge(int s, struct can_frame *cf)
+void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
 	struct aes_ctx cipher;
 	struct macan_challenge *chal;
@@ -159,18 +163,19 @@ void ks_receive_challenge(int s, struct can_frame *cf)
 
 void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
+	/* Note: ctx is not valid here! */
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
 	/* ToDo: do some filter here */
-	if (cf->can_id == KEY_SERVER)
+	if (cf->can_id == key_server_id) /* FIXME: ECU to CAN ID mapping */
 		return;
-	if (cf->can_id == SIG_TIME)
-		return;
-	if (cryf->dst_id != KEY_SERVER)
+/* 	if (cf->can_id == ctx->config->can_id_time) */
+/* 		return; */
+	if (cryf->dst_id != key_server_id)
 		return;
 
 	/* ToDo: do some check on challenge message, the only message recepted by KS */
-	ks_receive_challenge(s, cf);
+	ks_receive_challenge(ctx, s, cf);
 }
 
 int main(int argc, char *argv[])

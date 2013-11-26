@@ -53,8 +53,9 @@
 #include "aes_cmac.h"
 #endif /* TC1798 */
 #include "helper.h"
-#include "macan.h"
-#include "macan_config.h"
+#include <macan.h>
+#include <macan_private.h>
+
 
 /* ToDo
  *   implement groups
@@ -64,12 +65,6 @@
 #define TS_TEST_ERR 500000
 
 uint64_t last_usec;
-
-/* ltk stands for long term key; it is a key shared with the key server */
-uint8_t ltk[] = {
-	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-  	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
-};
 
 /**
  * ts_receive_challenge() - serves the request for signed time
@@ -102,7 +97,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	memcpy(plain, ch->chg, 6);
 	memcpy(plain + 6, &last_usec, 4);
 
-	canf.can_id = SIG_TIME;
+	canf.can_id = ctx->config->can_id_time;
 	canf.can_dlc = 8;
 	memcpy(canf.data, &last_usec, 4);
 	sign(skey, canf.data + 4, plain, 10);
@@ -120,14 +115,14 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	/* ToDo: make sure all branches end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
-	if (cf->can_id == TIME_SERVER)
+	if (cf->can_id == ctx->config->time_server_id) /* FIXME: ECU to CAN ID mapping */
 		return;
-	if (cryf->dst_id != TIME_SERVER)
+	if (cryf->dst_id != ctx->config->time_server_id)
 		return;
 
 	switch (cryf->flags) {
 	case 1:
-		if (cf->can_id == KEY_SERVER) {
+		if (cf->can_id == ctx->config->key_server_id) { /* FIXME: ECU to CAN ID mapping */
 			receive_challenge(ctx, s, cf);
 		} else
 		{
@@ -135,7 +130,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 		}
 		break;
 	case 2:
-		if (cf->can_id == KEY_SERVER) {
+		if (cf->can_id == ctx->config->key_server_id) { /* FIXME: ECU to CAN ID mapping */
 			receive_skey(ctx, cf);
 			break;
 		}
@@ -155,7 +150,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
  * @freq: broadcast frequency
  *
  */
-void broadcast_time(int s, uint64_t *bcast_time)
+void broadcast_time(struct macan_ctx *ctx, int s, uint64_t *bcast_time)
 {
 	struct can_frame cf;
 	uint64_t usec;
@@ -168,7 +163,7 @@ void broadcast_time(int s, uint64_t *bcast_time)
 	usec = read_time() + TS_TEST_ERR;
 	last_usec = usec;
 
-	cf.can_id = SIG_TIME;
+	cf.can_id = ctx->config->can_id_time;
 	cf.can_dlc = 4;
 	memcpy(cf.data, &usec, 4);
 
@@ -182,11 +177,22 @@ void operate_ts(struct macan_ctx *ctx, int s)
 	while(1) {
 		helper_read_can(ctx, s, can_recv_cb);
 		macan_request_keys(ctx, s);
-		broadcast_time(s, &bcast_time);
+		broadcast_time(ctx, s, &bcast_time);
 
 		usleep(250);
 	}
 }
+
+struct macan_config config = {
+	.node_id = 1,		/* FIXME: Make changable from command line */
+	.ltk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F }, /* FIXME: Make changable from command line */
+	.key_server_id = 0,	/* FIXME: Make changable from command line */
+	.time_server_id = 1,    /* should be same as node_id */
+	.can_id_time = 0,	/* FIXME: Make changable from command line */
+	.time_div = 1000000,    /* FIXME: Make changable from command line */
+	/* Note: Time server should not care about other parameters
+	 * than those above */
+};
 
 int main(int argc, char *argv[])
 {
@@ -194,10 +200,8 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = helper_init();
-	macan_init(&ctx, demo_sig_spec);
-	macan_set_ltk(&ctx, ltk);
+	macan_init(&ctx, &config);
 	operate_ts(&ctx, s);
 
 	return 0;
 }
-

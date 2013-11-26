@@ -41,7 +41,6 @@
 #include <linux/can/raw.h>
 #include <nettle/aes.h>
 #include "aes_cmac.h"
-#include "macan_config.h"
 #include "macan.h"
 
 /**
@@ -71,7 +70,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 		return memchk(cmac4, cmac, 4);
 	}
 
-	time = get_macan_time(ctx) / TIME_DIV;
+	time = macan_get_time(ctx);
 
 	for (i = 0; i >= -1; i--) {
 		*ftime = time + i;
@@ -105,7 +104,7 @@ void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
 /**
  * unwrap_key() - deciphers AES-WRAPed key
  */
-void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
+void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 {
 	struct aes_ctx cipher;
 
@@ -134,4 +133,3 @@ uint64_t read_time()
 
 	return time;
 }
-

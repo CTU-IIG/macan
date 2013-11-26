@@ -54,16 +54,10 @@
 #include "aes_cmac.h"
 #endif /* __CPU_TC1798__ */
 #include "helper.h"
-#include "macan.h"
+#include <macan.h>
 #include "macan_config.h"
 
 #define TIME_EMIT_SIG 1000000
-
-/* ltk stands for long term key; it is a key shared with the key server */
-uint8_t ltk[] = {
-	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-  	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
-};
 
 void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
@@ -101,18 +95,33 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
 }
 
+struct macan_config config = {
+	.node_id = NODE_ID,
+	.ltk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F },
+	.sig_count = SIG_COUNT,
+	.sigspec = demo_sig_spec,
+	.node_count = NODE_COUNT,
+	.key_server_id = KEY_SERVER,
+	.time_server_id = TIME_SERVER,
+	.can_id_time = SIG_TIME,
+	.time_div = TIME_DIV,
+	.ack_timeout = ACK_TIMEOUT,
+	.skey_validity = SKEY_TIMEOUT,
+	.skey_chg_timeout = SKEY_CHG_TIMEOUT,
+	.time_timeout = ACK_TIMEOUT,
+	.time_delta = TIME_DELTA,
+};
+
 int main(int argc, char *argv[])
 {
 	int s;
 	struct macan_ctx ctx;
 
 	s = helper_init();
-	macan_init(&ctx, demo_sig_spec);
-	macan_set_ltk(&ctx, ltk);
+	macan_init(&ctx, &config);
 	macan_reg_callback(&ctx, ENGINE, sig_callback);
 	macan_reg_callback(&ctx, BRAKE, sig_callback);
 	operate_ecu(&ctx, s);
 
 	return 0;
 }
-

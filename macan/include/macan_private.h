@@ -132,15 +132,14 @@ struct sig_handle {
  * Omnipresent structure representing the state of the MaCAN library.
  */
 struct macan_ctx {
-	const struct macan_sig_spec *sigspec;  /* static configuration given, see demo */
+	const struct macan_config *config;     /* MaCAN configuration passed to macan_init() */
 	struct com_part **cpart;               /* vector of communication partners, e.g. stores keys */
 	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
-	uint8_t ltk[16];                       /* key shared with the key server */
 	struct macan_time time;                /* used to manage time of the protocol */
-	uint64_t timeout_ack;                  /* timeout for sending ACK messages */
+	uint64_t ack_timeout_abs;	       /* timeout for sending ACK messages ??? */
 };
 
-void unwrap_key(uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
+void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
 int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 int init();
 void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
@@ -151,7 +150,7 @@ int is_skey_ready(struct macan_ctx *ctx, uint8_t dst_id);
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf);
 void send_auth_req(struct macan_ctx *ctx, int s,uint8_t dst_id,uint8_t sig_num,uint8_t prescaler);
 void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf);
-void send_challenge(int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg);
+void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg);
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf);
 void gen_challenge(uint8_t *chal);
 extern uint8_t *key_ptr;
@@ -165,11 +164,10 @@ extern uint8_t skey[24];
 int write(int s, struct can_frame *cf, int len);
 #endif
 uint64_t read_time();
-uint64_t get_macan_time();
+uint64_t macan_get_time();
 void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
 int can_sid_to_sig_num(struct macan_ctx *ctx, uint8_t can_id);
 
 #endif /* MACAN_PRIVATE_H */
-
