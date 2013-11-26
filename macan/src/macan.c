@@ -457,6 +457,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
 	uint64_t recent;
+    uint64_t time_ts_us;
    
 	memcpy(&time_ts, cf->data, 4);
 
@@ -475,8 +476,11 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 			return;
 	}
 
-	if (abs(recent - time_ts) > TIME_DELTA) {
-		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu32")\n", (uint64_t)abs(recent - time_ts), recent, time_ts);
+    time_ts_us = time_ts;
+    time_ts_us *= 1000000;
+
+	if (abs(recent - time_ts_us) > TIME_DELTA) {
+		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu64")\n", (uint64_t)abs(recent - time_ts_us), recent, time_ts_us);
 
 		ctx->time.chal_ts = recent;
 		send_challenge(ctx, s, ctx->nodespec[TIME_SERVER].ecu_id, 0, ctx->time.chg);
@@ -494,6 +498,7 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	uint8_t plain[12];
 	uint8_t *skey;
 	struct com_part **cpart;
+    uint64_t time_ts_us;
 
     printf(ANSI_COLOR_CYAN "RECV signed time\n" ANSI_COLOR_RESET);  
 
@@ -517,7 +522,10 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	}
 	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ", signed time = %d (0x%X)\n",time_ts,time_ts);
 
-	ctx->time.offs += (time_ts - ctx->time.chal_ts);
+    time_ts_us = time_ts;
+    time_ts_us *= 1000000;
+
+	ctx->time.offs += (time_ts_us - ctx->time.chal_ts);
 	ctx->time.chal_ts = 0;
 }
 
