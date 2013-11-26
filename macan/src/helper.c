@@ -44,8 +44,11 @@
 #include <linux/can/raw.h>
 #endif /* __CPU_TC1798__ */
 #include <helper.h>
+#include <macan.h>
+#include <macan_private.h>
 
 #ifndef __CPU_TC1798__
+#include "target/linux/lib.h"
 void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ctx *ctx, int s, struct can_frame *cf))
 {
 	struct can_frame cf;
@@ -61,8 +64,14 @@ void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ct
 		exit(0);
 	}
 
-	printf("RECV ");
-	print_hexn(&cf, sizeof(struct can_frame));
+	char frame[80], comment[80];
+	comment[0] = 0;
+	sprint_canframe(frame, &cf, 0, 8);
+	if (ctx && ctx->config) {
+		if (cf.can_id == ctx->config->can_id_time)
+			sprintf(comment, "time %ssigned", cf.can_dlc == 4 ? "un" : "");
+	}
+	printf("RECV %-20s %s\n", frame, comment);
 
 	cback(ctx, s, &cf);
 }
