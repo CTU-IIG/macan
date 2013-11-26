@@ -4,7 +4,7 @@
 #  (C) Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2013 by Michal Sojka - Czech Technical University, FEE, DCE
 #
 #  Homepage: http://rtime.felk.cvut.cz/omk/
-#  Version:  0.2-148-g2cff028
+#  Version:  0.2-156-g67ae518
 #
 # The OMK build system is distributed under the GNU General Public
 # License.  See file COPYING for details.
@@ -38,9 +38,9 @@
 # lib_LOADLIBES    .. list of libraries linked to each executable
 # INCLUDES         .. additional include directories and defines for user-space
 #
-# AM_CFLAGS        .. C compiler flags
-# AM_CXXFLAGS      .. C++ compiler flags
-# AM_CPPFLAGS	   .. C preprocessor flags
+# OMK_CFLAGS        .. C compiler flags
+# OMK_CXXFLAGS      .. C++ compiler flags
+# OMK_CPPFLAGS	   .. C preprocessor flags
 # LDFLAGS	   .. linker flags for programs linking
 # kernel_LIBRARIES .. list of the kernel-space libraries                         #OMK:linux-kernel.omk
 # rtlinux_LIBRARIES.. list of the RT-Linux kernel-space libraries
@@ -53,6 +53,8 @@
 # OMIT_KERNEL_PASSES  if defined, all kernel passes are omited
 # LINUX_DIR        .. location of Linux kernel sources
 # RTL_DIR          .. location of RT-Linux sources
+# cmetric_include_HEADERS    .. generate header file with offsets and sizes of structure fields #OMK:cmetric.omk
+# xxx_CMETRIC_SOURCES	     .. the source cmetric generation
 # LOCAL_CONFIG_H   .. name of local config.h file generated from values          #OMK:config_h.omk
 #                     of options defined in the current directory
 # config_include_HEADERS .. names of global config files (possibly
@@ -521,14 +523,14 @@ endif
 
 ifdef USER_RULE_TEMPLATES
 
-c_o_COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -DOMK_FOR_USER
+c_o_COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(OMK_CPPFLAGS) \
+	$(CPPFLAGS) $(OMK_CFLAGS) $(CFLAGS) -DOMK_FOR_USER
 
-cc_o_COMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -DOMK_FOR_USER
+cc_o_COMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(OMK_CPPFLAGS) \
+	$(CPPFLAGS) $(OMK_CFLAGS) $(CFLAGS) $(OMK_CXXFLAGS) $(CXXFLAGS) -DOMK_FOR_USER
 
-S_o_COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) $(ASFLAGS) -DOMK_FOR_USER
+S_o_COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(OMK_CPPFLAGS) \
+	$(CPPFLAGS) $(OMK_CFLAGS) $(CFLAGS) $(ASFLAGS) -DOMK_FOR_USER
 
 idl_COMPILE = $(IDL_COMPILER)
 
@@ -585,33 +587,6 @@ $(2): $(1) $$(GEN_HEADERS)
 endif
 endef
 
-NM ?= nm
-
-# Syntax: $(call CMETRIC_o_h_template,<object_file>,<target_header>)
-define CMETRIC_o_h_template
-$(2): $(1)
-	@$(QUIET_CMD_ECHO) "  CMETRIC $$@"
-	$(Q)if [ -n `dirname $$@` ] ; then \
-	      if [ ! -e `dirname $$@` ] ; then \
-	        mkdir -p `dirname $$@` ; fi ; fi
-	$(Q)echo >$$@.tmp '/* Automatically generated from $$< */'
-	$(Q)echo >>$$@.tmp '/* Conditionals to control compilation */'
-# Bellow, the tricks with redirection are for shells without set -o pipefail
-# (see http://www.mail-archive.com/dash@vger.kernel.org/msg00149.html)
-	$(Q)exec 3>&1; status=`exec 4>&1 >&3; { $(NM) $$<; echo $$$$? >&4; }\
-		| $(SED4OMK) -n 's/^ *0*\(0[0-9A-Fa-f]*\) *A *_cmetric2cond_\([A-Za-z_0-9]*\) */#define \2 0x\1/p' \
-		| sort >>$$@.tmp` && exit $$$$status
-	$(Q)echo >>$$@.tmp '/* Defines from the values defined to symbols in hexadecimal format */'
-	$(Q)exec 3>&1; status=`exec 4>&1 >&3; { $(NM) $$<; echo $$$$? >&4; }\
-		| $(SED4OMK) -n 's/^ *0*\(0[0-9A-Fa-f]*\) *A *_cmetric2def_\([A-Za-z_0-9]*\) */#define \2 0x\1/p' \
-		| sort >>$$@.tmp` && exit $$$$status
-	$(Q)echo >>$$@.tmp '/* Defines from the values defined to symbols in decimal format */'
-	$(Q)exec 3>&1; status=`exec 4>&1 >&3; { $(NM) -td $$<; echo $$$$? >&4; }\
-		| $(SED4OMK) -n 's/^ *0*\(0\|[1-9][0-9]*\) *A *_cmetric2defdec_\([A-Za-z_0-9]*\) */#define \2 \1/p' \
-		| sort >>$$@.tmp` && exit $$$$status
-	$(Q)mv $$@.tmp $$@
-endef
-
 # Syntax: $(call COMPILE_idl_template,</path/to/src.idl>,<basename>)
 define COMPILE_idl_template
 
@@ -625,18 +600,18 @@ $(2).c $(2)-stubs.c $(2)-skels.c $(2)-common.c $(2).h: $(1) $$(wildcard $$(first
 endif
 endef
 
-# Syntax: $(call COMPILE_templates,<sources_abs>,<suffix>)
+# Syntax: $(call COMPILE_templates,<sources_abs>,<suffix>,<obj-prefix>)
 # Note: The newlines after $(call ) are IMPORTANT!!!
 define COMPILE_templates
-$(foreach src,$(filter %.c,$(1)),$(call COMPILE_c_o_template,$(src),$(notdir $(src:%.c=%$(2))),)
+$(foreach src,$(filter %.c,$(1)),$(call COMPILE_c_o_template,$(src),$(3)$(notdir $(src:%.c=%$(2))),)
 )
-$(foreach src,$(filter %.cc,$(1)),$(call COMPILE_cc_o_template,$(src),$(notdir $(src:%.cc=%$(2))),)
+$(foreach src,$(filter %.cc,$(1)),$(call COMPILE_cc_o_template,$(src),$(3)$(notdir $(src:%.cc=%$(2))),)
 )
-$(foreach src,$(filter %.cxx,$(1)),$(call COMPILE_cc_o_template,$(src),$(notdir $(src:%.cxx=%$(2))),)
+$(foreach src,$(filter %.cxx,$(1)),$(call COMPILE_cc_o_template,$(src),$(3)$(notdir $(src:%.cxx=%$(2))),)
 )
-$(foreach src,$(filter %.cpp,$(1)),$(call COMPILE_cc_o_template,$(src),$(notdir $(src:%.cpp=%$(2))),)
+$(foreach src,$(filter %.cpp,$(1)),$(call COMPILE_cc_o_template,$(src),$(3)$(notdir $(src:%.cpp=%$(2))),)
 )
-$(foreach src,$(filter %.S,$(1)),$(call COMPILE_S_o_template,$(src),$(notdir $(src:%.S=%$(2))),)
+$(foreach src,$(filter %.S,$(1)),$(call COMPILE_S_o_template,$(src),$(3)$(notdir $(src:%.S=%$(2))),)
 )
 endef
 
@@ -647,21 +622,28 @@ TARGET_IDL_SOURCES =  $(filter %.c,$($(1)_SERVER_IDL:%.idl=%-skels.c)) \
 		       $(filter %.c,$($(1)_IDL:%.idl=%.c))
 TARGET_SOURCES = $($(1)_SOURCES) $($(1)_GEN_SOURCES) $(TARGET_IDL_SOURCES)
 TARGET_SOURCES_ABS = $($(1)_SOURCES:%=$(SOURCES_DIR)/%) $($(1)_GEN_SOURCES) $(TARGET_IDL_SOURCES)
-TARGET_OBJS  = $(sort $(addsuffix .o,$(basename $(notdir $(TARGET_SOURCES)))))
-TARGET_LOBJS = $(sort $(addsuffix .lo,$(basename $(notdir $(TARGET_SOURCES)))))
+TARGET_OBJ_PREFIX = $(if $($(1)_CFLAGS)$($(1)_CXXFLAGS)$($(1)_CPPFLAGS),$(1)-,)
+TARGET_OBJS  = $(sort $(addprefix $(TARGET_OBJ_PREFIX),$(addsuffix .o,$(basename $(notdir $(TARGET_SOURCES))))))
+TARGET_LOBJS = $(sort $(addprefix $(TARGET_OBJ_PREFIX),$(addsuffix .lo,$(basename $(notdir $(TARGET_SOURCES))))))
 TARGET_IDLS = $($(1)_SERVER_IDL) $($(1)_CLIENT_IDL) $($(1)_IDL)
+TARGET_CFLAGS   = $(if $($(1)_CFLAGS),$($(1)_CFLAGS),$(OMK_CFLAGS))
+TARGET_CXXFLAGS = $(if $($(1)_CXXFLAGS),$($(1)_CXXFLAGS),$(OMK_CXXFLAGS))
+TARGET_CPPFLAGS = $(if $($(1)_CPPFLAGS),$($(1)_CPPFLAGS),$(OMK_CPPFLAGS))
 LINK_WITH_CXX = $(filter %.cc,$(TARGET_SOURCES))$(filter %.cxx,$(TARGET_SOURCES))$$(filter %.cpp,$(TARGET_SOURCES))
 
 # Syntax: $(call PROGRAM_template,<executable-name>,<dir>,<executable-suffix>,<linker-sript>)
 define PROGRAM_template
 $(foreach idl,$(TARGET_IDLS),$(call COMPILE_idl_template,$(SOURCES_DIR)/$(idl),$(idl:%.idl=%)))
 
-$(call COMPILE_templates,$(TARGET_SOURCES_ABS),.o)
+$(call COMPILE_templates,$(TARGET_SOURCES_ABS),.o,$(TARGET_OBJ_PREFIX))
 
+$(2)/$(1)$(3): OMK_CFLAGS=$(TARGET_CFLAGS)
+$(2)/$(1)$(3): OMK_CXXFLAGS=$(TARGET_CXXFLAGS)
+$(2)/$(1)$(3): OMK_CPPFLAGS=$(TARGET_CPPFLAGS)
 $(2)/$(1)$(3): $(TARGET_OBJS)
 	@$(QUIET_CMD_ECHO) "  LINK    $$@"
 	$(Q) $(if $(LINK_WITH_CXX),$$(CXX),$$(CC)) \
-	  $$^ $$($(1)_LIBS:%=-l%) $$(LOADLIBES) $$(AM_LDFLAGS) $$(LDFLAGS) $$($(1)_LDFLAGS) -Wl,-rpath-link,$(USER_LIB_DIR) -Wl,-Map,$(USER_OBJS_DIR)/$(1).exe.map -o $$@
+	  $$^ $$($(1)_LIBS:%=-l%) $$(LOADLIBES) $$(OMK_LDFLAGS) $$(LDFLAGS) $$($(1)_LDFLAGS) -Wl,-rpath-link,$(USER_LIB_DIR) -Wl,-Map,$(USER_OBJS_DIR)/$(1).exe.map -o $$@
 	@echo "$(2)/$(1)$(3): \\" >$(USER_OBJS_DIR)/$(1).exe.d
 	@$(SED4OMK) -n -e 's|^LOAD \(.*\)$$$$|  \1  \&|p' $(USER_OBJS_DIR)/$(1).exe.map|tr '&' '\134'  >>$(USER_OBJS_DIR)/$(1).exe.d
 	@echo >>$(USER_OBJS_DIR)/$(1).exe.d
@@ -684,8 +666,11 @@ define LIBRARY_template
 
 $(foreach idl,$(TARGET_IDLS),$(call COMPILE_idl_template,$(SOURCES_DIR)/$(idl),$(idl:%.idl=%)))
 
-$(call COMPILE_templates,$(TARGET_SOURCES_ABS),.o)
+$(call COMPILE_templates,$(TARGET_SOURCES_ABS),.o,$(TARGET_OBJ_PREFIX))
 
+$(USER_LIB_DIR)/lib$(1).a: OMK_CFLAGS=$(TARGET_CFLAGS)
+$(USER_LIB_DIR)/lib$(1).a: OMK_CXXFLAGS=$(TARGET_CXXFLAGS)
+$(USER_LIB_DIR)/lib$(1).a: OMK_CPPFLAGS=$(TARGET_CPPFLAGS)
 $(USER_LIB_DIR)/lib$(1).a: $(TARGET_OBJS)
 	@$(QUIET_CMD_ECHO) "  AR      $$@"
 	$(Q) $(AR) rcs $$@ $$^
@@ -699,11 +684,15 @@ define SOLIB_template
 
 $(foreach idl,$(TARGET_IDLS),$(call COMPILE_idl_template,$(SOURCES_DIR)/$(idl),$(idl:%.idl=%)))
 
-$(call COMPILE_templates,$(TARGET_SOURCES_ABS),.lo)
+$(call COMPILE_templates,$(TARGET_SOURCES_ABS),.lo,$(TARGET_OBJ_PREFIX))
 
 .PHONY: $(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar
-$(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar: AM_CFLAGS += $(SOLIB_PICFLAGS)
-$(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar: AM_CXXFLAGS += $(SOLIB_PICFLAGS)
+$(2)/$(1)$(3): OMK_CFLAGS=$(TARGET_CFLAGS)
+$(2)/$(1)$(3): OMK_CXXFLAGS=$(TARGET_CXXFLAGS)
+$(2)/$(1)$(3): OMK_CPPFLAGS=$(TARGET_CPPFLAGS)
+$(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar: OMK_CFLAGS = $(TARGET_CFLAGS) $(SOLIB_PICFLAGS)
+$(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar: OMK_CXXFLAGS = $(TARGET_CXXFLAGS) $(SOLIB_PICFLAGS)
+$(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar: OMK_CPPFLAGS = $(TARGET_CPPFLAGS)
 $(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar: $(TARGET_LOBJS)
 	$(Q)echo '$(1)_objslo += $$$$(addprefix $(USER_OBJS_DIR)/,$$^)' > $$@.tmp; \
 	    echo '$(1)_libs += $$($(1)_LIBS) $$(lib_LOADLIBES)' >> $$@.tmp; \
@@ -713,19 +702,6 @@ $(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar: $(TARGET_LOBJS)
 
 library-pass-local: $(OMK_WORK_DIR)/lib$(1).$(SOLIB_EXT).omkvar
 endef
-
-library-pass-local: $(addprefix $(USER_INCLUDE_DIR)/,$(cmetric_include_HEADERS)) \
-
-# Special rules for CMETRIC generated headers
-
-$(foreach cmetrh,$(cmetric_include_HEADERS),$(eval $(call COMPILE_c_o_template,\
-		$(SOURCES_DIR)/$($(basename $(notdir $(cmetrh)))_CMETRIC_SOURCES),\
-		$($(basename $(notdir $(cmetrh)))_CMETRIC_SOURCES:%.c=%.o),)))
-$(foreach cmetrh,$(cmetric_include_HEADERS),$(eval $(call CMETRIC_o_h_template,\
-		$($(basename $(notdir $(cmetrh)))_CMETRIC_SOURCES:%.c=%.o),\
-		$(addprefix $(USER_INCLUDE_DIR)/,$(cmetrh)))))
-
-GEN_HEADERS+=$(cmetric_include_HEADERS:%=$(USER_INCLUDE_DIR)/%)
 
 # Generate rules for compilation of programs and libraries
 
@@ -775,7 +751,7 @@ $(foreach lib,$(shared_libs),$(eval $(call solib_link_template,$(lib))))
 link-shared-libs: $(shared_libs:%=$(USER_LIB_DIR)/lib%.$(SOLIB_EXT))
 endif # link-shared-libs
 
-$(eval $(call omk_pass_template, library-pass,$(USER_OBJS_DIR),USER_RULE_TEMPLATES=y,$(lib_LIBRARIES)$(shared_LIBRARIES)))
+$(eval $(call omk_pass_template, library-pass,$(USER_OBJS_DIR),USER_RULE_TEMPLATES=y,$(lib_LIBRARIES)$(shared_LIBRARIES)$(cmetric_include_HEADERS)))
 $(eval $(call omk_pass_template, binary-pass, $(USER_OBJS_DIR),USER_RULE_TEMPLATES=y,$(bin_PROGRAMS)$(utils_PROGRAMS)$(test_PROGRAMS)$(bin_SCRIPTS)))
 
 $(eval $(call omk_pass_template,clean,$(USER_OBJS_DIR),,always))
@@ -1185,6 +1161,46 @@ ifndef OMIT_KERNEL_PASSES
 # Also make kernel passes if not disabled
 default: kernel-lib-pass kernel-pass
 endif
+                                                                                 #OMK:cmetric.omk@Makefile.rules.linux
+NM ?= nm
+
+# Syntax: $(call CMETRIC_o_h_template,<object_file>,<target_header>)
+define CMETRIC_o_h_template
+$(2): $(1)
+	@$(QUIET_CMD_ECHO) "  CMETRIC $$@"
+	$(Q)if [ -n `dirname $$@` ] ; then \
+	      if [ ! -e `dirname $$@` ] ; then \
+	        mkdir -p `dirname $$@` ; fi ; fi
+	$(Q)echo >$$@.tmp '/* Automatically generated from $$< */'
+	$(Q)echo >>$$@.tmp '/* Conditionals to control compilation */'
+# Bellow, the tricks with redirection are for shells without set -o pipefail
+# (see http://www.mail-archive.com/dash@vger.kernel.org/msg00149.html)
+	$(Q)exec 3>&1; status=`exec 4>&1 >&3; { $(NM) $$<; echo $$$$? >&4; }\
+		| $(SED4OMK) -n 's/^ *0*\(0[0-9A-Fa-f]*\) *A *_cmetric2cond_\([A-Za-z_0-9]*\) */#define \2 0x\1/p' \
+		| sort >>$$@.tmp` && exit $$$$status
+	$(Q)echo >>$$@.tmp '/* Defines from the values defined to symbols in hexadecimal format */'
+	$(Q)exec 3>&1; status=`exec 4>&1 >&3; { $(NM) $$<; echo $$$$? >&4; }\
+		| $(SED4OMK) -n 's/^ *0*\(0[0-9A-Fa-f]*\) *A *_cmetric2def_\([A-Za-z_0-9]*\) */#define \2 0x\1/p' \
+		| sort >>$$@.tmp` && exit $$$$status
+	$(Q)echo >>$$@.tmp '/* Defines from the values defined to symbols in decimal format */'
+	$(Q)exec 3>&1; status=`exec 4>&1 >&3; { $(NM) -td $$<; echo $$$$? >&4; }\
+		| $(SED4OMK) -n 's/^ *0*\(0\|[1-9][0-9]*\) *A *_cmetric2defdec_\([A-Za-z_0-9]*\) */#define \2 \1/p' \
+		| sort >>$$@.tmp` && exit $$$$status
+	$(Q)mv $$@.tmp $$@
+endef
+
+library-pass-local: $(addprefix $(USER_INCLUDE_DIR)/,$(cmetric_include_HEADERS))
+
+# Special rules for CMETRIC generated headers
+
+$(foreach cmetrh,$(cmetric_include_HEADERS),$(eval $(call COMPILE_c_o_template,\
+		$(SOURCES_DIR)/$($(basename $(notdir $(cmetrh)))_CMETRIC_SOURCES),\
+		$($(basename $(notdir $(cmetrh)))_CMETRIC_SOURCES:%.c=%.o),)))
+$(foreach cmetrh,$(cmetric_include_HEADERS),$(eval $(call CMETRIC_o_h_template,\
+		$($(basename $(notdir $(cmetrh)))_CMETRIC_SOURCES:%.c=%.o),\
+		$(addprefix $(USER_INCLUDE_DIR)/,$(cmetrh)))))
+
+GEN_HEADERS+=$(cmetric_include_HEADERS:%=$(USER_INCLUDE_DIR)/%)
                                                                                  #OMK:config_h.omk@Makefile.rules.linux
 # Syntax: $(call BUILD_CONFIG_H_template,<stamp_dir>,<header_file_path>,<list_of_options_to_export>,<header_barrier>)
 define BUILD_CONFIG_H_template
