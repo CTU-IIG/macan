@@ -917,4 +917,12 @@ int can_sid_to_sig_num(struct macan_ctx *ctx, uint8_t can_id) {
     return -1;
 
 }
+int get_index_from_ecuid(uint8_t ecu_id) {
+    int i;
 
+    for(i = 0; i < NODE_COUNT-1; i++) {
+        if(demo_node_spec[i].ecu_id == ecu_id)
+            return i;
+    }
+    return -1;
+}
