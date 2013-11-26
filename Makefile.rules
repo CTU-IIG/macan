@@ -4,7 +4,7 @@
 #  (C) Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2013 by Michal Sojka - Czech Technical University, FEE, DCE
 #
 #  Homepage: http://rtime.felk.cvut.cz/omk/
-#  Version:  0.2-156-g67ae518
+#  Version:  0.2-157-gc07f762
 #
 # The OMK build system is distributed under the GNU General Public
 # License.  See file COPYING for details.
@@ -643,7 +643,7 @@ $(2)/$(1)$(3): OMK_CPPFLAGS=$(TARGET_CPPFLAGS)
 $(2)/$(1)$(3): $(TARGET_OBJS)
 	@$(QUIET_CMD_ECHO) "  LINK    $$@"
 	$(Q) $(if $(LINK_WITH_CXX),$$(CXX),$$(CC)) \
-	  $$^ $$($(1)_LIBS:%=-l%) $$(LOADLIBES) $$(OMK_LDFLAGS) $$(LDFLAGS) $$($(1)_LDFLAGS) -Wl,-rpath-link,$(USER_LIB_DIR) -Wl,-Map,$(USER_OBJS_DIR)/$(1).exe.map -o $$@
+	  $(TARGET_OBJS) $$($(1)_LIBS:%=-l%) $$(LOADLIBES) $$(OMK_LDFLAGS) $$(LDFLAGS) $$($(1)_LDFLAGS) -Wl,-rpath-link,$(USER_LIB_DIR) -Wl,-Map,$(USER_OBJS_DIR)/$(1).exe.map -o $$@
 	@echo "$(2)/$(1)$(3): \\" >$(USER_OBJS_DIR)/$(1).exe.d
 	@$(SED4OMK) -n -e 's|^LOAD \(.*\)$$$$|  \1  \&|p' $(USER_OBJS_DIR)/$(1).exe.map|tr '&' '\134'  >>$(USER_OBJS_DIR)/$(1).exe.d
 	@echo >>$(USER_OBJS_DIR)/$(1).exe.d
