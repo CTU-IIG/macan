@@ -323,6 +323,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	struct macan_sess_key *sk;
 	uint8_t fwd_id;
+    uint8_t node_index;
 	static uint8_t keywrap[32];
 	uint8_t skey[24];
 	uint8_t seq, len;
@@ -343,29 +344,36 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	assert((seq != 5 && len == 6) || (seq == 5 && len == 2));
 
 	memcpy(keywrap + 6 * seq, sk->data, len);
+    
 
 	if (seq == 5) {
-		print_hexn(keywrap, 32);
+
+        printf(ANSI_COLOR_CYAN "RECV Session key\n" ANSI_COLOR_RESET);
+
 		unwrap_key(ctx->ltk, 32, skey, keywrap);
-		print_hexn(skey, 24);
+		fwd_id = skey[17];
+        print_hexn(skey,24);
+        node_index = get_index_from_ecuid(fwd_id);
 
-		fwd_id = skey[6];
-		if (fwd_id <= 0 || NODE_COUNT <= fwd_id || cpart[fwd_id] == NULL) {
-			printf("receive session key \033[1;31mFAIL\033[0;0m: unexpected fwd_id\n");
+		if (fwd_id <= 0 || NODE_COUNT <= node_index || cpart[node_index] == NULL) {
+			printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": unexpected fwd_id\n");
 			return -1;
 		}
 
-		if(!memchk(skey, cpart[fwd_id]->chg, 6)) {
-			printf("receive session key \033[1;31mFAIL\033[0;0m: check cmac\n");
+		if(!memchk(skey+18, cpart[node_index]->chg, 6)) {
+			printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": check cmac\n");
 			return -1;
 		}
 
-		cpart[fwd_id]->valid_until = read_time() + SKEY_TIMEOUT;
-		memcpy(cpart[fwd_id]->skey, skey + 8, 16);
-		cpart[fwd_id]->group_field |= 1 << NODE_ID;
-		printf("receive session key (%d->%"PRIu8") \033[1;32mOK\033[0;0m\n", NODE_ID, fwd_id);
+		cpart[node_index]->valid_until = read_time() + SKEY_TIMEOUT;
+		memcpy(cpart[node_index]->skey, skey, 16);
+		cpart[node_index]->group_field |= 1 << NODE_ID;
+       
+        // print key
+        printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ": KEY (%s -> %s) is ",ctx->nodespec[NODE_ID].name, ctx->nodespec[node_index].name);
+        print_hexn(cpart[node_index]->skey, 16);
 
-		return fwd_id;
+		return node_index;
 	}
 
 	return 0;
