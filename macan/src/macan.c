@@ -408,8 +408,18 @@ void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id
 	cf.can_id = ctx->nodespec[NODE_ID].can_id;
 	cf.can_dlc = 8;
 	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
-    printf("Sending CHALLENGE (dst_id: 0x%X, fwd_id: 0x%X)\n",dst_id,fwd_id);
-    printf("0x%X\n",*((uint8_t *)&chal));
+
+    // Print info start
+    printf(ANSI_COLOR_CYAN "SEND Challenge" ANSI_COLOR_RESET "\n"); 
+    printf("dst_id: 0x%X (%s), fwd_id: 0x%X (%s), ",
+            dst_id,
+            ctx->nodespec[get_index_from_ecuid(dst_id)].name,
+            fwd_id,
+            ctx->nodespec[get_index_from_ecuid(fwd_id)].name);
+    printf("chal: ");
+    print_hexn(chg,6);
+    // Print info end
+
 	write(s, &cf, sizeof(struct can_frame));
 }
 
