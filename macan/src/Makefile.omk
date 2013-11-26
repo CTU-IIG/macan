@@ -2,4 +2,4 @@ lib_LIBRARIES = macan
 
 macan_SOURCES = common.c debug.c helper.c macan.c
 
-macan_SOURCES += target/linux/aes_cmac.c target/linux/aes_keywrap.c target/linux/linux_macan.c
+macan_SOURCES += target/linux/aes_cmac.c target/linux/aes_keywrap.c target/linux/linux_macan.c target/linux/lib.c

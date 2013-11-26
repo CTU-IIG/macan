@@ -142,8 +142,8 @@ int parse_canframe(char *cs, struct canfd_frame *cf);
  * - CAN FD frames do not have a RTR bit
  */
 
-void fprint_canframe(FILE *stream , struct canfd_frame *cf, char *eol, int sep, int maxdlen);
-void sprint_canframe(char *buf , struct canfd_frame *cf, int sep, int maxdlen);
+void fprint_canframe(FILE *stream , struct can_frame *cf, char *eol, int sep, int maxdlen);
+void sprint_canframe(char *buf , struct can_frame *cf, int sep, int maxdlen);
 /*
  * Creates a CAN frame hexadecimal output in compact format.
  * The CAN data[] is separated by '.' when sep != 0.

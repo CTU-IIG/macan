@@ -211,7 +211,7 @@ int parse_canframe(char *cs, struct canfd_frame *cf) {
 	return ret;
 }
 
-void fprint_canframe(FILE *stream , struct canfd_frame *cf, char *eol, int sep, int maxdlen) {
+void fprint_canframe(FILE *stream , struct can_frame *cf, char *eol, int sep, int maxdlen) {
 	/* documentation see lib.h */
 
 	char buf[CL_CFSZ]; /* max length */
@@ -222,11 +222,11 @@ void fprint_canframe(FILE *stream , struct canfd_frame *cf, char *eol, int sep, 
 		fprintf(stream, "%s", eol);
 }
 
-void sprint_canframe(char *buf , struct canfd_frame *cf, int sep, int maxdlen) {
+void sprint_canframe(char *buf , struct can_frame *cf, int sep, int maxdlen) {
 	/* documentation see lib.h */
 
 	int i,offset;
-	int len = (cf->len > maxdlen) ? maxdlen : cf->len;
+	int len = (cf->can_dlc > maxdlen) ? maxdlen : cf->can_dlc;
 
 	if (cf->can_id & CAN_ERR_FLAG) {
 		sprintf(buf, "%08X#", cf->can_id & (CAN_ERR_MASK|CAN_ERR_FLAG));
@@ -243,20 +243,12 @@ void sprint_canframe(char *buf , struct canfd_frame *cf, int sep, int maxdlen) {
 	if (maxdlen == CAN_MAX_DLEN && cf->can_id & CAN_RTR_FLAG) {
 
 		/* print a given CAN 2.0B DLC if it's not zero */
-		if (cf->len && cf->len <= CAN_MAX_DLC)
-			sprintf(buf+offset, "R%d", cf->len);
+		if (cf->can_dlc && cf->can_dlc <= CAN_MAX_DLC)
+			sprintf(buf+offset, "R%d", cf->can_dlc);
 		else
 			sprintf(buf+offset, "R");
 
 		return;
-	}
-
-	if (maxdlen == CANFD_MAX_DLEN) {
-		/* add CAN FD specific escape char and flags */
-		sprintf(buf+offset, "#%X", cf->flags & 0xF);
-		offset += 2;
-		if (sep && len)
-			sprintf(buf+offset++, ".");
 	}
 
 	for (i = 0; i < len; i++) {
