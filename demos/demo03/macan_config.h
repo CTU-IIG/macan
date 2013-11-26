@@ -35,10 +35,10 @@
 #define ACK_TIMEOUT 10000000	  /* usec */
 
 enum sig_id {
-	SIGNAL_A,
-	SIGNAL_B,
-//    TIME_DUMMY2,
-//	TIME_DUMMY3,
+//	SIGNAL_A,
+//	SIGNAL_B,
+//  TIME_DUMMY2,
+	TIME_DUMMY3,
 	SIG_COUNT
 };
 
