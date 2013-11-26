@@ -188,16 +188,37 @@ struct macan_config config = {
 	.ltk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F }, /* FIXME: Make changable from command line */
 	.key_server_id = 0,	/* FIXME: Make changable from command line */
 	.time_server_id = 1,    /* should be same as node_id */
-	.can_id_time = 0,	/* FIXME: Make changable from command line */
+	.can_id_time = -1,
 	.time_div = 1000000,    /* FIXME: Make changable from command line */
 	/* Note: Time server should not care about other parameters
 	 * than those above */
 };
 
+void print_help(char *argv0)
+{
+	fprintf(stderr, "Usage: %s -i can_id\n", argv0);
+}
+
 int main(int argc, char *argv[])
 {
 	struct macan_ctx ctx;
 	int s;
+
+	char opt;
+	while ((opt = getopt(argc, argv, "i:")) != -1) {
+		switch (opt) {
+		case 'i':
+			config.can_id_time = atol(optarg);
+			break;
+		default: /* '?' */
+			print_help(argv[0]);
+			exit(1);
+		}
+	}
+	if (config.can_id_time == -1) {
+		print_help(argv[0]);
+		exit(1);
+	}
 
 	s = helper_init();
 	macan_init(&ctx, &config);
