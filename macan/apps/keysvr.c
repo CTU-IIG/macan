@@ -162,7 +162,6 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 
 void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
-	/* Note: ctx is not valid here! */
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
 	/* Reject non-crypt frames */
