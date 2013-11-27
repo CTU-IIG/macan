@@ -26,14 +26,6 @@
 
 #include <macan.h>
 
-#define SIG_TIME 4
-#define TIME_DELTA 2000   /* tolerated time divergency from TS in usecs */
-#define TIME_DIV 500000
-#define TIME_TIMEOUT 5000000	/* usec */
-#define SKEY_TIMEOUT 6000000000u /* usec */
-#define SKEY_CHG_TIMEOUT 30000000u /* usec */
-#define ACK_TIMEOUT 10000000	  /* usec */
-
 enum sig_id {
 	ENGINE,
 	BRAKE,
@@ -51,7 +43,6 @@ enum node_id {
 	NODE_COUNT
 };
 
-extern struct macan_sig_spec demo_sig_spec[];
+extern const struct macan_config config;
 
 #endif /* MACAN_CONFIG_H */
-

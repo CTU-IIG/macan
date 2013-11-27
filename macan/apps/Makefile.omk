@@ -5,4 +5,4 @@ keysvr_LIBS = macan
 timesvr_SOURCES = timesvr.c
 timesvr_LIBS = macan
 
-lib_LOADLIBES = nettle rt
+lib_LOADLIBES = nettle rt dl
