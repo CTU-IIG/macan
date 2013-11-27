@@ -1,3 +1,6 @@
 test_PROGRAMS = d2node2
 lib_LOADLIBES = macan nettle rt
 d2node2_SOURCES = node.c macan_config.c
+
+shared_LIBRARIES = demo02cfg
+demo02cfg_SOURCES = macan_config.c
