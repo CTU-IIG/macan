@@ -649,8 +649,10 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sign
 	sigspec = ctx->config->sigspec;
 
 	dst_id = sigspec[sig_num].dst_id;
-	if (!is_channel_ready(ctx, dst_id))
+	if (!is_channel_ready(ctx, dst_id)) {
+		printf("Channel not ready\n"); /* FIXME: return error instead of printing this */
 		return;
+	}
 
 	switch (sighand[sig_num]->presc) {
 	case SIG_DONTSIGN:
