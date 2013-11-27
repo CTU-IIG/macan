@@ -221,7 +221,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	sign(skey, ack.cmac, plain, sizeof(plain));
 #endif
 
-	cf.can_id = ctx->config->node_id;
+	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 8;
 	memcpy(cf.data, &ack, 8);
 
@@ -241,7 +241,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
  */
 int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	uint8_t id;
+	int8_t id;
 	struct com_part *cp;
 	struct macan_ack *ack = (struct macan_ack *)cf->data;
 	uint8_t plain[8];
@@ -250,8 +250,8 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	cpart = ctx->cpart;
 
-	id = cf->can_id;
-	assert(id < ctx->config->node_count);
+	id = canid2ecuid(ctx, cf->can_id);
+	assert(0 <= id && id < ctx->config->node_count);
 
 	/* ToDo: overflow check */
 	/* ToDo: what if ack contains me */
@@ -379,7 +379,7 @@ void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id
 		memcpy(chal.chg, chg, 6);
 	}
 
-	cf.can_id = ctx->config->node_id;
+	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 8;
 	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
 	write(s, &cf, sizeof(struct can_frame));
@@ -511,7 +511,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num
 	areq.prescaler = prescaler;
 	sign(skey, areq.cmac, plain, sizeof(plain));
 
-	cf.can_id = ctx->config->node_id;
+	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 7;
 	memcpy(&cf.data, &areq, 7);
 
@@ -531,13 +531,16 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
 
-	if (cpart[cf->can_id] == NULL)
+	int8_t ecuid = canid2ecuid(ctx, cf->can_id);
+	assert(ecuid >= 0);
+
+	if (cpart[ecuid] == NULL)
 		return;
 
 	areq = (struct macan_sig_auth_req *)cf->data;
-	skey = cpart[cf->can_id]->skey;
+	skey = cpart[ecuid]->skey;
 
-	plain[4] = cf->can_id;
+	plain[4] = ecuid;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
@@ -605,7 +608,7 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
         sig16->sig_num = sig_num;
         memcpy(plain + 6, &signal, 2);
         memcpy(&sig16->signal, &signal, 2);
-        cf.can_id = ctx->config->node_id;
+        cf.can_id = CANID(ctx, ctx->config->node_id);
         plain_length = 8;
         cmac = sig16->cmac;
     }
@@ -683,6 +686,8 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	struct com_part **cpart;
 	struct sig_handle **sighand;
     int plain_length;
+	int8_t ecuid = canid2ecuid(ctx, cf->can_id);
+	assert(ecuid >= 0);
 
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
@@ -702,9 +707,9 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
     } else {
         // we have received 16 bit signal
 	    struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
-	    plain[4] = cf->can_id;
+	    plain[4] = ecuid;
 	    memcpy(plain + 6, sig16->signal, 2);
-        skey = cpart[cf->can_id]->skey;
+        skey = cpart[ecuid]->skey;
         plain_length = 8;
         cmac = sig16->cmac;
         sig_num = sig16->sig_num;
@@ -818,7 +823,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 	/* ToDo: make sure all branches end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
-	if(cf->can_id == ctx->config->node_id)
+	if(cf->can_id == CANID(ctx, ctx->config->node_id))
 		return 1;
 	if (cf->can_id == ctx->config->can_id_time) {
 		switch(cf->can_dlc) {
@@ -839,7 +844,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		receive_challenge(ctx, s, cf);
 		break;
 	case 2:
-		if (cf->can_id == ctx->config->key_server_id) { /* FIXME: Map from ecu-id to can-id */
+		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			fwd = receive_skey(ctx, cf);
 			if (fwd > 1) {
 				send_ack(ctx, s, fwd);
@@ -849,7 +854,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 
 		/* ToDo: what if ack CMAC fails, there should be no response */
 		if (receive_ack(ctx, cf) == 1)
-			send_ack(ctx, s, cf->can_id);
+			send_ack(ctx, s, canid2ecuid(ctx, cf->can_id));
 		break;
 	case 3:
 		if (cf->can_dlc == 7)

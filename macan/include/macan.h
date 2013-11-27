@@ -53,7 +53,8 @@ struct macan_config {
 	uint8_t ltk[16];                       /* Long-term key shared with the key server */
 	uint32_t sig_count;		       /* Number of sinals in sig_spec */
 	const struct macan_sig_spec *sigspec;
-	uint8_t node_count;		       /* Number of nodes in our network */
+	uint8_t node_count;		       /* Number of nodes (ECUs) in our network */
+	const uint32_t *ecu2canid;	       /* Mapping from ECU-ID to crypt-frame CAN-ID */
 	uint8_t key_server_id;		       /* ECU-ID of the key server */
 	uint8_t time_server_id;		       /* ECU-ID of the time server */
 	uint32_t can_id_time;		       /* CAN-ID of time signal (both authenticated and non-auth.) */

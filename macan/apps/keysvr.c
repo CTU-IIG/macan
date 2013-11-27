@@ -154,7 +154,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	aes_set_encrypt_key(&cipher, 16, ltk);
 	chal = (struct macan_challenge *)cf->data;
 
-	dst_id = cf->can_id;
+	dst_id = canid2ecuid(ctx, cf->can_id);
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
@@ -166,11 +166,9 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	/* Note: ctx is not valid here! */
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
-	/* ToDo: do some filter here */
-	if (cf->can_id == key_server_id) /* FIXME: ECU to CAN ID mapping */
+	/* Reject non-crypt frames */
+	if (canid2ecuid(ctx, cf->can_id) == -1)
 		return;
-/* 	if (cf->can_id == ctx->config->can_id_time) */
-/* 		return; */
 	if (cryf->dst_id != key_server_id)
 		return;
 

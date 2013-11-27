@@ -23,6 +23,18 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <macan_private.h>
+
+int canid2ecuid(struct macan_ctx *ctx, uint32_t canid)
+{
+	int i;
+
+	for (i = 0; i < ctx->config->node_count; i++) {
+		if (ctx->config->ecu2canid[i] == canid)
+			return i;
+	}
+	return -1;
+}
 
 void print_hexn(void *data, size_t len)
 {

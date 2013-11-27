@@ -145,6 +145,9 @@ struct macan_ctx {
 	uint64_t ack_timeout_abs;	       /* timeout for sending ACK messages ??? */
 };
 
+#define CANID(ctx, ecuid) ((ctx)->config->ecu2canid[ecuid])
+
+int canid2ecuid(struct macan_ctx *ctx, uint32_t canid);
 void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
 int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 int init();

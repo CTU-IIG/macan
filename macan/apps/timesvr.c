@@ -85,7 +85,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	struct com_part **cpart;
 
 	cpart = ctx->cpart;
-	dst_id = cf->can_id;
+	dst_id = canid2ecuid(ctx, cf->can_id);
 
 	if (!is_skey_ready(ctx, dst_id)) {
 		printf("cannot send time, because dont have key\n");
@@ -115,14 +115,14 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	/* ToDo: make sure all branches end ASAP */
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
-	if (cf->can_id == ctx->config->time_server_id) /* FIXME: ECU to CAN ID mapping */
+	if (cf->can_id == CANID(ctx, ctx->config->time_server_id))
 		return;
 	if (cryf->dst_id != ctx->config->time_server_id)
 		return;
 
 	switch (cryf->flags) {
 	case 1:
-		if (cf->can_id == ctx->config->key_server_id) { /* FIXME: ECU to CAN ID mapping */
+		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			receive_challenge(ctx, s, cf);
 		} else
 		{
@@ -130,7 +130,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 		}
 		break;
 	case 2:
-		if (cf->can_id == ctx->config->key_server_id) { /* FIXME: ECU to CAN ID mapping */
+		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			receive_skey(ctx, cf);
 			break;
 		}

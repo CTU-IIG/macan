@@ -262,8 +262,8 @@ int process_ack(struct can_frame *cf)
 	uint32_t time = 0;
 	uint8_t *skey;
 
-	id = cf->can_id;
-	assert(id < (sizeof(cpart) / sizeof(struct com_part)));
+	id = canid2ecuid(cf->can_id);
+	assert(p <= id && id < (sizeof(cpart) / sizeof(struct com_part)));
 
 	/* ToDo: overflow check */
 	/* ToDo: what if ack contains me */
@@ -415,9 +415,9 @@ void send_challenge(int s, uint8_t fwd_id)
 	write(s, &cf, sizeof(struct can_frame));
 }
 
-void process_req_challenge(int s, struct can_frame *cf)
+void process_req_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
-	assert(cf->can_id == NODE_KS);
+	assert(canid2ecuid(ctx, cf->can_id) == NODE_KS);
 
 	struct challenge *ch = (struct challenge *)cf->data;
 
