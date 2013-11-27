@@ -48,16 +48,6 @@
 #include <macan_private.h>
 
 #ifndef __CPU_TC1798__
-#include "target/linux/lib.h"
-
-static int is_crypt_frame(struct macan_ctx *ctx, struct can_frame *cf)
-{
-	if (cf->can_dlc == 8 && (cf->data[0] & 0x3f) == ctx->config->node_id) { /* Frame for me */
-		/* TODO: Check can_id in CAN-ID(EDU-ID) mapping */
-		return 1;
-	} else
-		return 0;
-}
 
 void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ctx *ctx, int s, struct can_frame *cf))
 {
@@ -74,31 +64,7 @@ void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ct
 		exit(0);
 	}
 
-	char frame[80], comment[80];
-	comment[0] = 0;
-	sprint_canframe(frame, &cf, 0, 8);
-	if (ctx && ctx->config) {
-		if (cf.can_id == ctx->config->can_id_time)
-			sprintf(comment, "time %ssigned", cf.can_dlc == 4 ? "un" : "");
-		else if (is_crypt_frame(ctx, &cf)) {
-			char *type;
-			switch (cf.data[0] >> 6) {
-			case FL_CHALLENGE:
-				type = "challenge";
-				break;
-			case FL_SESS_KEY:
-				type = "sess_key or ack";
-			case FL_SIGNAL:
-				type = "signal";
-				break;
-			default:
-				type = "???";
-			}
-			sprintf(comment, "crypt for me: %s\n", type);
-		}
-	}
-	printf("RECV %-20s %s\n", frame, comment);
-
+	print_frame(ctx, &cf);
 	cback(ctx, s, &cf);
 }
 #endif /* __CPU_TC1798__ */
