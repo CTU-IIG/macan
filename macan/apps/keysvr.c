@@ -41,6 +41,7 @@
 #include "macan_private.h"
 #include <stdbool.h>
 #include <time.h>
+#include <dlfcn.h>
 
 #define NODE_COUNT 64
 
@@ -176,14 +177,42 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	ks_receive_challenge(ctx, s, cf);
 }
 
+void print_help(char *argv0)
+{
+	fprintf(stderr, "Usage: %s -c <config_shlib>\n", argv0);
+}
+
 int main(int argc, char *argv[])
 {
 	int s;
+	struct macan_ctx ctx;
+	struct macan_config *config = NULL;
+
+	char opt;
+	while ((opt = getopt(argc, argv, "c:")) != -1) {
+		switch (opt) {
+		case 'c': {
+			void *handle = dlopen(optarg, RTLD_LAZY);
+			config = dlsym(handle, "config");
+			break;
+		}
+		default: /* '?' */
+			print_help(argv[0]);
+			exit(1);
+		}
+	}
+	if (!config) {
+		print_help(argv[0]);
+		exit(1);
+	}
+
+        config->node_id = config->key_server_id;
 	srand(time(NULL));
 	s = helper_init();
+	macan_init(&ctx, config);
 
 	while (1) {
-		helper_read_can(NULL, s, can_recv_cb);
+		helper_read_can(&ctx, s, can_recv_cb);
 
 		usleep(250);
 	}

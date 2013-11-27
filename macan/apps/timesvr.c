@@ -211,6 +211,7 @@ int main(int argc, char *argv[])
 		print_help(argv[0]);
 		exit(1);
 	}
+        config->node_id = config->time_server_id;
 
 	s = helper_init();
 	macan_init(&ctx, config);
