@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <can_frame.h>
+#include <macan.h>
 
 /* MaCAN message definitions */
 

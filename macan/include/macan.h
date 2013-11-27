@@ -24,7 +24,10 @@
 #ifndef MACAN_H
 #define MACAN_H
 
-#include <macan_private.h>
+#include <stdint.h>
+
+struct macan_ctx;
+struct can_frame;
 
 /*
  * Frame types for sending signals:

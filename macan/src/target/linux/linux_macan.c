@@ -41,7 +41,7 @@
 #include <linux/can/raw.h>
 #include <nettle/aes.h>
 #include "aes_cmac.h"
-#include "macan.h"
+#include "macan_private.h"
 
 /**
  * checks a message authenticity

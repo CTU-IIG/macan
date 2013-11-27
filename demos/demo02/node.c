@@ -55,6 +55,7 @@
 #endif /* __CPU_TC1798__ */
 #include "helper.h"
 #include "macan.h"
+#include <macan_private.h> 	/* FIXME: Needed for read_time - replace with macan_get_time */
 #include "macan_config.h"
 
 #define TIME_EMIT_SIG 1000000
