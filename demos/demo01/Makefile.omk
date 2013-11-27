@@ -1,6 +1,6 @@
 test_PROGRAMS = d1node2 d1node3
 
-lib_LOADLIBES = macan nettle
+lib_LOADLIBES = macan nettle rt
 
 d1node2_SOURCES = node.c macan_config.c
 d1node2_CPPFLAGS = -DNODE_ID=2
