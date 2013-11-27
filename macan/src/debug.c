@@ -51,26 +51,41 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 			sprintf(comment, "time %ssigned", cf->can_dlc == 4 ? "un" : "");
 		else if ((src = canid2ecuid(ctx, cf->can_id)) >= 0) {
 			/* Crypt frame */
-			if (cf->can_dlc < 8) {
+			if (cf->can_dlc < 4) {
 				sprintf(comment, "broken crypt frame");
 			} else {
 				struct macan_crypt_frame *crypt = (struct macan_crypt_frame*)cf->data;
-				char *type;
+				char type[80];
 				switch (crypt->flags) {
-				case FL_CHALLENGE:
-					type = "challenge";
+				case FL_CHALLENGE: {
+					struct macan_challenge *chg = (struct macan_challenge*)cf->data;
+					sprintf(type, "challenge fwd_id=%d", chg->fwd_id);
 					break;
+				}
 				case FL_SESS_KEY:
-					if (src == ctx->config->key_server_id)
-						type = "sess_key";
-					else
-						type = "ack";
+					if (src == ctx->config->key_server_id) {
+						struct macan_sess_key *sk = (struct macan_sess_key*)cf->data;
+						sprintf(type, "sess_key seq=%d len=%d", sk->seq, sk->len);
+					} else {
+						struct macan_ack *ack = (struct macan_ack*)cf->data;
+						char *p = type + sprintf(type, "ack group=");
+						char delim = '[';
+						int i;
+						for (i = 0; i < 24; i++)
+							if (ack->group[i/8] & (0x80 >> (i%8))) {
+								p += sprintf(p, "%c%d", delim, i);
+								delim = ' ';
+							}
+						strcpy(p, "]");
+					}
 					break;
-				case FL_SIGNAL:
-					type = "signal";
+				case FL_SIGNAL: {
+					struct macan_signal_ex *sig = (struct macan_signal_ex*)cf->data;
+					sprintf(type, "signal %d", sig->sig_num);
 					break;
+				}
 				default:
-					type = "???";
+					strcpy(type, "???");
 				}
 				char srcstr[5], dststr[5];
 				if (src == ctx->config->key_server_id)       strcpy(srcstr, "KS");
@@ -86,6 +101,15 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 
 
 				sprintf(comment, "crypt %s->%s (%d->%d): %s", srcstr, dststr, src, dst, type);
+			}
+		} else {
+			int i;
+			for (i = 0; i < ctx->config->sig_count; i++) {
+				const struct macan_sig_spec *ss = &ctx->config->sigspec[i];
+				if (cf->can_id == ss->can_nsid)
+					sprintf(comment, "non-secure signal %d", i);
+				else if (cf->can_id == ss->can_sid)
+					sprintf(comment, "secure signal %d", i);
 			}
 		}
 	}
