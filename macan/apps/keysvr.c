@@ -49,7 +49,6 @@ uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
-uint8_t key_server_id = 0;
 
 struct sess_key {
 	bool valid;
@@ -122,7 +121,7 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
 	skey.flags = 2;
 	skey.dst_id = dst_id;
 
-	cf.can_id = key_server_id; /* FIXME: EDU to CAN ID mapping */
+	cf.can_id = CANID(ctx, ctx->config->key_server_id);
 	cf.can_dlc = 8;
 
 	for (i = 0; i < 6; i++) {
@@ -169,7 +168,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	/* Reject non-crypt frames */
 	if (canid2ecuid(ctx, cf->can_id) == -1)
 		return;
-	if (cryf->dst_id != key_server_id)
+	if (cryf->dst_id != ctx->config->key_server_id)
 		return;
 
 	/* ToDo: do some check on challenge message, the only message recepted by KS */
