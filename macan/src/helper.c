@@ -64,7 +64,8 @@ void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ct
 		exit(0);
 	}
 
-	print_frame(ctx, &cf);
+	if (getenv("MACAN_DUMP"))
+		print_frame(ctx, &cf);
 	cback(ctx, s, &cf);
 }
 #endif /* __CPU_TC1798__ */
