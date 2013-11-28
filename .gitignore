@@ -1,5 +1,8 @@
 *~
 /build/
+/_build/
+/_compiled/
 cscope.*
 caninit.sh
 tags
+/config.omk-default
