@@ -36,10 +36,10 @@ int canid2ecuid(struct macan_ctx *ctx, uint32_t canid)
 	return -1;
 }
 
-void print_hexn(void *data, size_t len)
+void print_hexn(const void *data, size_t len)
 {
 	int i;
-	uint8_t *d = data;
+	const uint8_t *d = data;
 
 	for (i = 0; i < len; i++) {
 		printf("%02x", d[i]);

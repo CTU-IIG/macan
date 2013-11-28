@@ -21,25 +21,37 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef MACAN_CONFIG_H
+#define MACAN_CONFIG_H
 
-#define print_hex(key) print_hexn(key, 16)
-#define check128(a, b) memchk(a, b, 16)
+#include <macan.h>
 
-/* color definitions for output */
-#define ANSI_COLOR_RED     "\033[1;31m"
-#define ANSI_COLOR_GREEN   "\033[1;32m"
-#define ANSI_COLOR_YELLOW  "\033[1;33m"
-#define ANSI_COLOR_BLUE    "\033[1;34m"
-#define ANSI_COLOR_MAGENTA "\033[1;35m"
-#define ANSI_COLOR_CYAN    "\033[1;36m"
-#define ANSI_COLOR_RESET   "\033[0;0m"
+#define SIG_TIME 4
+#define TIME_DELTA 2000   /* tolerated time divergency from TS in usecs */
+#define TIME_DIV 500000
+#define TIME_TIMEOUT 5000000	/* usec */
+#define SKEY_TIMEOUT 500000000u /* usec */
+#define SKEY_CHG_TIMEOUT 500000000u /* usec */
+#define ACK_TIMEOUT 10000000	  /* usec */
 
-void eval(const char *tname,int b);
-int memchk(const uint8_t *a, const uint8_t *b, size_t len);
-void print_hexn(const void *data, size_t len);
-void memcpy_bw(void *dst, const void *src, size_t len);
+enum sig_id {
+//	SIGNAL_A,
+//	SIGNAL_B,
+//  TIME_DUMMY2,
+	TIME_DUMMY3,
+	SIG_COUNT
+};
 
-#endif /* COMMON_H */
+enum node_id {
+	KEY_SERVER,
+	TIME_SERVER,
+	NODE_VW,
+	NODE_CTU,
+	NODE_COUNT
+};
+
+extern struct macan_sig_spec demo_sig_spec[];
+extern struct macan_node_spec demo_node_spec[];
+
+#endif /* MACAN_CONFIG_H */
 

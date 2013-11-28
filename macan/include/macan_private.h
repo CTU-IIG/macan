@@ -34,7 +34,9 @@
 #define FL_CHALLENGE 1
 #define FL_SESS_KEY  2
 #define FL_ACK       2
+#define FL_SESS_KEY_OR_ACK  2
 #define FL_SIGNAL    3
+#define FL_SIGNAL_OR_AUTH_REQ 3
 
 struct macan_crypt_frame {
 	uint8_t flags : 2;	/* FIXME: Bitfield ordering is not (probably) defined and is does not match to the MaCAN paper */
