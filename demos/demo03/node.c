@@ -54,16 +54,10 @@
 #include "aes_cmac.h"
 #endif /* __CPU_TC1798__ */
 #include "helper.h"
-#include "macan.h"
+#include "macan_private.h"
 #include "macan_config.h"
 
 #define TIME_EMIT_SIG 1000000
-
-/* ltk stands for long term key; it is a key shared with the key server */
-uint8_t ltk[] = {
-	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-  	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
-};
 
 void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
@@ -108,8 +102,7 @@ int main(int argc, char *argv[])
 	struct macan_ctx ctx;
 
 	s = helper_init();
-	macan_init(&ctx, demo_sig_spec, demo_node_spec);
-	macan_set_ltk(&ctx, ltk);
+	macan_init(&ctx, &config);
 	//macan_reg_callback(&ctx, SIGNAL_A, sig_callback);
 	//macan_reg_callback(&ctx, SIGNAL_B, sig_callback);
     //macan_reg_callback(&ctx, SIGNAL_C, sig_callback);
