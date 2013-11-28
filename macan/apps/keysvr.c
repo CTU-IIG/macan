@@ -118,15 +118,15 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
 	print_hexn(wrap, 32);
 	print_hexn(plain, 24);
 
-	skey.flags = 2;
-	skey.dst_id = dst_id;
+	skey.flags_and_dst_id = FL_SESS_KEY << 6;
+	skey.flags_and_dst_id |= dst_id & 0x3F;
 
 	cf.can_id = CANID(ctx, ctx->config->key_server_id);
 	cf.can_dlc = 8;
 
 	for (i = 0; i < 6; i++) {
-		skey.seq = i;
-		skey.len = (i == 5) ? 2 : 6;
+		skey.seq_and_len = i << 4; // seq
+		skey.seq_and_len |= (i == 5) ? 2 : 6; // len
 		memcpy(skey.data, wrap + (6 * i), 6);
 		memcpy(cf.data, &skey, 8);
 

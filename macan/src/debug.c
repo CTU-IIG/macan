@@ -65,7 +65,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				case FL_SESS_KEY_OR_ACK:
 					if (src == ctx->config->key_server_id) {
 						struct macan_sess_key *sk = (struct macan_sess_key*)cf->data;
-						sprintf(type, "sess_key seq=%d len=%d", sk->seq, sk->len);
+						sprintf(type, "sess_key seq=%d len=%d", GET_SEQ(sk->seq_and_len), GET_LEN(sk->seq_and_len));
 					} else {
 						struct macan_ack *ack = (struct macan_ack*)cf->data;
 						char *p = type + sprintf(type, "ack group=");

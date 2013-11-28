@@ -41,6 +41,8 @@
 /* helpers for first byte in crypt frames */
 #define GET_FLAGS(byte) ((byte & 0xC0) >> 6)
 #define GET_DST_ID(byte) (byte & 0x3F)
+#define GET_SEQ(byte) ((byte & 0xF0) >> 4)
+#define GET_LEN(byte) (byte & 0x0F)
 
 struct macan_crypt_frame {
 	uint8_t flags_and_dst_id;
@@ -53,10 +55,8 @@ struct macan_challenge {
 };
 
 struct macan_sess_key {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
-	uint8_t seq : 4;
-	uint8_t len : 4;
+	uint8_t flags_and_dst_id;
+	uint8_t seq_and_len;
 	uint8_t data[6];
 };
 
