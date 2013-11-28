@@ -72,7 +72,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 						char delim = '[';
 						int i;
 						for (i = 0; i < 24; i++)
-							if (ack->group[i/8] & (0x80 >> (i%8))) {
+							if (ack->group[i/8] & (0x01 << (i%8))) {
 								p += sprintf(p, "%c%d", delim, i);
 								delim = ' ';
 							}
