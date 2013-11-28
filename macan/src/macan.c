@@ -399,8 +399,11 @@ void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id
     printf("dst_id: 0x%X, fwd_id: 0x%X, ",
             dst_id,
             fwd_id);
-    printf("chal: ");
-    print_hexn(chg,6);
+    if (chg) {
+	    printf("chal: ");
+	    print_hexn(chg,6);
+    } else
+	    printf("\n");
     // Print info end
 
 	write(s, &cf, sizeof(struct can_frame));
