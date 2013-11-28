@@ -51,7 +51,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 			sprintf(comment, "time %ssigned", cf->can_dlc == 4 ? "un" : "");
 		else if ((src = canid2ecuid(ctx, cf->can_id)) >= 0) {
 			/* Crypt frame */
-			if (cf->can_dlc < 4) {
+			if (cf->can_dlc < 7) {
 				sprintf(comment, "broken crypt frame");
 			} else {
 				struct macan_crypt_frame *crypt = (struct macan_crypt_frame*)cf->data;
@@ -62,7 +62,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 					sprintf(type, "challenge fwd_id=%d", chg->fwd_id);
 					break;
 				}
-				case FL_SESS_KEY:
+				case FL_SESS_KEY_OR_ACK:
 					if (src == ctx->config->key_server_id) {
 						struct macan_sess_key *sk = (struct macan_sess_key*)cf->data;
 						sprintf(type, "sess_key seq=%d len=%d", sk->seq, sk->len);
@@ -79,11 +79,15 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 						strcpy(p, "]");
 					}
 					break;
-				case FL_SIGNAL: {
-					struct macan_signal_ex *sig = (struct macan_signal_ex*)cf->data;
-					sprintf(type, "signal %d", sig->sig_num);
+				case FL_SIGNAL_OR_AUTH_REQ:
+					if (cf->can_dlc == 8) {
+						struct macan_signal_ex *sig = (struct macan_signal_ex*)cf->data;
+						sprintf(type, "signal %d", sig->sig_num);
+					} else {
+						struct macan_sig_auth_req *ar = (struct macan_sig_auth_req*)cf->data;
+						sprintf(type, "sig auth req signal=%d presc=%d", ar->sig_num, ar->prescaler);
+					}
 					break;
-				}
 				default:
 					strcpy(type, "???");
 				}
