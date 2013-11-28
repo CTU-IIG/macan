@@ -383,7 +383,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
 {
 	struct can_frame cf = {0};
-	struct macan_challenge chal = { .flags = FL_CHALLENGE, .dst_id = dst_id, .fwd_id = fwd_id };
+	struct macan_challenge chal = { .flags_and_dst_id = (FL_CHALLENGE << 6) | (dst_id & 0x3F), .fwd_id = fwd_id };
 
 	if (chg) {
 		gen_challenge(chg);

@@ -44,9 +44,8 @@ struct macan_crypt_frame {
 };
 
 struct macan_challenge {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
-	uint8_t fwd_id : 8;
+	uint8_t flags_and_dst_id;
+	uint8_t fwd_id;
 	uint8_t chg[6];
 };
 
