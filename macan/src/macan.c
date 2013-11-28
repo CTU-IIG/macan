@@ -875,11 +875,11 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		}
 	}
 
-	if (cryf->dst_id != ctx->config->node_id)
+	if (GET_DST_ID(cryf->flags_and_dst_id) != ctx->config->node_id)
 		return 1;
 
 
-	switch (cryf->flags) {
+	switch (GET_FLAGS(cryf->flags_and_dst_id)) {
 	case FL_CHALLENGE:
 		receive_challenge(ctx, s, cf);
 		break;

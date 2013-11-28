@@ -167,7 +167,7 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	/* Reject non-crypt frames */
 	if (canid2ecuid(ctx, cf->can_id) == -1)
 		return;
-	if (cryf->dst_id != ctx->config->key_server_id)
+	if (GET_DST_ID(cryf->flags_and_dst_id) != ctx->config->key_server_id)
 		return;
 
 	/* ToDo: do some check on challenge message, the only message recepted by KS */

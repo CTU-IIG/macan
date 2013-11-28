@@ -56,7 +56,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 			} else {
 				struct macan_crypt_frame *crypt = (struct macan_crypt_frame*)cf->data;
 				char type[80];
-				switch (crypt->flags) {
+				switch (GET_FLAGS(crypt->flags_and_dst_id)) {
 				case FL_CHALLENGE: {
 					struct macan_challenge *chg = (struct macan_challenge*)cf->data;
 					sprintf(type, "challenge fwd_id=%d", chg->fwd_id);
@@ -97,7 +97,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				else sprintf(srcstr, "%d", src);
 				if (src == ctx->config->node_id) strcat(srcstr, "me");
 
-				int8_t dst = crypt->dst_id;
+				int8_t dst = GET_DST_ID(crypt->flags_and_dst_id);
 				if (dst == ctx->config->key_server_id)       strcpy(dststr, "KS");
 				else if (dst == ctx->config->time_server_id) strcpy(dststr, "TS");
 				else sprintf(dststr, "%d", dst);

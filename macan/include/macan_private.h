@@ -38,9 +38,12 @@
 #define FL_SIGNAL    3
 #define FL_SIGNAL_OR_AUTH_REQ 3
 
+/* helpers for first byte in crypt frames */
+#define GET_FLAGS(byte) ((byte & 0xC0) >> 6)
+#define GET_DST_ID(byte) (byte & 0x3F)
+
 struct macan_crypt_frame {
-	uint8_t flags : 2;	/* FIXME: Bitfield ordering is not (probably) defined and is does not match to the MaCAN paper */
-	uint8_t dst_id : 6;
+	uint8_t flags_and_dst_id;
 };
 
 struct macan_challenge {

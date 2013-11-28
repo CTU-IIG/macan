@@ -117,10 +117,10 @@ void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	/* ToDo: crypto frame or else */
 	if (cf->can_id == CANID(ctx, ctx->config->time_server_id))
 		return;
-	if (cryf->dst_id != ctx->config->time_server_id)
+	if (GET_DST_ID(cryf->flags_and_dst_id) != ctx->config->time_server_id)
 		return;
 
-	switch (cryf->flags) {
+	switch (GET_FLAGS(cryf->flags_and_dst_id)) {
 	case 1:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			receive_challenge(ctx, s, cf);
