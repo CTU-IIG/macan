@@ -60,14 +60,22 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 	uint8_t cmac[16];
 	uint64_t time;
 	uint32_t *ftime = (uint32_t *)fill_time;
-	int i;
+	int i,ret;
 
 	aes_set_encrypt_key(&cipher, 16, skey);
 
 	if (!fill_time) {
 		aes_cmac(&cipher, len, cmac, plain);
-
-		return memchk(cmac4, cmac, 4);
+		ret = memchk(cmac4, cmac, 4);
+		if(ret == 0) {
+			// check failed, print more info
+			printf(ANSI_COLOR_RED "CMAC check failed\n" ANSI_COLOR_RESET);
+			printf("plain: "); print_hexn(plain,len);
+			printf("expected cmac: "); print_hexn(&cmac4,4);
+			printf("computed cmac: "); print_hexn(&cmac,4);
+			printf("session key: "); print_hexn(&cipher,16);
+		}
+		return ret;
 	}
 
 	time = macan_get_time(ctx);
