@@ -24,7 +24,7 @@
 #include <macan.h>
 #include "macan_config.h"
 
-#define SIG_TIME 4
+#define SIG_TIME 0x102 
 #define TIME_DELTA 2000   /* tolerated time divergency from TS in usecs */
 #define TIME_DIV 500000
 #define TIME_TIMEOUT 5000000	/* usec */
@@ -56,7 +56,7 @@ const uint32_t ecu2canid_map[] = {
 
 
 struct macan_config config = {
-	.node_id = 2,
+	.node_id = NODE_CTU,
 	.ltk = { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F },
 	.sig_count = SIG_COUNT,
 	.sigspec = demo_sig_spec,
