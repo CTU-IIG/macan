@@ -27,9 +27,10 @@
 #include <macan.h>
 
 enum sig_id {
-//	SIGNAL_A,
-//	SIGNAL_B,
-//  TIME_DUMMY2,
+	NO_SIGNAL,
+	SIGNAL_A,
+	SIGNAL_B,
+	TIME_DUMMY2,
 	TIME_DUMMY3,
 	SIG_COUNT
 };

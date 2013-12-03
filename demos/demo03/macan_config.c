@@ -26,7 +26,7 @@
 
 #define SIG_TIME 0x102 
 #define TIME_DELTA 2000   /* tolerated time divergency from TS in usecs */
-#define TIME_DIV 500000
+#define TIME_DIV 1000000
 #define TIME_TIMEOUT 5000000	/* usec */
 #define SKEY_TIMEOUT 500000000u /* usec */
 #define SKEY_CHG_TIMEOUT 500000000u /* usec */
@@ -34,10 +34,10 @@
 
 /* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
-//	[TIME_DUMMY2] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_VW,  .presc = 0},
+	[TIME_DUMMY2] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_VW,  .presc = 0},
 	[TIME_DUMMY3] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_CTU, .presc = 0},
-//	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0xC1,  .src_id = NODE_VW,     .dst_id = NODE_CTU, .presc = 0}, // signal 1
-//	[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 0xD1,  .src_id = NODE_CTU,    .dst_id = NODE_VW,  .presc = 0}, // signal 2
+	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0x2C1,  .src_id = NODE_VW,     .dst_id = NODE_CTU, .presc = 0}, // signal 1
+	[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 0x2D1,  .src_id = NODE_CTU,    .dst_id = NODE_VW,  .presc = 0}, // signal 2
 };
 
 /* struct macan_node_spec demo_node_spec[] = { */
