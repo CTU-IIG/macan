@@ -41,8 +41,8 @@ struct can_frame;
  * can_nsid && can_sid => std. frame wo. sign + std. frame w. sign (depending on presc value)
  */
 struct macan_sig_spec {
-	uint8_t can_nsid;  /* can non-secured id */
-	uint8_t can_sid;   /* can secured id */
+	uint16_t can_nsid;  /* can non-secured id */
+	uint16_t can_sid;   /* can secured id */
 	uint8_t src_id;    /* node dispathing this signal */
 	uint8_t dst_id;    /* node receiving this signal */
 	uint8_t presc;     /* prescaler */
