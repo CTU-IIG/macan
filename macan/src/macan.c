@@ -577,6 +577,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	areq = (struct macan_sig_auth_req *)cf->data;
 	skey = cpart[ecuid]->skey;
 
+	/* Don't check CMAC, VW node is not sending it 
 	plain[4] = ecuid;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
@@ -585,7 +586,10 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	if (!check_cmac(ctx, skey, areq->cmac, plain, plain, sizeof(plain))) {
 		printf("error: sig_auth cmac is incorrect\n");
 	}
+	*/
 
+	printf(ANSI_COLOR_CYAN "RECV Auth Req\n" ANSI_COLOR_RESET);
+	printf("sig_num: 0x%X\n",areq->sig_num);
 	sig_num = areq->sig_num;
     
     can_sid = ctx->config->sigspec[sig_num].can_sid;
@@ -626,29 +630,32 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 
 	skey = cpart[dst_id]->skey;
 	t = macan_get_time(ctx);
+	
+	/* changed to be compatible with VW macangw */
+	memcpy(plain+4, &t, 4);
+	//plain[4] = ctx->config->node_id;
+	//plain[5] = dst_id;
 
-	memcpy(plain, &t, 4);
-	plain[4] = ctx->config->node_id;
-	plain[5] = dst_id;
-
-    if(is_32bit_signal(ctx,sig_num)) {
-        struct macan_signal *sig32 = (struct macan_signal *) sig;
-        memcpy(plain + 6, &signal, 4);
-        memcpy(sig32->sig, &signal, 4);
-        cf.can_id = ctx->config->sigspec[sig_num].can_sid;
-        plain_length = 10;
-        cmac = sig32->cmac;
-    } else {
-        struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
-        sig16->flags = 3;
-        sig16->dst_id = dst_id;
-        sig16->sig_num = sig_num;
-        memcpy(plain + 6, &signal, 2);
-        memcpy(&sig16->signal, &signal, 2);
-        cf.can_id = CANID(ctx, ctx->config->node_id);
-        plain_length = 8;
-        cmac = sig16->cmac;
-    }
+	if(is_32bit_signal(ctx,sig_num)) {
+		struct macan_signal *sig32 = (struct macan_signal *) sig;
+		// changed to be compatible with macangw
+		memcpy(plain, &signal, 4);
+		memcpy(plain+8, &ctx->config->sigspec[sig_num].can_sid,2); 
+		memcpy(sig32->sig, &signal, 4);
+		cf.can_id = ctx->config->sigspec[sig_num].can_sid;
+		plain_length = 10;
+		cmac = sig32->cmac;
+	} else {
+		struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
+		sig16->flags = 3;
+		sig16->dst_id = dst_id;
+		sig16->sig_num = sig_num;
+		memcpy(plain + 6, &signal, 2);
+		memcpy(&sig16->signal, &signal, 2);
+		cf.can_id = CANID(ctx, ctx->config->node_id);
+		plain_length = 8;
+		cmac = sig16->cmac;
+	}
 
 
 #ifdef DEBUG_TS
@@ -799,10 +806,13 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 	if (cpart[dst] == NULL)
 		return 0;
 
+    /* Don't check this, VW is not sending ACK messages 
 	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_field)) & 0x00ffffff;
 	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & 0x00ffffff;
 
 	return ((grp & wf) == wf);
+	*/
+	return 1;
 }
 
 /**
@@ -896,7 +906,8 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 			send_ack(ctx, s, canid2ecuid(ctx, cf->can_id));
 		break;
 	case FL_SIGNAL_OR_AUTH_REQ:
-		if (cf->can_dlc == 7)
+		if (cf->can_dlc == 3)
+			// length should be 7 bytes, but VW node is not sending CMAC!!
 			receive_auth_req(ctx, cf);
 		else
 			receive_sig(ctx, cf, -1);
