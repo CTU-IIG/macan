@@ -68,8 +68,7 @@ struct macan_ack {
 };
 
 struct macan_sig_auth_req {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
+	uint8_t flags_and_dst_id;
 	uint8_t sig_num;
 	uint8_t prescaler;
 	uint8_t cmac[4];

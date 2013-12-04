@@ -543,8 +543,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num
 	plain[6] = sig_num;
 	plain[7] = prescaler;
 
-	areq.flags = 3;
-	areq.dst_id = dst_id;
+	areq.flags_and_dst_id = FL_SIGNAL_OR_AUTH_REQ << 6 | dst_id;
 	areq.sig_num = sig_num;
 	areq.prescaler = prescaler;
 	sign(skey, areq.cmac, plain, sizeof(plain));
