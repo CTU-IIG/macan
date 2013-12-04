@@ -39,10 +39,10 @@
 #define FL_SIGNAL_OR_AUTH_REQ 3
 
 /* helpers for first byte in crypt frames */
-#define GET_FLAGS(byte) ((byte & 0xC0) >> 6)
-#define GET_DST_ID(byte) (byte & 0x3F)
-#define GET_SEQ(byte) ((byte & 0xF0) >> 4)
-#define GET_LEN(byte) (byte & 0x0F)
+#define GET_FLAGS(byte) (((byte) & 0xC0) >> 6)
+#define GET_DST_ID(byte) ((byte) & 0x3F)
+#define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
+#define GET_LEN(byte) ((byte) & 0x0F)
 
 struct macan_crypt_frame {
 	uint8_t flags_and_dst_id;
