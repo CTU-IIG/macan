@@ -61,6 +61,7 @@ void generate_subkey(uint8_t *key, uint8_t *key1, uint8_t *key2)
 	lshift(key1, l);
 	if (l[0] & 0x80) {
 		memxor(key1, rb, 16);
+		key1[15] = 0x87; // to work with VW
 	}
 
 	lshift(key2, key1);
@@ -111,6 +112,13 @@ void aes_cmac(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
     	}
 
 	generate_subkey(key, key1, key2);
+
+#ifdef DEBUG	
+	printf("AES Key1: ");
+	print_hexn(key1,16);
+	printf("AES Key2: ");
+	print_hexn(key2,16);
+#endif
 
 	if (pad_flag) {
 		memcpy(lblock, src, lblen);
