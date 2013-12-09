@@ -164,8 +164,15 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 		if (!is_channel_ready(ctx, cp))
 			continue;
 
+		if(!is_time_ready(ctx)) // time must be ready before receiving signals
+			continue;
+
+		if(sigspec[i].src_id == ctx->config->time_server_id) // don't send requests for dummy time signals
+			continue;
+
 		if (!(sighand[i]->flags & AUTHREQ_SENT)) {
 			sighand[i]->flags |= AUTHREQ_SENT;
+			printf("Sending req auth for signal %d...\n",i);
 			send_auth_req(ctx, s, cp, i, presc);
 		}
 	}
@@ -513,6 +520,7 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 
 	ctx->time.offs += (time_ts_us - ctx->time.chal_ts);
 	ctx->time.chal_ts = 0;
+	ctx->time.is_time_ready = 1;
 }
 
 /**
@@ -806,13 +814,16 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 	if (cpart[dst] == NULL)
 		return 0;
 
-    /* Don't check this, VW is not sending ACK messages 
+    /* Don't check this, VW is not sending ACK messages
 	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_field)) & 0x00ffffff;
 	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & 0x00ffffff;
 
 	return ((grp & wf) == wf);
-	*/
+	*/	
 	return 1;
+}
+int is_time_ready(struct macan_ctx *ctx) {
+	return ctx->time.is_time_ready;	
 }
 
 /**
