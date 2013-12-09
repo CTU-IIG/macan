@@ -946,16 +946,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 }
 
 int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num) {
-    int can_nsid, can_sid;
-
-    can_nsid = ctx->config->sigspec[sig_num].can_nsid;
-    can_sid = ctx->config->sigspec[sig_num].can_sid;
-
-    if((can_nsid == 0 && can_sid != 0) ||
-       (can_nsid != 0 && can_sid != 0)) {
-        return 1;
-    }
-    return 0;
+    return (ctx->config->sigspec[sig_num].can_nsid != 0);
 }
 int can_sid_to_sig_num(struct macan_ctx *ctx, uint16_t can_id) {
     int i;
