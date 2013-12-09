@@ -345,11 +345,14 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	if (seq == 5) {
 
-		printf(ANSI_COLOR_CYAN "RECV Session key\n" ANSI_COLOR_RESET);
 		unwrap_key(ctx->config->ltk, 32, skey, keywrap);
-
 		fwd_id = skey[17];
+
+#ifdef DEBUG
+		printf(ANSI_COLOR_CYAN "RECV Session key\n" ANSI_COLOR_RESET);
+		printf("Unwrapped: ");
 		print_hexn(skey,24);
+#endif
 
 		if (fwd_id < 0 || fwd_id >= ctx->config->node_count || cpart[fwd_id] == NULL) {
 			printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": unexpected fwd_id\n");
@@ -401,6 +404,7 @@ void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id
 	cf.can_dlc = 8;
 	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
 
+#ifdef DEBUG
     // Print info start
     printf(ANSI_COLOR_CYAN "SEND Challenge" ANSI_COLOR_RESET "\n"); 
     printf("dst_id: 0x%X, fwd_id: 0x%X, ",
@@ -412,6 +416,7 @@ void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id
     } else
 	    printf("\n");
     // Print info end
+#endif
 
 	write(s, &cf, sizeof(struct can_frame));
 }
@@ -454,11 +459,15 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
    
 	memcpy(&time_ts, cf->data, 4);
 
+#ifdef DEBUG
     printf(ANSI_COLOR_CYAN "RECV plain time\n" ANSI_COLOR_RESET);  
 	printf("plain time = %d (0x%X)\n", time_ts,time_ts);
+#endif
 
 	if (!is_skey_ready(ctx, ctx->config->time_server_id)) {
-                printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": ignoring, we don't have key for timeserver\n");
+#ifdef DEBUG
+        printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": ignoring, we don't have key for timeserver\n");
+#endif DEBUG
 		return;
     }
 
@@ -474,6 +483,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 
 	if (abs(recent - time_ts_us) > ctx->config->time_delta) {
 		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu64")\n", (uint64_t)abs(recent - time_ts_us), recent, time_ts_us);
+		printf("Requesting signed time...\n");
 
 		ctx->time.chal_ts = recent;
 		send_challenge(ctx, s, ctx->config->time_server_id, 0, ctx->time.chg);
@@ -493,7 +503,9 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	struct com_part **cpart;
 	uint64_t time_ts_us;
 
+#ifdef DEBUG
 	printf(ANSI_COLOR_CYAN "RECV signed time\n" ANSI_COLOR_RESET);  
+#endif
 
 	cpart = ctx->cpart;
 
@@ -510,10 +522,12 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id),2); /* FIXME: Endianing problem */
 
 	if (!check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
+#ifdef DEBUG
 		printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": check cmac\n");
+#endif
 		return;
 	}
-	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ", signed time = %d (0x%X)\n",time_ts,time_ts);
+	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ": signed time = %d (0x%X)\n",time_ts,time_ts);
 
 	time_ts_us = time_ts;
 	time_ts_us *= 1000000;
@@ -595,9 +609,11 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 		printf("error: sig_auth cmac is incorrect\n");
 	}
 	*/
-
+	printf("Received auth request for signal %d...\n",areq->sig_num);
+#ifdef DEBUG
 	printf(ANSI_COLOR_CYAN "RECV Auth Req\n" ANSI_COLOR_RESET);
 	printf("sig_num: 0x%X\n",areq->sig_num);
+#endif
 	sig_num = areq->sig_num;
     
     can_sid = ctx->config->sigspec[sig_num].can_sid;
@@ -845,6 +861,7 @@ void macan_request_keys(struct macan_ctx *ctx, int s)
 		if (cpart[i]->valid_until > read_time())
 			continue;
 
+		printf("Requesting key for %d...\n",i);
 		send_challenge(ctx, s, ctx->config->key_server_id, i, cpart[i]->chg);
 		cpart[i]->valid_until = read_time() + ctx->config->skey_chg_timeout;
 	}
