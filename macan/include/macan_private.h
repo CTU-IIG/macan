@@ -181,7 +181,7 @@ uint64_t macan_get_time();
 void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
-int can_sid_to_sig_num(struct macan_ctx *ctx, uint8_t can_id);
+int can_sid_to_sig_num(struct macan_ctx *ctx, uint16_t can_id);
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf);
 
 #endif /* MACAN_PRIVATE_H */

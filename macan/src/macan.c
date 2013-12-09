@@ -957,7 +957,7 @@ int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num) {
     }
     return 0;
 }
-int can_sid_to_sig_num(struct macan_ctx *ctx, uint8_t can_id) {
+int can_sid_to_sig_num(struct macan_ctx *ctx, uint16_t can_id) {
     int i;
    
     if(can_id == 0)
