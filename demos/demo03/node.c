@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 
 	s = helper_init();
 	macan_init(&ctx, &config);
-	macan_reg_callback(&ctx, SIGNAL_B, sig_callback);
+	macan_reg_callback(&ctx, SIGNAL_A, sig_callback);
 	operate_ecu(&ctx, s);
 
 	return 0;

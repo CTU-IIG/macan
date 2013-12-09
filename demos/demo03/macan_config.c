@@ -36,7 +36,7 @@
 struct macan_sig_spec demo_sig_spec[] = {
 	[TIME_DUMMY2] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_VW,  .presc = 0},
 	[TIME_DUMMY3] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_CTU, .presc = 0},
-	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0x2C1,  .src_id = NODE_VW,     .dst_id = NODE_CTU, .presc = 0}, // signal 1
+	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0x2C1,  .src_id = NODE_VW,     .dst_id = NODE_CTU, .presc = 1}, // signal 1
 	[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 0x2D1,  .src_id = NODE_CTU,    .dst_id = NODE_VW,  .presc = 0}, // signal 2
 };
 
