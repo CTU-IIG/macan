@@ -467,7 +467,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	if (!is_skey_ready(ctx, ctx->config->time_server_id)) {
 #ifdef DEBUG
         printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": ignoring, we don't have key for timeserver\n");
-#endif DEBUG
+#endif
 		return;
     }
 
@@ -579,8 +579,8 @@ void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num
 
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	uint8_t *skey;
-	uint8_t plain[8];
+	//uint8_t *skey;
+	//uint8_t plain[8];
 	uint8_t sig_num;
     int can_sid,can_nsid;
 	struct macan_sig_auth_req *areq;
@@ -597,7 +597,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 		return;
 
 	areq = (struct macan_sig_auth_req *)cf->data;
-	skey = cpart[ecuid]->skey;
+	//skey = cpart[ecuid]->skey;
 
 	/* Don't check CMAC, VW node is not sending it 
 	plain[4] = ecuid;
