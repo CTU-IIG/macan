@@ -757,23 +757,23 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	struct sig_handle **sighand;
     int plain_length;
 	int8_t ecuid = canid2ecuid(ctx, cf->can_id);
-	assert(ecuid >= 0);
+	//assert(ecuid >= 0);
 
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
 
-    
     if(sig32_num >= 0) {
         // we have received 32 bit signal
         struct macan_signal *sig32 = (struct macan_signal *)cf->data;
         sig_num = sig32_num;
-        plain[4] = ctx->config->sigspec[sig_num].src_id;
-        memcpy(plain + 6, sig32->sig, 4);
         skey = cpart[ctx->config->sigspec[sig_num].src_id]->skey;
-        plain_length = 10;
         cmac = sig32->cmac;
         memcpy(&sig_val, sig32->sig, 4);
-        
+
+        //plain[4] = ctx->config->sigspec[sig_num].src_id;
+		memcpy(plain,&sig_val,4);
+		memcpy(plain + 8,&(cf->can_id),2);
+        plain_length = 10;
     } else {
         // we have received 16 bit signal
 	    struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
@@ -786,7 +786,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
         memcpy(&sig_val, sig16->signal, 2);
     }
 
-	plain[5] = ctx->config->node_id;
+	//plain[5] = ctx->config->node_id;
 
 
 #ifdef DEBUG_TS
