@@ -43,6 +43,7 @@
 #include "she.h"
 #include "macan_config.h"
 #include "macan.h"
+#include "macan_private.h"
 
 #define f_STM 100000000
 #define TIME_USEC (f_STM / 1000000)
@@ -92,7 +93,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 		return memchk(cmac4, cmac, 4);
 	}
 
-	time = get_macan_time(ctx) / TIME_DIV;
+	time = macan_get_time(ctx) / config.time_div;
 
 	for (i = 0; i >= -1; i--) {
 		*ftime = time + i;

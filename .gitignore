@@ -6,3 +6,4 @@ cscope.*
 caninit.sh
 tags
 /config.omk-default
+/Debug/
