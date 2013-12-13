@@ -21,6 +21,7 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "can_fifo.h"
 #include <stdint.h>
 #include <can.h>
 #include <can_frame.h>
@@ -41,7 +42,7 @@ struct Can_HardwareObject
 #define CAN_HWOBJ ((struct Can_HardwareObject volatile *)(void*) &CAN_MOFCR0)
 #define CAN_MOAR_ID_STD_SHIFT  (18U)
 
-void poll_can_fifo(struct macan_ctx *ctx, void (*cback)(struct macan_ctx *ctx, struct can_frame *cf))
+void poll_can_fifo(struct macan_ctx *ctx, void (*cback)(struct macan_ctx *ctx, int s, struct can_frame *cf))
 {
 	uint32_t i;
 	Can_IdType can_id;
@@ -60,7 +61,7 @@ void poll_can_fifo(struct macan_ctx *ctx, void (*cback)(struct macan_ctx *ctx, s
 		cf.can_dlc = CAN_HWOBJ[i].MOFCR.B.DLC;
 		memcpy(cf.data, (uint8 *) CAN_HWOBJ[i].MODAT, 8);
 
-		cback(ctx, &cf);
+		cback(ctx, 0, &cf);
 
 		i++;
 		if (i > 32) {

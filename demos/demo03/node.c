@@ -42,6 +42,7 @@
 #include "Test_Print.h"
 #include "Os.h"
 #include "she.h"
+#include <can_fifo.h>
 #else
 #include <unistd.h>
 #include <net/if.h>
