@@ -115,7 +115,7 @@ void led_set(uint8_t value) {
 	P4_IOCR0.U = 0x80808080;
 	P4_IOCR4.U = 0x80808080;
 	// write output
-	P4_OMR.U = ~value;
+	P4_OUT.U = ~value;
 	SetEndinit();
 }
 /* test if button is pressed, returns 0 if pressed
@@ -136,6 +136,7 @@ void handle_io(void)
 
 	P7_IOCR0.B.PC0 = 0x8; // P7.0 is output (red LED)
 	P7_OUT.B.P0 = pressed;
+	led_set(pressed ? 0xf0 : 0x0f);
 }
 
 #endif
