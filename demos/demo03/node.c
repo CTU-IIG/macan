@@ -64,40 +64,6 @@
 
 static struct macan_ctx macan_ctx;
 
-void can_recv_cb(int s, struct can_frame *cf)
-{
-	macan_process_frame(&macan_ctx, s, cf);
-}
-
-void operate_ecu(struct macan_ctx *ctx, int s)
-{
-	uint64_t signal_time = 0;
-
-	while(1) {
-#ifdef __CPU_TC1798__
-		poll_can_fifo(can_recv_cb);
-#else
-		helper_read_can(ctx, s, can_recv_cb);
-#endif /* __CPU_TC1798__ */
-
-		macan_request_keys(ctx, s);
-		macan_wait_for_key_acks(ctx, s);
-		if (signal_time < read_time()) {
-			signal_time = read_time() + TIME_EMIT_SIG;
-			macan_send_sig(ctx, s, SIGNAL_B, 10);
-		}
-
-#ifndef __CPU_TC1798__
-		usleep(250);
-#endif /* __CPU_TC1798__ */
-	}
-}
-
-void sig_callback(uint8_t sig_num, uint32_t sig_val)
-{
-	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
-}
-
 #ifdef __CPU_TC1798__
 void ClearEndinit(void)
 {
@@ -162,7 +128,52 @@ int is_button_pressed() {
 	SetEndinit();
 	return P4_IN.U & 0x00000080; // register P4_IN
 }
+
+void handle_io(void)
+{
+	P7_IOCR4.B.PC5 = 0x2; // P7.5 is input with pull-up switch
+	int pressed = !P7_IN.B.P5;
+
+	P7_IOCR0.B.PC0 = 0x8; // P7.0 is output (red LED)
+	P7_OUT.B.P0 = pressed;
+}
+
 #endif
+
+void can_recv_cb(int s, struct can_frame *cf)
+{
+	macan_process_frame(&macan_ctx, s, cf);
+}
+
+void operate_ecu(struct macan_ctx *ctx, int s)
+{
+	uint64_t signal_time = 0;
+
+	while(1) {
+#ifdef __CPU_TC1798__
+		poll_can_fifo(can_recv_cb);
+		handle_io();
+#else
+		helper_read_can(ctx, s, can_recv_cb);
+#endif /* __CPU_TC1798__ */
+
+		macan_request_keys(ctx, s);
+		macan_wait_for_key_acks(ctx, s);
+		if (signal_time < read_time()) {
+			signal_time = read_time() + TIME_EMIT_SIG;
+			macan_send_sig(ctx, s, SIGNAL_B, 10);
+		}
+
+#ifndef __CPU_TC1798__
+		usleep(250);
+#endif /* __CPU_TC1798__ */
+	}
+}
+
+void sig_callback(uint8_t sig_num, uint32_t sig_val)
+{
+	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
+}
 
 int main(int argc, char *argv[])
 {
