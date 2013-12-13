@@ -43,6 +43,7 @@
 #include "Os.h"
 #include "she.h"
 #include <can_fifo.h>
+#include <sfr/regtc1798.sfr>
 #else
 #include <unistd.h>
 #include <net/if.h>
@@ -145,10 +146,10 @@ void SetEndinit(void)
 void led_set(uint8_t value) {
 	ClearEndinit();
 	// set all led pins as outputs
-	(*( unsigned int *) 0xf0001010u) = 0x80808080; // register P4_IOCR0
-	(*( unsigned int *) 0xf0001014u) = 0x80808080; // register P4_IOCR4
+	P4_IOCR0.U = 0x80808080;
+	P4_IOCR4.U = 0x80808080;
 	// write output
-	(*( unsigned int *) 0xf0001004u) = ~value; // register P4_OMR
+	P4_OMR.U = ~value;
 	SetEndinit();
 }
 /* test if button is pressed, returns 0 if pressed
@@ -157,9 +158,9 @@ void led_set(uint8_t value) {
 int is_button_pressed() {
 	ClearEndinit();
 	// init P4.7 as input
-	(*( unsigned int *) 0xf0001014u) = 0x00202020; // register P4_IOCR0
+	P4_IOCR0.U = 0x00202020; // register P4_IOCR0
 	SetEndinit();
-	return (*( unsigned int *) 0xf0001024u) & 0x00000080; // register P4_IN
+	return P4_IN.U & 0x00000080; // register P4_IN
 }
 #endif
 
