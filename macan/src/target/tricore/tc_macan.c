@@ -96,7 +96,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 
 	time = macan_get_time(ctx);
 
-	for (i = 0; i >= -1; i--) {
+	for (i = -1; i <= 1; i++) {
 		*ftime = time + i;
 		aes_cmac(skey, len, cmac, plain);
 
