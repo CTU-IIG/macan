@@ -47,6 +47,7 @@
 
 #define f_STM 100000000
 #define TIME_USEC (f_STM / 1000000)
+#define CAN_IF 1
 
 /**
  * write() - sends a can frame
