@@ -26,6 +26,7 @@
 #include <can.h>
 #include <can_frame.h>
 #include <CanIf_Cbk.h>
+#include <string.h>
 
 struct Can_HardwareObject
 {
