@@ -154,7 +154,7 @@ struct macan_ctx {
 int canid2ecuid(struct macan_ctx *ctx, uint32_t canid);
 void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
 int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
-int init();
+int init(void);
 void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
 void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_num);
 int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal);
@@ -176,8 +176,8 @@ extern uint8_t skey[24];
 #ifdef __CPU_TC1798__
 int write(int s, struct can_frame *cf, int len);
 #endif
-uint64_t read_time();
-uint64_t macan_get_time();
+uint64_t read_time(void);
+uint64_t macan_get_time(struct macan_ctx *ctx);
 void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
