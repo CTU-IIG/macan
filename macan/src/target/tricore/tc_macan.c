@@ -93,7 +93,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 		return memchk(cmac4, cmac, 4);
 	}
 
-	time = macan_get_time(ctx) / config.time_div;
+	time = macan_get_time(ctx);
 
 	for (i = 0; i >= -1; i--) {
 		*ftime = time + i;
