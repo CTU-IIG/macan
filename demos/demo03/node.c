@@ -93,6 +93,7 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
 }
 
+#ifdef __CPU_TC1798__
 void ClearEndinit(void)
 {
   uint32_t u32WdtCon0, u32WdtCon1;
@@ -156,6 +157,7 @@ int is_button_pressed() {
 	SetEndinit();
 	return (*( unsigned int *) 0xf0001024u) & 0x00000080; // register P4_IN
 }
+#endif
 
 int main(int argc, char *argv[])
 {
