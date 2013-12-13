@@ -51,7 +51,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 			sprintf(comment, "time %ssigned", cf->can_dlc == 4 ? "un" : "");
 		else if ((src = canid2ecuid(ctx, cf->can_id)) >= 0) {
 			/* Crypt frame */
-			if (cf->can_dlc < 7) {
+			if (cf->can_dlc < 2) {
 				sprintf(comment, "broken crypt frame");
 			} else {
 				struct macan_crypt_frame *crypt = (struct macan_crypt_frame*)cf->data;
@@ -85,7 +85,14 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 						sprintf(type, "signal %d", sig->sig_num);
 					} else {
 						struct macan_sig_auth_req *ar = (struct macan_sig_auth_req*)cf->data;
-						sprintf(type, "sig auth req signal=%d presc=%d", ar->sig_num, ar->prescaler);
+						const char *auth_req_type;
+						switch (cf->can_dlc) {
+						case 3: auth_req_type = "+ MAC"; break;
+						case 7: auth_req_type = "NO MAC"; break;
+						default: auth_req_type = "BROKEN!!!"; break;
+						}
+						sprintf(type, "auth req %s signal=%d presc=%d", auth_req_type,
+							ar->sig_num, ar->prescaler);
 					}
 					break;
 				default:
