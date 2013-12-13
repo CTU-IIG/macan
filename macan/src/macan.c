@@ -331,8 +331,8 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	/* it reads wrong values, dirty hack to read directly from CAN frame 
 	 * bytes are in reverse order! */
-	seq = (cf->data[0] & 0xF0) >> 4;
-	len = (cf->data[0] & 0x0F);
+	seq = (cf->data[1] & 0xF0) >> 4;
+	len = (cf->data[1] & 0x0F);
 
 	/* this is because of VW macan sends len 6 in last key packet */
 	if(seq == 5) len = 2;
