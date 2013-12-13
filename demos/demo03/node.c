@@ -120,16 +120,6 @@ void led_set(uint8_t value) {
 	P4_OUT.U = ~value;
 	SetEndinit();
 }
-/* test if button is pressed, returns 0 if pressed
- * Pozor: uz jsem nestihl otestovat jestli tato funkce funguje.
- * */
-int is_button_pressed() {
-	ClearEndinit();
-	// init P4.7 as input
-	P4_IOCR0.U = 0x00202020; // register P4_IOCR0
-	SetEndinit();
-	return P4_IN.U & 0x00000080; // register P4_IN
-}
 
 void handle_io(void)
 {
