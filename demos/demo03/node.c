@@ -44,6 +44,8 @@
 #include "she.h"
 #include <can_fifo.h>
 #include <sfr/regtc1798.sfr>
+#include <Adc.h>
+#include <Adc_Cfg.h>
 #else
 #include <unistd.h>
 #include <net/if.h>
@@ -137,8 +139,20 @@ void handle_io(void)
 	P7_IOCR0.B.PC0 = 0x8; // P7.0 is output (red LED)
 	P7_OUT.B.P0 = pressed;
 	led_set(pressed ? 0xf0 : 0x0f);
+
+	//Adc_ReadGroup(0, 0);
 }
 
+void io_init(void)
+{
+  //Adc_Init(Adc_ConfigRoot);
+}
+
+#else
+void io_init(void)
+{
+
+}
 #endif
 
 void can_recv_cb(int s, struct can_frame *cf)
@@ -181,6 +195,7 @@ int main(int argc, char *argv[])
 	int s;
 
 	s = helper_init();
+	io_init();
 	macan_init(&macan_ctx, &config);
 	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback);
 	operate_ecu(&macan_ctx, s);
