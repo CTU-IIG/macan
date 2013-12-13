@@ -93,6 +93,70 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
 }
 
+void ClearEndinit(void)
+{
+  uint32_t u32WdtCon0, u32WdtCon1;
+  uint32_t pwd = 0;
+
+  u32WdtCon0 = WDT_CON0.U;
+  u32WdtCon1 = WDT_CON1.U;
+
+  /* unlock */
+  //pwd |= u32WdtCon0 & 0x1;
+  //pwd |= u32WdtCon0 & 0x4;
+
+  u32WdtCon0 &= 0xFFFFFF03;
+  u32WdtCon0 |= 0xF0;
+  u32WdtCon0 |= (u32WdtCon1 & 0xc);
+  u32WdtCon0 ^= 0x2;
+  WDT_CON0.U = u32WdtCon0;
+
+  /* Modify access to u32WdtCon0 */
+  u32WdtCon0 &= 0xFFFFFFF0;
+  u32WdtCon0 |= 2;
+  WDT_CON0.U = u32WdtCon0;
+}
+
+void SetEndinit(void)
+{
+  uint32_t u32WdtCon0, u32WdtCon1;
+
+  u32WdtCon0 = WDT_CON0.U;
+  u32WdtCon1 = WDT_CON1.U;
+
+  u32WdtCon0 &= 0xFFFFFF03;
+  u32WdtCon0 |= 0xF0;
+  u32WdtCon0 |= (u32WdtCon1 & 0xc);
+  u32WdtCon0 ^= 0x2;
+  WDT_CON0.U = u32WdtCon0;
+
+  /* Modify access to u32WdtCon0 */
+  u32WdtCon0 &= 0xFFFFFFF0;
+  u32WdtCon0 |= 3;
+  WDT_CON0.U = u32WdtCon0;
+}
+
+/* will light up onboard LEDs according to bits in "value" argument*/
+void led_set(uint8_t value) {
+	ClearEndinit();
+	// set all led pins as outputs
+	(*( unsigned int *) 0xf0001010u) = 0x80808080; // register P4_IOCR0
+	(*( unsigned int *) 0xf0001014u) = 0x80808080; // register P4_IOCR4
+	// write output
+	(*( unsigned int *) 0xf0001004u) = ~value; // register P4_OMR
+	SetEndinit();
+}
+/* test if button is pressed, returns 0 if pressed
+ * Pozor: uz jsem nestihl otestovat jestli tato funkce funguje.
+ * */
+int is_button_pressed() {
+	ClearEndinit();
+	// init P4.7 as input
+	(*( unsigned int *) 0xf0001014u) = 0x00202020; // register P4_IOCR0
+	SetEndinit();
+	return (*( unsigned int *) 0xf0001024u) & 0x00000080; // register P4_IN
+}
+
 int main(int argc, char *argv[])
 {
 	int s;
