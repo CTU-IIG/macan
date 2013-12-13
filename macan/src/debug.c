@@ -87,8 +87,8 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 						struct macan_sig_auth_req *ar = (struct macan_sig_auth_req*)cf->data;
 						const char *auth_req_type;
 						switch (cf->can_dlc) {
-						case 3: auth_req_type = "+ MAC"; break;
-						case 7: auth_req_type = "NO MAC"; break;
+						case 3: auth_req_type = "NO MAC"; break;
+						case 7: auth_req_type = "+ MAC"; break;
 						default: auth_req_type = "BROKEN!!!"; break;
 						}
 						sprintf(type, "auth req %s signal=%d presc=%d", auth_req_type,
