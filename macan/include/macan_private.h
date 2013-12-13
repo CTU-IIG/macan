@@ -31,11 +31,12 @@
 
 /* MaCAN message definitions */
 
-#define FL_CHALLENGE 1
-#define FL_SESS_KEY  2
-#define FL_ACK       2
-#define FL_SESS_KEY_OR_ACK  2
-#define FL_SIGNAL    3
+#define FL_REQ_CHALLENGE      0
+#define FL_CHALLENGE	      1
+#define FL_SESS_KEY	      2
+#define FL_ACK		      2
+#define FL_SESS_KEY_OR_ACK    2
+#define FL_SIGNAL	      3
 #define FL_SIGNAL_OR_AUTH_REQ 3
 
 /* helpers for first byte in crypt frames */
@@ -46,6 +47,11 @@
 
 struct macan_crypt_frame {
 	uint8_t flags_and_dst_id;
+};
+
+struct macan_req_challenge {
+	uint8_t flags_and_dst_id;
+	uint8_t fwd_id;
 };
 
 struct macan_challenge {

@@ -57,6 +57,12 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				struct macan_crypt_frame *crypt = (struct macan_crypt_frame*)cf->data;
 				char type[80];
 				switch (GET_FLAGS(crypt->flags_and_dst_id)) {
+				case FL_REQ_CHALLENGE: {
+					struct macan_req_challenge *chg = (struct macan_req_challenge*)cf->data;
+					sprintf(type, "req challenge fwd_id=%d%s", chg->fwd_id,
+						cf->can_dlc == 2 ? "" : " wrong length");
+					break;
+				}
 				case FL_CHALLENGE: {
 					struct macan_challenge *chg = (struct macan_challenge*)cf->data;
 					sprintf(type, "challenge fwd_id=%d", chg->fwd_id);
