@@ -46,9 +46,12 @@
 
 #define NODE_COUNT 64
 
-void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
+static struct macan_ctx macan_ctx;
+
+
+void can_recv_cb(int s, struct can_frame *cf)
 {
-	print_frame(ctx, cf);
+	print_frame(&macan_ctx, cf);
 }
 
 void print_help(char *argv0)
@@ -59,7 +62,6 @@ void print_help(char *argv0)
 int main(int argc, char *argv[])
 {
 	int s;
-	struct macan_ctx ctx;
 	struct macan_config *config = NULL;
 
 	char opt;
@@ -83,13 +85,13 @@ int main(int argc, char *argv[])
         config->node_id = -1;
 	srand(time(NULL));
 	s = helper_init();
-	macan_init(&ctx, config);
+	macan_init(&macan_ctx, config);
 
 	while (1) {
 		struct pollfd pfd = { .fd = s, .events = POLLIN };
 		if (poll(&pfd, 1, -1) == -1)
 			perror("poll");
-		helper_read_can(&ctx, s, can_recv_cb);
+		helper_read_can(&macan_ctx, s, can_recv_cb);
 	}
 
 	return 0;

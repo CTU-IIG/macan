@@ -60,15 +60,17 @@
 
 #define TIME_EMIT_SIG 1000000
 
+static struct macan_ctx macan_ctx;
+
 /* ltk stands for long term key; it is a key shared with the key server */
 uint8_t ltk[] = {
 	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
   	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 };
 
-void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
+void can_recv_cb(int s, struct can_frame *cf)
 {
-	macan_process_frame(ctx, s, cf);
+	macan_process_frame(&macan_ctx, s, cf);
 }
 
 void operate_ecu(struct macan_ctx *ctx, int s)
@@ -106,15 +108,14 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 int main(int argc, char *argv[])
 {
 	int s;
-	struct macan_ctx ctx;
 
 	s = helper_init();
-	macan_init(&ctx, &config);
-	macan_reg_callback(&ctx, SIGNAL_A, sig_callback);
-	macan_reg_callback(&ctx, SIGNAL_B, sig_callback);
-    macan_reg_callback(&ctx, SIGNAL_C, sig_callback);
-	macan_reg_callback(&ctx, SIGNAL_D, sig_callback);
-	operate_ecu(&ctx, s);
+	macan_init(&macan_ctx, &config);
+	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback);
+	macan_reg_callback(&macan_ctx, SIGNAL_B, sig_callback);
+	macan_reg_callback(&macan_ctx, SIGNAL_C, sig_callback);
+	macan_reg_callback(&macan_ctx, SIGNAL_D, sig_callback);
+	operate_ecu(&macan_ctx, s);
 
 	return 0;
 }

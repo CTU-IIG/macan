@@ -60,9 +60,11 @@
 
 #define TIME_EMIT_SIG 1000000
 
-void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
+static struct macan_ctx macan_ctx;
+
+void can_recv_cb(int s, struct can_frame *cf)
 {
-	macan_process_frame(ctx, s, cf);
+	macan_process_frame(&macan_ctx, s, cf);
 }
 
 void operate_ecu(struct macan_ctx *ctx, int s)
@@ -99,13 +101,12 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 int main(int argc, char *argv[])
 {
 	int s;
-	struct macan_ctx ctx;
 
 	s = helper_init();
-	macan_init(&ctx, &config);
-	macan_reg_callback(&ctx, ENGINE, sig_callback);
-	macan_reg_callback(&ctx, BRAKE, sig_callback);
-	operate_ecu(&ctx, s);
+	macan_init(&macan_ctx, &config);
+	macan_reg_callback(&macan_ctx, ENGINE, sig_callback);
+	macan_reg_callback(&macan_ctx, BRAKE, sig_callback);
+	operate_ecu(&macan_ctx, s);
 
 	return 0;
 }

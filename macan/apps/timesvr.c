@@ -65,6 +65,7 @@
 #define TS_TEST_ERR 500000
 
 uint64_t last_usec;
+static struct macan_ctx macan_ctx;
 
 /**
  * ts_receive_challenge() - serves the request for signed time
@@ -108,9 +109,10 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	return 0;
 }
 
-void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
+void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
+	struct macan_ctx *ctx = &macan_ctx;
 
 	/* ToDo: make sure all branches end ASAP */
 	/* ToDo: macan or plain can */
@@ -190,7 +192,6 @@ void print_help(char *argv0)
 
 int main(int argc, char *argv[])
 {
-	struct macan_ctx ctx;
 	int s;
 	struct macan_config *config = NULL;
 
@@ -214,8 +215,8 @@ int main(int argc, char *argv[])
         config->node_id = config->time_server_id;
 
 	s = helper_init();
-	macan_init(&ctx, config);
-	operate_ts(&ctx, s);
+	macan_init(&macan_ctx, config);
+	operate_ts(&macan_ctx, s);
 
 	return 0;
 }

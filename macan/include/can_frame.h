@@ -24,6 +24,8 @@
 #ifndef CAN_H_
 #define CAN_H_
 
+#include <stdint.h>
+
 #ifdef __CPU_TC1798__
 struct can_frame {
 	uint32_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */

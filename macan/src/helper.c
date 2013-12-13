@@ -49,7 +49,7 @@
 
 #ifndef __CPU_TC1798__
 
-void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ctx *ctx, int s, struct can_frame *cf))
+void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(int s, struct can_frame *cf))
 {
 	struct can_frame cf;
 	int rbyte;
@@ -66,7 +66,7 @@ void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(struct macan_ct
 
 	if (getenv("MACAN_DUMP"))
 		print_frame(ctx, &cf);
-	cback(ctx, s, &cf);
+	cback(s, &cf);
 }
 #endif /* __CPU_TC1798__ */
 

@@ -61,6 +61,8 @@ struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {
 	{{0},{0},{0},{0}},
 };
 
+static struct macan_ctx macan_ctx;
+
 void generate_skey(struct sess_key *skey)
 {
 	int i;
@@ -160,18 +162,18 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	send_skey(ctx, s, &cipher, dst_id, fwd_id, chg);
 }
 
-void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
+void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
 	/* Reject non-crypt frames */
-	if (canid2ecuid(ctx, cf->can_id) == -1)
+	if (canid2ecuid(&macan_ctx, cf->can_id) == -1)
 		return;
-	if (GET_DST_ID(cryf->flags_and_dst_id) != ctx->config->key_server_id)
+	if (GET_DST_ID(cryf->flags_and_dst_id) != macan_ctx.config->key_server_id)
 		return;
 
 	/* ToDo: do some check on challenge message, the only message recepted by KS */
-	ks_receive_challenge(ctx, s, cf);
+	ks_receive_challenge(&macan_ctx, s, cf);
 }
 
 void print_help(char *argv0)
@@ -182,7 +184,6 @@ void print_help(char *argv0)
 int main(int argc, char *argv[])
 {
 	int s;
-	struct macan_ctx ctx;
 	struct macan_config *config = NULL;
 
 	char opt;
@@ -206,10 +207,10 @@ int main(int argc, char *argv[])
         config->node_id = config->key_server_id;
 	srand(time(NULL));
 	s = helper_init();
-	macan_init(&ctx, config);
+	macan_init(&macan_ctx, config);
 
 	while (1) {
-		helper_read_can(&ctx, s, can_recv_cb);
+		helper_read_can(&macan_ctx, s, can_recv_cb);
 
 		usleep(250);
 	}

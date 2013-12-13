@@ -57,12 +57,15 @@
 #include "helper.h"
 #include "macan_private.h"
 #include "macan_config.h"
+#include "can_recv_cb.h"
 
 #define TIME_EMIT_SIG 1000000
 
-void can_recv_cb(struct macan_ctx *ctx, int s, struct can_frame *cf)
+static struct macan_ctx macan_ctx;
+
+void can_recv_cb(int s, struct can_frame *cf)
 {
-	macan_process_frame(ctx, s, cf);
+	macan_process_frame(&macan_ctx, s, cf);
 }
 
 void operate_ecu(struct macan_ctx *ctx, int s)
@@ -71,7 +74,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 
 	while(1) {
 #ifdef __CPU_TC1798__
-		poll_can_fifo(ctx, can_recv_cb);
+		poll_can_fifo(can_recv_cb);
 #else
 		helper_read_can(ctx, s, can_recv_cb);
 #endif /* __CPU_TC1798__ */
@@ -163,12 +166,11 @@ int is_button_pressed() {
 int main(int argc, char *argv[])
 {
 	int s;
-	struct macan_ctx ctx;
 
 	s = helper_init();
-	macan_init(&ctx, &config);
-	macan_reg_callback(&ctx, SIGNAL_A, sig_callback);
-	operate_ecu(&ctx, s);
+	macan_init(&macan_ctx, &config);
+	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback);
+	operate_ecu(&macan_ctx, s);
 
 	return 0;
 }

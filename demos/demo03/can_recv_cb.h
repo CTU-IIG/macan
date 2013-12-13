@@ -21,11 +21,11 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef HELPER_H
-#define HELPER_H
+#ifndef CAN_RECV_CB_H
+#define CAN_RECV_CB_H
 
-#include <macan.h>
+#include <can_frame.h>
 
-int helper_init(void);
-void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(int s, struct can_frame *cf));
+void can_recv_cb(int s, struct can_frame *cf);
+
 #endif
