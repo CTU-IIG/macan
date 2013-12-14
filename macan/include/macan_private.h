@@ -37,6 +37,7 @@
 #define FL_ACK		      2
 #define FL_SESS_KEY_OR_ACK    2
 #define FL_SIGNAL	      3
+#define FL_AUTH_REQ	      3
 #define FL_SIGNAL_OR_AUTH_REQ 3
 
 /* helpers for first byte in crypt frames */
