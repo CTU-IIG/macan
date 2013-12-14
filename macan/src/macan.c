@@ -200,7 +200,7 @@ int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc)
  */
 void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 {
-	struct macan_ack ack = {2, dst_id, {0}, {0}};
+	struct macan_ack ack = { .flags_and_dst_id = FL_ACK << 6 | (dst_id & 0x3f), .group = {0}, .cmac = {0}};
 	uint8_t plain[8] = {0};
 	uint32_t time;
 	uint8_t *skey;
@@ -218,7 +218,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	time = macan_get_time(ctx);
 
 	memcpy(plain, &time, 4);
-	plain[4] = ack.dst_id;
+	plain[4] = dst_id;
 	memcpy(plain + 5, ack.group, 3);
 
 #ifdef DEBUG_TS
@@ -268,7 +268,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	cp = cpart[id];
 	skey = cp->skey;
 
-	plain[4] = ack->dst_id;
+	plain[4] = ack->flags_and_dst_id & 0x3f;
 	memcpy(plain + 5, ack->group, 3);
 
 #ifdef DEBUG_TS

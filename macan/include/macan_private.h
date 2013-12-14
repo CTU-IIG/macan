@@ -67,8 +67,7 @@ struct macan_sess_key {
 };
 
 struct macan_ack {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
+	uint8_t flags_and_dst_id;
 	uint8_t group[3];
 	uint8_t cmac[4];
 };
