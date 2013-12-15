@@ -95,7 +95,7 @@ void aes_wrap(uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src)
  * The function unwraps key data stored at src. An auxiliary buffer tmp is
  * required, although it is possible to supply src as tmp.
  */
-int aes_unwrap(uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp)
+int aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp)
 {
 	uint8_t iv[8] = { 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6 };
 	uint8_t b[16];
