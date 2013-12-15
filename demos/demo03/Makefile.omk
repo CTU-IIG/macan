@@ -1,6 +1,6 @@
 test_PROGRAMS = d3node
 lib_LOADLIBES = macan nettle rt
-d3node_SOURCES = node.c macan_config.c
+d3node_SOURCES = d3node.c macan_config.c
 
 shared_LIBRARIES = demo03cfg
 demo03cfg_SOURCES = macan_config.c
