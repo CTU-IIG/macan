@@ -305,7 +305,7 @@ void gen_challenge(uint8_t *chal)
 	int i;
 
 	for (i = 0; i < 6; i++)
-		chal[i] = rand();
+		chal[i] = rand(); /* TODO: Use RNG from SHE or /dev/random */
 }
 
 /**

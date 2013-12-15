@@ -70,7 +70,7 @@ void generate_skey(struct sess_key *skey)
 	skey->valid = true;
 
 	for (i = 0; i < 16; i++)
-		skey->key[i] = rand(); /* FIXME: Does this use /dev/random? Probably not - it should. */
+		skey->key[i] = rand(); /* TODO: This should use /dev/random or SHE. */
 }
 
 uint8_t lookup_skey(uint8_t src, uint8_t dst, struct sess_key **key_ret)
