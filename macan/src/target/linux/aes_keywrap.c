@@ -48,9 +48,9 @@ void aes_wrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
 	uint8_t a[8] = { 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6 };
 	uint8_t b[16];
 	size_t block_size = 16;
-	uint32_t t, n;
+	size_t t, n;
 	uint32_t *af;
-	int i, j;
+	unsigned i, j;
 
 	assert((length % 8) == 0);
 
@@ -61,12 +61,12 @@ void aes_wrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
 		for (i = 1; i < n + 1; i++) {
 			memcpy(b, a, 8);
 			memcpy(b + 8, dst + (8 * i), 8);
-			aes_encrypt(ctx, block_size, b, b);
+			aes_encrypt(ctx, (unsigned)block_size, b, b);
 
 			memcpy(a, b, 8);
 			t = (n*j) + i;
 			af = (uint32_t *)(a + 4);
-			*af = *af ^ htobe32(t);
+			*af = *af ^ htobe32((unsigned)t);
 
 			memcpy(dst + (8 * i), b + 8, 8);   /* ToDo: write to dst */
 		}
@@ -93,22 +93,23 @@ int aes_unwrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, uint8_t *src, u
 	size_t block_size = 16;
 	uint32_t t, n;
 	uint32_t *af;
-	int i, j;
+	unsigned i;
+	int j;
 
 	assert((length % 8) == 0 && length > 0);
 
 	memmove(tmp, src, length);
-	n = length / 8 - 1;
+	n = (uint32_t)length / 8 - 1;
 
 	for (j = 5; j >= 0; j--) {
 		for (i = n; i > 0; i--) {
-			t = (n*j) + i;
+			t = (n*(uint32_t)j) + i;
 			af = (uint32_t *)(tmp + 4);
 			*af = *af ^ htobe32(t);
 
 			memcpy(b, tmp, 8);
 			memcpy(b + 8, tmp + (8 * i), 8);
-			aes_decrypt(ctx, block_size, b, b);
+			aes_decrypt(ctx, (unsigned)block_size, b, b);
 
 			memcpy(tmp, b, 8);
 			memcpy(tmp + (8 * i), b + 8, 8);   /* ToDo: write to dst */

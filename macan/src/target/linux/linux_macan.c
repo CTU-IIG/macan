@@ -59,7 +59,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 	struct aes_ctx cipher;
 	uint8_t cmac[16];
 	uint64_t time;
-	uint32_t *ftime = (uint32_t *)(fill_time + 4);
+	int32_t *ftime = (int32_t *)(fill_time + 4);
 	int i,ret;
 
 	aes_set_encrypt_key(&cipher, 16, skey);
@@ -83,7 +83,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 	time = macan_get_time(ctx);
 
 	for (i = -1; i <= 1; i++) {
-		*ftime = time + i;
+		*ftime = (int)time + i;
 		aes_cmac(&cipher, len, cmac, plain);
 
 		if (memchk(cmac4, cmac, 4) == 1)
@@ -138,8 +138,8 @@ uint64_t read_time()
 	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
 	ts.tv_sec -= buz.tv_sec;
 	ts.tv_nsec -= buz.tv_nsec;
-	time = ts.tv_sec * 1000000;
-	time += ts.tv_nsec / 1000;
+	time = (uint64_t)ts.tv_sec * 1000000;
+	time += (uint64_t)ts.tv_nsec / 1000;
 
 	return time;
 }

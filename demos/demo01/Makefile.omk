@@ -11,4 +11,4 @@ d1node3_LIBS = macan nettle rt
 
 shared_LIBRARIES = demo01cfg
 demo01cfg_SOURCES = macan_config.c
-demo01cfg_CPPFLAGS = -DNODE_ID=-1
+demo01cfg_CPPFLAGS = -DNODE_ID=0xff

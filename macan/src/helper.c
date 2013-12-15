@@ -51,7 +51,7 @@
 void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(int s, struct can_frame *cf))
 {
 	struct can_frame cf;
-	int rbyte;
+	ssize_t rbyte;
 
 	rbyte = read(s, &cf, sizeof(struct can_frame));
 	if (rbyte == -1 && errno == EAGAIN) {

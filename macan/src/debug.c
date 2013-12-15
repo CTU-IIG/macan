@@ -43,7 +43,7 @@ void debug_printf(const char* format, ...)
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 {
 	char frame[80], comment[80];
-	int8_t src;
+	int src;
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);
 	if (ctx && ctx->config) {
@@ -120,7 +120,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				sprintf(comment, "crypt %s->%s (%d->%d): %s", srcstr, dststr, src, dst, type);
 			}
 		} else {
-			int i;
+			unsigned i;
 			for (i = 0; i < ctx->config->sig_count; i++) {
 				const struct macan_sig_spec *ss = &ctx->config->sigspec[i];
 				if (cf->can_id == ss->can_nsid)

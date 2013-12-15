@@ -51,6 +51,7 @@ static struct macan_ctx macan_ctx;
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
+	(void)s;
 	print_frame(&macan_ctx, cf);
 }
 
@@ -64,7 +65,7 @@ int main(int argc, char *argv[])
 	int s;
 	struct macan_config *config = NULL;
 
-	char opt;
+	int opt;
 	while ((opt = getopt(argc, argv, "c:")) != -1) {
 		switch (opt) {
 		case 'c': {
@@ -82,8 +83,8 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-        config->node_id = -1;
-	srand(time(NULL));
+        config->node_id = 0xff;	/* We do not send anything */
+	srand((unsigned)time(NULL));
 	s = helper_init();
 	macan_init(&macan_ctx, config);
 
