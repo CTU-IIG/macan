@@ -470,18 +470,18 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 		return;
 	}
 
-	recent = read_time() + ctx->time.offs;
+	recent = read_time() + ctx->time.offs; /* Estimated time on TS (us) */
 
 	if (ctx->time.chal_ts) {
+		/* Don't ask TS for authenticated time too often */
 		if ((recent - ctx->time.chal_ts) < ctx->config->time_timeout)
 			return;
 	}
 
-	time_ts_us = time_ts;
-	time_ts_us *= 1000000;
+	time_ts_us = (uint64_t)time_ts * 1000000;
 
-	if (abs(recent - time_ts_us) > ctx->config->time_delta) {
-		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" us = %"PRIu64" - %"PRIu64")\n", (uint64_t)abs(recent - time_ts_us), recent, time_ts_us);
+	if (llabs(recent - time_ts_us) > ctx->config->time_delta) {
+		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" us = %"PRIu64" - %"PRIu64")\n", (uint64_t)llabs(recent - time_ts_us), recent, time_ts_us);
 		printf("Requesting signed time...\n");
 
 		ctx->time.chal_ts = recent;
@@ -526,14 +526,14 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 //#endif
 			return;
 	}
-	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ": signed time = %d (0x%X)\n",time_ts,time_ts);
-
-	time_ts_us = time_ts;
-	time_ts_us *= 1000000;
+	time_ts_us = (uint64_t)time_ts * 1000000;
 
 	ctx->time.offs += (time_ts_us - ctx->time.chal_ts);
 	ctx->time.chal_ts = 0;
 	ctx->time.is_time_ready = 1;
+
+	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ": signed time = %d, offs %"PRIu64"\n",
+	       time_ts, ctx->time.offs);
 }
 
 /**

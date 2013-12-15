@@ -62,7 +62,7 @@ struct macan_config {
 	uint32_t ack_timeout;		       /* Timeout in microseconds for waiting for key acknowledge */
 	uint64_t skey_validity;		       /* Session key expiration time in microseconds */
 	uint32_t skey_chg_timeout;	       /* ??? when to change the session key (microseconds) ??? */
-	uint32_t time_timeout;		       /* ??? how long is time valid (microseconds) ??? */
+	uint32_t time_timeout;		       /* Don't ask for authenticated time more often than this value (microseconds) */
 	uint32_t time_delta;		       /* When our estimated time differs from timerserver time by this number of microseconds, we ask for authenticated time */
 };
 
