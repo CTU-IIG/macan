@@ -27,6 +27,7 @@
 #include "macan_private.h"
 #include "target/linux/lib.h"
 #include <string.h>
+#include <inttypes.h>
 
 void debug_printf(const char* format, ...)
 {
@@ -144,5 +145,6 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 			}
 		}
 	}
-	printf("RECV %s %-20s %s" ANSI_COLOR_RESET "\n", color, frame, comment);
+	uint64_t time = read_time();
+	printf("RECV %s%4"PRIu64".%04"PRIu64" %-20s %s" ANSI_COLOR_RESET "\n", color, time/1000000, (time/100)%1000, frame, comment);
 }
