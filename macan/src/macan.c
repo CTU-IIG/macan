@@ -764,7 +764,13 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
         // we have received 32 bit signal
         struct macan_signal *sig32 = (struct macan_signal *)cf->data;
         sig_num = sig32_num;
+        assert(sig_num < ctx->config->sig_count);
         skey = cpart[ctx->config->sigspec[sig_num].src_id]->skey;
+        if (!skey) {
+		fail_printf("No key to check signal %d\n", sig_num);
+		return;
+        }
+        assert(skey);
         cmac = sig32->cmac;
         memcpy(&sig_val, sig32->sig, 4);
 
@@ -778,6 +784,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	    plain[4] = ecuid;
 	    memcpy(plain + 6, sig16->signal, 2);
         skey = cpart[ecuid]->skey;
+        assert(skey);
         plain_length = 8;
         cmac = sig16->cmac;
         sig_num = sig16->sig_num;
