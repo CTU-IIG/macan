@@ -37,7 +37,7 @@
 #include <nettle/aes.h>
 #include "common.h"
 #include "helper.h"
-#include "aes_keywrap.h"
+#include "../src/target/linux/aes_keywrap.h"
 #include "macan_private.h"
 #include <stdbool.h>
 #include <time.h>

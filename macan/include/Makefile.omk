@@ -1,3 +1,2 @@
-include_HEADERS = aes_cmac.h aes_keywrap.h can_frame.h common.h		\
-                  debug.h helper.h macan.h macan_private.h she.h	\
-                  tc_aes_keywrap.h
+include_HEADERS = can_frame.h common.h debug.h helper.h macan.h	\
+                  macan_private.h

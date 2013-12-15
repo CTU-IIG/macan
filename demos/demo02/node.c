@@ -31,7 +31,6 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "common.h"
-#include "aes_keywrap.h"
 #ifdef __CPU_TC1798__
 #include "can_frame.h"
 #include "Std_Types.h"
@@ -51,7 +50,6 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <nettle/aes.h>
-#include "aes_cmac.h"
 #endif /* __CPU_TC1798__ */
 #include "helper.h"
 #include "macan.h"

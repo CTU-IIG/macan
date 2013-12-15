@@ -30,7 +30,6 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "common.h"
-#include "aes_keywrap.h"
 #ifdef __CPU_TC1798__
 #include "Can.h"
 #include "she.h"

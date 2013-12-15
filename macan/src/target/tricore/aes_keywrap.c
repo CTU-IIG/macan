@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <common.h>
 #include "she.h"
+#include "aes_keywrap.h"
 
 /* ToDo:
  * 	consider endianness
