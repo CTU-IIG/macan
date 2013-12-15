@@ -791,7 +791,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)sig->cmac);
 #endif
 	if (!check_cmac(ctx, skey, cmac, plain, plain, plain_length)) {
-		printf("signal CMAC \033[1;31merror\033[0;0m\n");
+		fail_printf("CMAC error for signal %d\n", sig_num);
 		return;
 	}
 

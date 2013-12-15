@@ -67,6 +67,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 	if (!fill_time) {
 		aes_cmac(&cipher, len, cmac, plain);
 		ret = memchk(cmac4, cmac, 4);
+#define DEBUG
 #ifdef DEBUG
 		if(ret == 0) {
 			// check failed, print more info
