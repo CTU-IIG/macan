@@ -164,7 +164,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 		macan_wait_for_key_acks(ctx, s);
 		if (signal_time < read_time()) {
 			signal_time = read_time() + TIME_EMIT_SIG;
-			macan_send_sig(ctx, s, SIGNAL_B, 10);
+			macan_send_sig(ctx, s, SIGNAL_CTU, 10);
 		}
 
 #ifndef __CPU_TC1798__
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
 	s = helper_init();
 	io_init();
 	macan_init(&macan_ctx, &config);
-	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback);
+	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback);
 	operate_ecu(&macan_ctx, s);
 
 	return 0;

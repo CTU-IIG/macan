@@ -27,9 +27,9 @@
 #include <macan.h>
 
 enum sig_id {
-	NO_SIGNAL,
-	SIGNAL_A,
-	SIGNAL_B,
+	NO_SIGNAL, /* TODO: Remove this? If this is here because 0 cannot be a valid signal, fix that. */
+	SIGNAL_VW,
+	SIGNAL_CTU,
 	TIME_DUMMY2,
 	TIME_DUMMY3,
 	SIG_COUNT
