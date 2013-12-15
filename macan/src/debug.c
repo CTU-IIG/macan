@@ -49,12 +49,14 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 	sprint_canframe(frame, cf, 0, 8);
 	if (ctx && ctx->config) {
 		if (cf->can_id == ctx->config->can_id_time) {
+			uint32_t time;
+			memcpy(&time, cf->data, 4); /* FIXME: Handle endian */
 			if (cf->can_dlc == 4) {
 				color = ANSI_COLOR_LGRAY;
-				sprintf(comment, "time");
+				sprintf(comment, "time %u", time);
 			} else {
 				color = ANSI_COLOR_DGRAY;
-				sprintf(comment, "authenticated time");
+				sprintf(comment, "authenticated time %u", time);
 			}
 		}
 		else if ((src = canid2ecuid(ctx, cf->can_id)) >= 0) {

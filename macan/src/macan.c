@@ -481,7 +481,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
     time_ts_us *= 1000000;
 
 	if (abs(recent - time_ts_us) > ctx->config->time_delta) {
-		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" = %"PRIu64" - %"PRIu64")\n", (uint64_t)abs(recent - time_ts_us), recent, time_ts_us);
+		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" us = %"PRIu64" - %"PRIu64")\n", (uint64_t)abs(recent - time_ts_us), recent, time_ts_us);
 		printf("Requesting signed time...\n");
 
 		ctx->time.chal_ts = recent;
@@ -521,9 +521,9 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id),2); /* FIXME: Endianing problem */
 
 	if (!check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
-#ifdef DEBUG
-		fail_printf("check cmac\n");
-#endif
+//#ifdef DEBUG
+		fail_printf("check cmac time %d\n", time_ts);
+//#endif
 		return;
 	}
 	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ": signed time = %d (0x%X)\n",time_ts,time_ts);
