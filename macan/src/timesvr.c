@@ -30,7 +30,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "common.h"
-#include "../src/target/linux/aes_keywrap.h"
+#include "target/linux/aes_keywrap.h"
 #ifdef TC1798
 #include "can_frame.h"
 #include "Std_Types.h"
@@ -50,7 +50,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <nettle/aes.h>
-#include "../src/target/linux/aes_cmac.h"
+#include "target/linux/aes_cmac.h"
 #endif /* TC1798 */
 #include "helper.h"
 #include <macan.h>
