@@ -64,6 +64,8 @@
 
 static struct macan_ctx macan_ctx;
 
+int button_pressed;
+
 #ifdef __CPU_TC1798__
 void ClearEndinit(void)
 {
@@ -110,29 +112,27 @@ void SetEndinit(void)
 
 /* will light up onboard LEDs according to bits in "value" argument*/
 void led_set(uint8_t value) {
-	ClearEndinit();
-	// set all led pins as outputs
-	P4_IOCR0.U = 0x80808080;
-	P4_IOCR4.U = 0x80808080;
-	// write output
 	P4_OUT.U = ~value;
-	SetEndinit();
 }
 
 void handle_io(void)
 {
-	P7_IOCR4.B.PC5 = 0x2; // P7.5 is input with pull-up switch
-	int pressed = !P7_IN.B.P5;
+	button_pressed = !P7_IN.B.P5;
+	P4_OUT.B.P8 = !!button_pressed;
 
-	P7_IOCR0.B.PC0 = 0x8; // P7.0 is output (red LED)
-	P7_OUT.B.P0 = pressed;
-	led_set(pressed ? 0xf0 : 0x0f);
+	//P7_OUT.B.P0 = button_pressed; // Red LED
 
 	//Adc_ReadGroup(0, 0);
 }
 
 void io_init(void)
 {
+	// Blue LEDs on P4
+	P4_IOCR0.U = 0x80808080;
+	P4_IOCR4.U = 0x80808080;
+
+	P7_IOCR4.B.PC5 = 0x2; // P7.5 is input with pull-up switch
+	P7_IOCR0.B.PC0 = 0x8; // P7.0 is output (red LED)
   //Adc_Init(Adc_ConfigRoot);
 }
 
@@ -140,6 +140,11 @@ void io_init(void)
 void io_init(void)
 {
 
+}
+
+void handle_io(void)
+{
+	button_pressed = read_time() / 1000000 / 3;
 }
 #endif
 
@@ -155,16 +160,19 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 	while(1) {
 #ifdef __CPU_TC1798__
 		poll_can_fifo(can_recv_cb);
-		handle_io();
 #else
 		helper_read_can(ctx, s, can_recv_cb);
 #endif /* __CPU_TC1798__ */
+		handle_io();
 
 		macan_request_keys(ctx, s);
 		macan_wait_for_key_acks(ctx, s);
-		if (signal_time < read_time()) {
+
+		static int last_pressed = 0;
+		if (signal_time < read_time() || last_pressed != button_pressed) {
 			signal_time = read_time() + TIME_EMIT_SIG;
-			macan_send_sig(ctx, s, SIGNAL_CTU, 10);
+			last_pressed = button_pressed;
+			macan_send_sig(ctx, s, SIGNAL_CTU, button_pressed);
 		}
 
 #ifndef __CPU_TC1798__
