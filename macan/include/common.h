@@ -24,6 +24,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdint.h>
+#include <string.h>
+
 #define print_hex(key) print_hexn(key, 16)
 #define check128(a, b) memchk(a, b, 16)
 
@@ -42,4 +45,3 @@ void print_hexn(const void *data, size_t len);
 void memcpy_bw(void *dst, const void *src, size_t len);
 
 #endif /* COMMON_H */
-

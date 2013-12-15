@@ -53,6 +53,7 @@
 #endif /* __CPU_TC1798__ */
 #include <macan.h>
 #include "macan_private.h"
+#include "debug.h"
 
 /**
  * Initialize communication partner.
@@ -353,12 +354,12 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 #endif
 
 		if (fwd_id < 0 || fwd_id >= ctx->config->node_count || cpart[fwd_id] == NULL) {
-			printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": %s: unexpected fwd_id %#x\n", __func__, fwd_id);
+			fail_printf("unexpected fwd_id %#x\n", fwd_id);
 			return -1;
 		}
 
 		if(!memchk(skey+18, cpart[fwd_id]->chg, 6)) {
-			printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": check cmac\n");
+			fail_printf("check cmac from %d\n", fwd_id);
 			return -1;
 		}
 
@@ -464,7 +465,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 
 	if (!is_skey_ready(ctx, ctx->config->time_server_id)) {
 #ifdef DEBUG
-        printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": ignoring, we don't have key for timeserver\n");
+        fail_printf("ignoring, we don't have key for timeserver\n");
 #endif
 		return;
     }
@@ -521,7 +522,7 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 
 	if (!check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
 #ifdef DEBUG
-		printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": check cmac\n");
+		fail_printf("check cmac\n");
 #endif
 		return;
 	}
