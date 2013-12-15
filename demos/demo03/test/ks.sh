@@ -3,4 +3,4 @@
 source ./path.sh
 clear
 echo "BASH: Starting VW keyserver"
-$PATH_TO_VW_BIN/macanks -l 500 -f $PATH_TO_VW_CONFIG/ks.json -k 01
+$PATH_TO_VW_BIN/macanks -l 5000 -f config/ks.json -k 01

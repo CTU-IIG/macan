@@ -28,6 +28,7 @@ stuff "./macanmon.sh\n"
 
 focus down
 screen -t "Demo App"
+stuff "./vwsend.sh\n"
 
 focus down
 screen
