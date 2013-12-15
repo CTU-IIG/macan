@@ -117,8 +117,15 @@ void led_set(uint8_t value) {
 
 void handle_io(void)
 {
+	static int last_blink = 0;
+
 	button_pressed = !P7_IN.B.P5;
 	P4_OUT.B.P7 = !button_pressed; // One blue LED shows the button state
+	if ((int)read_time() - last_blink > 500000) {
+		static int blink = 0;
+		last_blink = read_time();
+		P4_OUT.B.P6 = (blink = !blink);
+	}
 
 	//P7_OUT.B.P0 = button_pressed; // Red LED
 
