@@ -44,11 +44,19 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 {
 	char frame[80], comment[80];
 	int8_t src;
+	const char *color = "";
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);
 	if (ctx && ctx->config) {
-		if (cf->can_id == ctx->config->can_id_time)
-			sprintf(comment, "time %ssigned", cf->can_dlc == 4 ? "un" : "");
+		if (cf->can_id == ctx->config->can_id_time) {
+			if (cf->can_dlc == 4) {
+				color = ANSI_COLOR_LGRAY;
+				sprintf(comment, "time");
+			} else {
+				color = ANSI_COLOR_DGRAY;
+				sprintf(comment, "authenticated time");
+			}
+		}
 		else if ((src = canid2ecuid(ctx, cf->can_id)) >= 0) {
 			/* Crypt frame */
 			if (cf->can_dlc < 2) {
@@ -66,14 +74,17 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				case FL_CHALLENGE: {
 					struct macan_challenge *chg = (struct macan_challenge*)cf->data;
 					sprintf(type, "challenge fwd_id=%d", chg->fwd_id);
+					color = ANSI_COLOR_DCYAN;
 					break;
 				}
 				case FL_SESS_KEY_OR_ACK:
 					if (src == ctx->config->key_server_id) {
 						struct macan_sess_key *sk = (struct macan_sess_key*)cf->data;
+						color = ANSI_COLOR_DBLUE;
 						sprintf(type, "sess_key seq=%d len=%d", GET_SEQ(sk->seq_and_len), GET_LEN(sk->seq_and_len));
 					} else {
 						struct macan_ack *ack = (struct macan_ack*)cf->data;
+						color = ANSI_COLOR_BLUE;
 						char *p = type + sprintf(type, "ack group=");
 						char delim = '[';
 						int i;
@@ -91,6 +102,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 						sprintf(type, "signal %d", sig->sig_num);
 					} else {
 						struct macan_sig_auth_req *ar = (struct macan_sig_auth_req*)cf->data;
+						color = ANSI_COLOR_MAGENTA;
 						const char *auth_req_type;
 						switch (cf->can_dlc) {
 						case 3: auth_req_type = "NO MAC"; break;
@@ -130,5 +142,5 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 			}
 		}
 	}
-	printf("RECV %-20s %s\n", frame, comment);
+	printf("RECV %s %-20s %s" ANSI_COLOR_RESET "\n", color, frame, comment);
 }

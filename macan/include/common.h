@@ -37,6 +37,10 @@
 #define ANSI_COLOR_BLUE    "\033[1;34m"
 #define ANSI_COLOR_MAGENTA "\033[1;35m"
 #define ANSI_COLOR_CYAN    "\033[1;36m"
+#define ANSI_COLOR_LGRAY   "\033[0;37m"
+#define ANSI_COLOR_DGRAY   "\033[1;30m"
+#define ANSI_COLOR_DBLUE   "\033[0;34m"
+#define ANSI_COLOR_DCYAN   "\033[0;36m"
 #define ANSI_COLOR_RESET   "\033[0;0m"
 
 void eval(const char *tname,int b);
