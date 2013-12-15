@@ -1,0 +1,34 @@
+# Screen setup for the demo. Run it as "screen -c screenrc"
+mousetrack on
+
+# Create 3x2 regions
+split -v
+split
+split
+focus bottom
+split
+split
+
+focus top
+screen -t "Key Server"
+stuff "sleep 1\n./ks.sh\n"
+
+focus down
+screen -t "Time Server"
+stuff "./ts.sh"
+
+focus down
+screen -t "VW MaCAN GW"
+stuff "./node-vw.sh"
+
+focus top
+focus right
+screen -t "MaCAN Monitor"
+stuff "./macanmon.sh\n"
+
+focus down
+screen -t "Demo App"
+
+focus down
+screen
+stuff "./node-ctu.sh"
