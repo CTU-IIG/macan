@@ -454,21 +454,21 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
 	uint64_t recent;
-    uint64_t time_ts_us;
-   
+	uint64_t time_ts_us;
+
 	memcpy(&time_ts, cf->data, 4);
 
 #ifdef DEBUG
-    printf(ANSI_COLOR_CYAN "RECV plain time\n" ANSI_COLOR_RESET);  
+	printf(ANSI_COLOR_CYAN "RECV plain time\n" ANSI_COLOR_RESET);
 	printf("plain time = %d (0x%X)\n", time_ts,time_ts);
 #endif
 
 	if (!is_skey_ready(ctx, ctx->config->time_server_id)) {
 #ifdef DEBUG
-        fail_printf("ignoring, we don't have key for timeserver\n");
+		fail_printf("ignoring, we don't have key for timeserver\n");
 #endif
 		return;
-    }
+	}
 
 	recent = read_time() + ctx->time.offs;
 
@@ -477,8 +477,8 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 			return;
 	}
 
-    time_ts_us = time_ts;
-    time_ts_us *= 1000000;
+	time_ts_us = time_ts;
+	time_ts_us *= 1000000;
 
 	if (abs(recent - time_ts_us) > ctx->config->time_delta) {
 		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" us = %"PRIu64" - %"PRIu64")\n", (uint64_t)abs(recent - time_ts_us), recent, time_ts_us);
@@ -524,7 +524,7 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 //#ifdef DEBUG
 		fail_printf("check cmac time %d\n", time_ts);
 //#endif
-		return;
+			return;
 	}
 	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ": signed time = %d (0x%X)\n",time_ts,time_ts);
 
