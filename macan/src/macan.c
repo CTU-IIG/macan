@@ -671,8 +671,7 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 		cmac = sig32->cmac;
 	} else {
 		struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
-		sig16->flags = 3;
-		sig16->dst_id = dst_id;
+		sig16->flags_and_dst_id = FL_SIGNAL << 6 | (dst_id & 0x3f);
 		sig16->sig_num = sig_num;
 		memcpy(plain + 6, &signal, 2);
 		memcpy(&sig16->signal, &signal, 2);

@@ -86,8 +86,7 @@ struct macan_signal {
 };
 
 struct macan_signal_ex {
-	uint8_t flags : 2;
-	uint8_t dst_id : 6;
+	uint8_t flags_and_dst_id;
 	uint8_t sig_num;
 	uint8_t signal[2];
 	uint8_t cmac[4];
