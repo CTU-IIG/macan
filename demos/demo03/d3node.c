@@ -118,7 +118,7 @@ void led_set(uint8_t value) {
 void handle_io(void)
 {
 	button_pressed = !P7_IN.B.P5;
-	P4_OUT.B.P8 = !!button_pressed;
+	P4_OUT.B.P7 = !button_pressed; // One blue LED shows the button state
 
 	//P7_OUT.B.P0 = button_pressed; // Red LED
 
@@ -130,6 +130,7 @@ void io_init(void)
 	// Blue LEDs on P4
 	P4_IOCR0.U = 0x80808080;
 	P4_IOCR4.U = 0x80808080;
+	led_set(0);
 
 	P7_IOCR4.B.PC5 = 0x2; // P7.5 is input with pull-up switch
 	P7_IOCR0.B.PC0 = 0x8; // P7.0 is output (red LED)
