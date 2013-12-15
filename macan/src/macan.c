@@ -353,7 +353,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 #endif
 
 		if (fwd_id < 0 || fwd_id >= ctx->config->node_count || cpart[fwd_id] == NULL) {
-			printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": unexpected fwd_id\n");
+			printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET ": %s: unexpected fwd_id %#x\n", __func__, fwd_id);
 			return -1;
 		}
 
