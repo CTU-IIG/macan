@@ -746,7 +746,7 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sign
 /* ToDo: receive signal frame with 32bits */
 void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_num)
 {
-	uint8_t plain[8];
+	uint8_t plain[10];
     uint8_t sig_num;
 	uint32_t sig_val = 0;
 	uint8_t *skey;
