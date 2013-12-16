@@ -36,6 +36,7 @@
  */
 void lshift(uint8_t *dst, uint8_t *src)
 {
+	/* TODO: This is not Linux specific - move it to the common code */
 	int i;
 
 	for(i = 0; i < 15; i++) {
@@ -61,7 +62,7 @@ void generate_subkey(uint8_t *key, uint8_t *key1, uint8_t *key2)
 	lshift(key1, l);
 	if (l[0] & 0x80) {
 		memxor(key1, rb, 16);
-		key1[15] = 0x87; // to work with VW
+		//key1[15] = 0x87; // to work with VW
 	}
 
 	lshift(key2, key1);
