@@ -281,7 +281,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 #endif
 
 	/* ToDo: make difference between wrong CMAC and not having the key */
-	if (!check_cmac(ctx, skey, ack->cmac, plain, plain, sizeof(plain))) {
+	if (!check_cmac(ctx, skey, ack->cmac, plain, plain+4, sizeof(plain))) {
 		printf("error: ACK CMAC failed\n");
 		return -1;
 	}
@@ -797,7 +797,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 #ifdef DEBUG_TS
 	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)sig->cmac);
 #endif
-	if (!check_cmac(ctx, skey, cmac, plain, plain, plain_length)) {
+	if (!check_cmac(ctx, skey, cmac, plain, plain+4, plain_length)) {
 		fail_printf("CMAC error for signal %d\n", sig_num);
 		return;
 	}

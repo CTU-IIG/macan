@@ -83,6 +83,7 @@ int write(int s, struct can_frame *cf, int len)
  */
 int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
 {
+	/* TODO: This is not target specific - move to the common code base */
 	uint8_t cmac[16];
 	uint64_t time;
 	uint32_t *ftime = (uint32_t *)fill_time;

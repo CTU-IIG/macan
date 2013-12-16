@@ -59,7 +59,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 	struct aes_ctx cipher;
 	uint8_t cmac[16];
 	uint64_t time;
-	uint32_t *ftime = (uint32_t *)(fill_time + 4);
+	uint32_t *ftime = (uint32_t *)fill_time;
 	int i,ret;
 
 	aes_set_encrypt_key(&cipher, 16, skey);
@@ -96,7 +96,7 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 	printf("plain: "); print_hexn(plain,len);
 	printf("session key: "); print_hexn(&cipher,16);
 	printf("expected cmac: "); print_hexn(cmac4,4);
-	printf("time ±1: %d\n", time);
+	printf("time ±1: %"PRIu64"\n", time);
 
 	return 0;
 }
