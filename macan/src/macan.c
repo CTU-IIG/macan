@@ -187,9 +187,10 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
  * @param sig_num  signal id number
  * @param fnc      pointer to the signal callback function
  */
-int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc)
+int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc, sig_cback invalid_cmac)
 {
 	ctx->sighand[sig_num]->cback = fnc;
+	ctx->sighand[sig_num]->invalid_cback = invalid_cmac;
 
 	return 0;
 }
@@ -798,7 +799,10 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)sig->cmac);
 #endif
 	if (!check_cmac(ctx, skey, cmac, plain, plain+4, plain_length)) {
-		fail_printf("CMAC error for signal %d\n", sig_num);
+		if (sighand[sig_num]->invalid_cback)
+			sighand[sig_num]->invalid_cback(sig_num, sig_val);
+		else
+			fail_printf("CMAC error for signal %d\n", sig_num);
 		return;
 	}
 

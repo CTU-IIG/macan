@@ -126,9 +126,6 @@ void handle_io(void)
 		last_blink = read_time();
 		P4_OUT.B.P6 = (blink = !blink);
 	}
-
-	//P7_OUT.B.P0 = button_pressed; // Red LED
-
 	//Adc_ReadGroup(0, 0);
 }
 
@@ -191,9 +188,19 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 
 void sig_callback(uint8_t sig_num, uint32_t sig_val)
 {
-	printf("received authenticated signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
+	printf("received authentic signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
 #ifdef __CPU_TC1798__
-	P4_OUT.U = ~(~P4_OUT.U & 0xf0 | sig_val & 0xf);
+	P4_OUT.U = ~(~P4_OUT.U & 0xf0 | sig_val & 0xf); // Blue LEDs
+	P7_OUT.B.P0 = 0; // Red LED off
+#endif
+}
+
+void sig_invalid(uint8_t sig_num, uint32_t sig_val)
+{
+	printf("received invalid signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
+#ifdef __CPU_TC1798__
+	P7_OUT.B.P0 = 1; // Red LED on
+
 #endif
 }
 
@@ -204,7 +211,7 @@ int main(int argc, char *argv[])
 	s = helper_init();
 	io_init();
 	macan_init(&macan_ctx, &config);
-	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback);
+	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);
 	operate_ecu(&macan_ctx, s);
 
 	return 0;

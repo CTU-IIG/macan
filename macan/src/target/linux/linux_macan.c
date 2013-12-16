@@ -67,7 +67,6 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 	if (!fill_time) {
 		aes_cmac(&cipher, len, cmac, plain);
 		ret = memchk(cmac4, cmac, 4);
-#define DEBUG
 #ifdef DEBUG
 		if(ret == 0) {
 			// check failed, print more info
@@ -92,11 +91,13 @@ int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8
 		}
 	}
 
+#if DEBUG
 	printf(ANSI_COLOR_RED "CMAC check failed\n" ANSI_COLOR_RESET);
 	printf("plain: "); print_hexn(plain,len);
 	printf("session key: "); print_hexn(&cipher,16);
 	printf("expected cmac: "); print_hexn(cmac4,4);
 	printf("time ±1: %"PRIu64"\n", time);
+#endif
 
 	return 0;
 }

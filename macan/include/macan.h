@@ -74,7 +74,7 @@ int  macan_init(struct macan_ctx *ctx, const struct macan_config *config);
 void macan_set_ltk(struct macan_ctx *ctx, uint8_t *key);
 void macan_request_keys(struct macan_ctx *ctx, int s);
 int  macan_wait_for_key_acks(struct macan_ctx *ctx, int s);
-int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc);
+int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc, sig_cback invalid_cmac);
 void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t signal);
 int  macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 

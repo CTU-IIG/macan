@@ -134,6 +134,7 @@ struct sig_handle {
 	                         allows the transmit to happen only if presc_cnt == 0 */
 	uint8_t flags;        /* mark AUTHREQ_SENT if signal request AUTH_REQ was sent */
 	void (*cback)(uint8_t sig_num, uint32_t sig_val);
+	void (*invalid_cback)(uint8_t sig_num, uint32_t sig_val);
 };
 
 #define SIG_DONTSIGN -1

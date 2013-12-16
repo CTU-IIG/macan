@@ -102,8 +102,8 @@ int main(int argc, char *argv[])
 
 	s = helper_init();
 	macan_init(&macan_ctx, &config);
-	macan_reg_callback(&macan_ctx, ENGINE, sig_callback);
-	macan_reg_callback(&macan_ctx, BRAKE, sig_callback);
+	macan_reg_callback(&macan_ctx, ENGINE, sig_callback, NULL);
+	macan_reg_callback(&macan_ctx, BRAKE, sig_callback, NULL);
 	operate_ecu(&macan_ctx, s);
 
 	return 0;
