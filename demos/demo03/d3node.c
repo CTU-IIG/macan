@@ -191,7 +191,10 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 
 void sig_callback(uint8_t sig_num, uint32_t sig_val)
 {
-	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
+	printf("received authenticated signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
+#ifdef __CPU_TC1798__
+	P4_OUT.U = ~(~P4_OUT.U & 0xf0 | sig_val & 0xf);
+#endif
 }
 
 int main(int argc, char *argv[])
