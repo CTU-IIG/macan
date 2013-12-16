@@ -45,6 +45,7 @@
 #include <helper.h>
 #include <macan.h>
 #include <macan_private.h>
+#include <string.h>
 
 #ifndef __CPU_TC1798__
 
