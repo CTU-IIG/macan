@@ -104,7 +104,7 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config)
 		}
 
 		ctx->sighand[i] = malloc(sizeof(struct sig_handle));
-		ctx->sighand[i]->presc = SIG_DONTSIGN;
+		ctx->sighand[i]->presc = 1; //SIG_DONTSIGN;
 		ctx->sighand[i]->presc_cnt = 0;
 		ctx->sighand[i]->flags = 0;
 		ctx->sighand[i]->cback = NULL;
