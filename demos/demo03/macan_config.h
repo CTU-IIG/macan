@@ -27,7 +27,7 @@
 #include <macan.h>
 
 enum sig_id {
-	NO_SIGNAL, /* TODO: Remove this? If this is here because 0 cannot be a valid signal, fix that. */
+	NO_SIGNAL, /* TODO: Remove this? If this is here because 0 cannot be a valid signal, fix that. Issue in redmine. */
 	SIGNAL_VW,
 	SIGNAL_CTU,
 	TIME_DUMMY2,
