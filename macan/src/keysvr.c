@@ -110,10 +110,10 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
 		send_challenge(ctx, s, fwd_id, dst_id, NULL);
 	}
 
-	memcpy(plain, chal, 6);
-	plain[6] = fwd_id;
-	plain[7] = dst_id;
-	memcpy(plain + 8, key, 16);
+	memcpy(plain, key, 16);
+	plain[16] = dst_id;
+	plain[17] = fwd_id;
+	memcpy(plain + 18, chal, 6);
 	aes_wrap(cipher, 24, wrap, plain);
 
 	printf("send KEY (wrap, plain):\n");
