@@ -116,7 +116,7 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
 	memcpy(plain + 18, chal, 6);
 	aes_wrap(cipher, 24, wrap, plain);
 
-	printf("send KEY (wrap, plain):\n");
+	print_msg(MSG_INFO,"send KEY (wrap, plain):\n");
 	print_hexn(wrap, 32);
 	print_hexn(plain, 24);
 
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-        config->node_id = config->key_server_id;
+	config->node_id = config->key_server_id;
 	srand(time(NULL));
 	s = helper_init();
 	macan_init(&macan_ctx, config);

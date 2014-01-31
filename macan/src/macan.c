@@ -171,7 +171,7 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 
 		if (!(sighand[i]->flags & AUTHREQ_SENT)) {
 			sighand[i]->flags |= AUTHREQ_SENT;
-			printf("Sending req auth for signal %d...\n",i);
+			print_msg(MSG_REQUEST,"Sending req auth for signal #%d\n",i);
 			send_auth_req(ctx, s, cp, i, presc);
 		}
 	}
@@ -226,14 +226,13 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 #else
 	sign(skey, ack.cmac, plain, sizeof(plain));
 #endif
-
 	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 8;
 	memcpy(cf.data, &ack, 8);
 
 	res = write(s, &cf, sizeof(struct can_frame));
 	if (res != 16) {
-		perror("send ack");
+		fail_printf("%s\n","failed to send some bytes of ack");
 	}
 
 	return;
@@ -369,7 +368,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 		cpart[fwd_id]->group_field |= 1 << ctx->config->node_id; // FIXME: Possible endianing problems
 
 		// print key
-		printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ": KEY (%d -> %d) is ", ctx->config->node_id, fwd_id);
+		print_msg(MSG_OK,"KEY (%d -> %d) is ", ctx->config->node_id, fwd_id);
 		print_hexn(cpart[fwd_id]->skey, 16);
 
 		return fwd_id;	/* FIXME: fwd_id can be 0 as well. What our callers do with the returned value? */
@@ -533,8 +532,7 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	ctx->time.chal_ts = 0;
 	ctx->time.is_time_ready = 1;
 
-	printf(ANSI_COLOR_GREEN "OK" ANSI_COLOR_RESET ": signed time = %d, offs %"PRIu64"\n",
-	       time_ts, ctx->time.offs);
+	print_msg(MSG_OK,"signed time = %d, offs %"PRIu64"\n",time_ts, ctx->time.offs);
 }
 
 /**
@@ -608,8 +606,8 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	if (!check_cmac(ctx, skey, areq->cmac, plain, plain, sizeof(plain))) {
 		printf("error: sig_auth cmac is incorrect\n");
 	}
-	*/
-	printf("Received auth request for signal %d...\n",areq->sig_num);
+
+	print_msg(MSG_INFO,"Received auth request for signal #%d\n",areq->sig_num);
 #ifdef DEBUG
 	printf(ANSI_COLOR_CYAN "RECV Auth Req\n" ANSI_COLOR_RESET);
 	printf("sig_num: 0x%X\n",areq->sig_num);
@@ -806,6 +804,8 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		return;
 	}
 
+	print_msg(MSG_SIGNAL,"Received signal #%d, value: %d\n", sig_num, sig_val);
+
 	if (sighand[sig_num]->cback)
 		sighand[sig_num]->cback(sig_num, sig_val);
 }
@@ -870,7 +870,7 @@ void macan_request_keys(struct macan_ctx *ctx, int s)
 		if (cpart[i]->valid_until > read_time())
 			continue;
 
-		printf("Requesting key for %d...\n",i);
+		print_msg(MSG_REQUEST,"Requesting skey for node #%d\n",i);
 		send_challenge(ctx, s, ctx->config->key_server_id, i, cpart[i]->chg);
 		cpart[i]->valid_until = read_time() + ctx->config->skey_chg_timeout;
 	}
