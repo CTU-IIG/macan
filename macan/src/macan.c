@@ -213,6 +213,9 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	if (!is_skey_ready(ctx, dst_id))
 		return;
 
+	if(!is_time_ready(ctx)) 
+		return;
+
 	skey = cpart[dst_id]->skey;
 	memcpy(&ack.group, &cpart[dst_id]->group_field, 3);
 	time = macan_get_time(ctx);
@@ -451,6 +454,8 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 		return;
 	}
 
+	memcpy(&time_ts, cf->data, 4);
+	time_ts_us = (uint64_t)time_ts * ctx->config->time_div;
 	recent = read_time() + ctx->time.offs; /* Estimated time on TS (us) */
 
 	if (ctx->time.chal_ts) {
@@ -459,11 +464,11 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 			return;
 	}
 
-	time_ts_us = (uint64_t)time_ts * 1000000;
+	delta = llabs(recent - time_ts_us);
 
-	if (llabs(recent - time_ts_us) > ctx->config->time_delta) {
-		printf(ANSI_COLOR_YELLOW "WARN" ANSI_COLOR_RESET ": time out of sync (%"PRIu64" us = %"PRIu64" - %"PRIu64")\n", (uint64_t)llabs(recent - time_ts_us), recent, time_ts_us);
-		printf("Requesting signed time...\n");
+	if (delta > ctx->config->time_delta) {
+		print_msg(MSG_WARN,"time out of sync (%"PRIu64" us = %"PRIu64" - %"PRIu64")\n", delta, recent, time_ts_us);
+		print_msg(MSG_REQUEST,"Requesting signed time\n");
 
 		ctx->time.chal_ts = recent;
 		send_challenge(ctx, s, ctx->config->time_server_id, 0, ctx->time.chg);
@@ -502,7 +507,8 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 		//fail_printf("check cmac time %d\n", time_ts);
 		return;
 	}
-	time_ts_us = (uint64_t)time_ts * 1000000;
+	
+	time_ts_us = (uint64_t)time_ts * ctx->config->time_div;
 
 	ctx->time.offs += (time_ts_us - ctx->time.chal_ts);
 	ctx->time.chal_ts = 0;

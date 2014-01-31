@@ -64,7 +64,7 @@
 
 #define TS_TEST_ERR 500000
 
-uint64_t last_usec;
+uint64_t macan_time;
 static struct macan_ctx macan_ctx;
 
 /**
@@ -81,7 +81,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	struct can_frame canf;
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
 	uint8_t *skey;
-	uint8_t plain[10];
+	uint8_t plain[12];
 	uint8_t dst_id;
 	struct com_part **cpart;
 
@@ -89,23 +89,24 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	dst_id = canid2ecuid(ctx, cf->can_id);
 
 	if (!is_skey_ready(ctx, dst_id)) {
-		printf("cannot send time, because dont have key\n");
+		print_msg(MSG_FAIL,"cannot send time, because don't have key\n");
 		return -1;
 	}
 
 	skey = cpart[dst_id]->skey;
 
-	memcpy(plain, ch->chg, 6);
-	memcpy(plain + 6, &last_usec, 4);
+	memcpy(plain, &macan_time, 4);
+	memcpy(plain + 4, ch->chg, 6);
+	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id), 2);
 
 	canf.can_id = ctx->config->can_id_time;
 	canf.can_dlc = 8;
-	memcpy(canf.data, &last_usec, 4);
-	sign(skey, canf.data + 4, plain, 10);
+	memcpy(canf.data, &macan_time, 4);
+	sign(skey, canf.data + 4, plain, 12);
 
 	write(s, &canf, sizeof(canf));
 
-	printf("signed time sent\n");
+	print_msg(MSG_INFO,"signed time sent\n");
 	return 0;
 }
 
@@ -162,12 +163,12 @@ void broadcast_time(struct macan_ctx *ctx, int s, uint64_t *bcast_time)
 
 	*bcast_time = read_time();
 
-	usec = read_time() + TS_TEST_ERR;
-	last_usec = usec;
+	usec = read_time();
+	macan_time = usec / ctx->config->time_div;
 
 	cf.can_id = ctx->config->can_id_time;
 	cf.can_dlc = 4;
-	memcpy(cf.data, &usec, 4);
+	memcpy(cf.data, &macan_time, 4);
 
 	write(s, &cf, sizeof(cf));
 }
