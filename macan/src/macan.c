@@ -561,8 +561,8 @@ void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num
 
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	//uint8_t *skey;
-	//uint8_t plain[8];
+	uint8_t *skey;
+	uint8_t plain[8];
 	uint8_t sig_num;
     int can_sid,can_nsid;
 	struct macan_sig_auth_req *areq;
@@ -579,16 +579,18 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 		return;
 
 	areq = (struct macan_sig_auth_req *)cf->data;
-	//skey = cpart[ecuid]->skey;
+	skey = cpart[ecuid]->skey;
 
-	/* Don't check CMAC, VW node is not sending it 
 	plain[4] = ecuid;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
 
-	if (!check_cmac(ctx, skey, areq->cmac, plain, plain, sizeof(plain))) {
-		printf("error: sig_auth cmac is incorrect\n");
+	/* Check CMAC only if can_dlc is 7 */
+	if(cf->can_dlc == 7) {
+		if (!check_cmac(ctx, skey, areq->cmac, plain, plain, sizeof(plain))) {
+			printf("error: sig_auth cmac is incorrect\n");
+		}
 	}
 
 	print_msg(MSG_INFO,"Received auth request for signal #%d\n",areq->sig_num);
@@ -926,7 +928,9 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 			send_ack(ctx, s, canid2ecuid(ctx, cf->can_id));
 		break;
 	case FL_SIGNAL_OR_AUTH_REQ:
-		if (cf->can_dlc == 3)
+		// can_dlc is 3 => req_auth without CMAC (sent by VW)
+		// can_dlc is 7 => req_auth with CMAC (sent by CTU)
+		if (cf->can_dlc == 3 || cf->can_dlc == 7)
 			// length should be 7 bytes, but VW node is not sending CMAC!!
 			receive_auth_req(ctx, cf);
 		else
