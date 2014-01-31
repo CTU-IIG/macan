@@ -639,12 +639,10 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 	skey = cpart[dst_id]->skey;
 	t = macan_get_time(ctx);
 	
-	/* changed to be compatible with VW macangw */
-	memcpy(plain+4, &t, 4);
-	//plain[4] = ctx->config->node_id;
-	//plain[5] = dst_id;
 
 	if(is_32bit_signal(ctx,sig_num)) {
+		/* changed to be compatible with VW macangw */
+		memcpy(plain+4, &t, 4);
 		struct macan_signal *sig32 = (struct macan_signal *) sig;
 		// changed to be compatible with macangw
 		memcpy(plain, &signal, 4);
@@ -655,12 +653,18 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 		cmac = sig32->cmac;
 	} else {
 		struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
+
 		sig16->flags_and_dst_id = FL_SIGNAL << 6 | (dst_id & 0x3f);
 		sig16->sig_num = sig_num;
-		memcpy(plain + 6, &signal, 2);
 		memcpy(&sig16->signal, &signal, 2);
-		cf.can_id = CANID(ctx, ctx->config->node_id);
+
+		memcpy(plain, &t, 4);
+		memcpy(plain + 4, &(ctx->config->node_id), 1);
+		memcpy(plain + 5, &dst_id, 1);
+		memcpy(plain + 6, &signal, 2);
 		plain_length = 8;
+
+		cf.can_id = CANID(ctx, ctx->config->node_id);
 		cmac = sig16->cmac;
 	}
 
@@ -701,7 +705,7 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sign
 
 	dst_id = sigspec[sig_num].dst_id;
 	if (!is_channel_ready(ctx, dst_id)) {
-		printf("Channel not ready\n"); /* FIXME: return error instead of printing this */
+		//printf("Channel not ready\n"); /* FIXME: return error instead of printing this */
 		return;
 	}
 
@@ -732,6 +736,7 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sign
 void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_num)
 {
 	uint8_t plain[10];
+	uint8_t *fill_time;
     uint8_t sig_num;
 	uint32_t sig_val = 0;
 	uint8_t *skey;
@@ -763,17 +768,23 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		memcpy(plain,&sig_val,4);
 		memcpy(plain + 8,&(cf->can_id),2);
         plain_length = 10;
+		fill_time = plain+4;
     } else {
         // we have received 16 bit signal
 	    struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
-	    plain[4] = ecuid;
+
+		memcpy(plain + 4, &ecuid, 1);
+		memcpy(plain + 5, &(ctx->config->node_id), 1);
 	    memcpy(plain + 6, sig16->signal, 2);
+        plain_length = 8;
+		
         skey = cpart[ecuid]->skey;
         assert(skey);
-        plain_length = 8;
+
         cmac = sig16->cmac;
         sig_num = sig16->sig_num;
         memcpy(&sig_val, sig16->signal, 2);
+		fill_time = plain;
     }
 
 	//plain[5] = ctx->config->node_id;
@@ -782,7 +793,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 #ifdef DEBUG_TS
 	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)sig->cmac);
 #endif
-	if (!check_cmac(ctx, skey, cmac, plain, plain+4, plain_length)) {
+	if (!check_cmac(ctx, skey, cmac, plain, fill_time, plain_length)) {
 		if (sighand[sig_num]->invalid_cback)
 			sighand[sig_num]->invalid_cback(sig_num, sig_val);
 		else
