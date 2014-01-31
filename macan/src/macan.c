@@ -274,8 +274,8 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	memcpy(plain + 5, ack->group, 3);
 
 	/* ToDo: make difference between wrong CMAC and not having the key */
-	if (!check_cmac(ctx, skey, ack->cmac, plain, plain+4, sizeof(plain))) {
-		printf("error: ACK CMAC failed\n");
+	if (!check_cmac(ctx, skey, ack->cmac, plain, plain, sizeof(plain))) {
+		fail_printf("%s\n","error: ACK CMAC failed");
 		return -1;
 	}
 
@@ -358,6 +358,8 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 		cpart[fwd_id]->valid_until = read_time() + ctx->config->skey_validity;
 		memcpy(cpart[fwd_id]->skey, skey, 16);
+		
+		// initialize group field - this will work only for ecu_id <= 23
 		cpart[fwd_id]->group_field |= 1 << ctx->config->node_id; // FIXME: Possible endianing problems
 
 		// print key
@@ -821,13 +823,12 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 	if (cpart[dst] == NULL)
 		return 0;
 
-    /* Don't check this, VW is not sending ACK messages
+    /* Don't check this, VW is not sending ACK messages */
+	/* DO check this, but allow to disable it */
 	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_field)) & 0x00ffffff;
 	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & 0x00ffffff;
 
 	return ((grp & wf) == wf);
-	*/	
-	return 1;
 }
 int is_time_ready(struct macan_ctx *ctx) {
 	return ctx->time.is_time_ready;	
