@@ -51,7 +51,7 @@ void print_hexn(const void *data, size_t len)
 	printf("\n");
 }
 
-int memchk(uint8_t *a, uint8_t *b, size_t len)
+int memchk(const uint8_t *a, const uint8_t *b, size_t len)
 {
 	int i;
 
