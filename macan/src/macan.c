@@ -270,16 +270,6 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	plain[4] = ack->flags_and_dst_id & 0x3f;
 	memcpy(plain + 5, ack->group, 3);
 
-#ifdef DEBUG_TS
-#ifdef __CPU_TC1798__
-	uint32_t cmac;
-	memcpy_bw(&cmac, ack->cmac, 4);
-	printf("time check: (local=%llu, in msg=%u)\n", get_macan_time(ctx) / TIME_DIV, cmac);
-#else
-	printf("time check: (local=%llu, in msg=%u)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)ack->cmac);
-#endif /* __CPU_TC1798__ */
-#endif
-
 	/* ToDo: make difference between wrong CMAC and not having the key */
 	if (!check_cmac(ctx, skey, ack->cmac, plain, plain+4, sizeof(plain))) {
 		printf("error: ACK CMAC failed\n");
@@ -455,18 +445,9 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	uint32_t time_ts;
 	uint64_t recent;
 	uint64_t time_ts_us;
-
-	memcpy(&time_ts, cf->data, 4);
-
-#ifdef DEBUG
-	printf(ANSI_COLOR_CYAN "RECV plain time\n" ANSI_COLOR_RESET);
-	printf("plain time = %d (0x%X)\n", time_ts,time_ts);
-#endif
+	uint64_t delta;
 
 	if (!is_skey_ready(ctx, ctx->config->time_server_id)) {
-#ifdef DEBUG
-		fail_printf("ignoring, we don't have key for timeserver\n");
-#endif
 		return;
 	}
 
@@ -502,10 +483,6 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	struct com_part **cpart;
 	uint64_t time_ts_us;
 
-#ifdef DEBUG
-	printf(ANSI_COLOR_CYAN "RECV signed time\n" ANSI_COLOR_RESET);  
-#endif
-
 	cpart = ctx->cpart;
 
 	memcpy(&time_ts, cf->data, 4);
@@ -521,10 +498,9 @@ void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *c
 	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id),2); /* FIXME: Endianing problem */
 
 	if (!check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
-//#ifdef DEBUG
-		fail_printf("check cmac time %d\n", time_ts);
-//#endif
-			return;
+		/* not a fatal error, we possibly received signed time for different node */
+		//fail_printf("check cmac time %d\n", time_ts);
+		return;
 	}
 	time_ts_us = (uint64_t)time_ts * 1000000;
 
