@@ -131,6 +131,9 @@ void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 	aes_unwrap(&cipher, len, dst, src, src);
 }
 
+/**
+ * read_time() - returns time in microseconds
+*/
 uint64_t read_time()
 {
 	uint64_t time;
