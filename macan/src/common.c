@@ -23,7 +23,9 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <macan_private.h>
+#include "common.h"
 
 int canid2ecuid(struct macan_ctx *ctx, uint32_t canid)
 {
@@ -83,4 +85,22 @@ void memcpy_bw(void *dst, const void *src, size_t len) {
 
         for (i = len; i--;)
                 dst8[i] = src8[i];
+}
+
+void print_msg(msg_type type, const char *format, ...) {
+
+	va_list ap;
+	char *msg_type_strings[] = {
+		[MSG_OK]      = ANSI_COLOR_GREEN   "OK  " ANSI_COLOR_RESET,
+		[MSG_WARN]    = ANSI_COLOR_YELLOW  "WARN" ANSI_COLOR_RESET,
+		[MSG_FAIL]    = ANSI_COLOR_RED     "FAIL" ANSI_COLOR_RESET,
+		[MSG_REQUEST] = ANSI_COLOR_DBLUE   "REQ " ANSI_COLOR_RESET,
+		[MSG_INFO]    = ANSI_COLOR_DCYAN   "INFO" ANSI_COLOR_RESET,
+		[MSG_SIGNAL]  = ANSI_COLOR_MAGENTA "SIG " ANSI_COLOR_RESET,
+
+	};
+
+	va_start(ap, format);
+	printf("%s: ",msg_type_strings[type]);
+	vprintf(format,ap);
 }

@@ -43,9 +43,19 @@
 #define ANSI_COLOR_DCYAN   "\033[0;36m"
 #define ANSI_COLOR_RESET   "\033[0;0m"
 
+typedef enum {
+	MSG_OK,
+	MSG_WARN,
+	MSG_FAIL,
+	MSG_REQUEST,
+	MSG_INFO,
+	MSG_SIGNAL
+} msg_type;
+
 void eval(const char *tname,int b);
 int memchk(const uint8_t *a, const uint8_t *b, size_t len);
 void print_hexn(const void *data, size_t len);
 void memcpy_bw(void *dst, const void *src, size_t len);
+void print_msg(msg_type type, const char *format, ...);
 
 #endif /* COMMON_H */
