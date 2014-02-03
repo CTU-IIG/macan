@@ -200,6 +200,11 @@ int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc, si
  */
 void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 {
+	if(ctx->config->ack_disable) {
+		/* ACK is disabled, don't do anything */
+		return;
+	}
+
 	struct macan_ack ack = { .flags_and_dst_id = FL_ACK << 6 | (dst_id & 0x3f), .group = {0}, .cmac = {0}};
 	uint8_t plain[8] = {0};
 	uint32_t time;
@@ -831,13 +836,16 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 {
 	struct com_part **cpart;
 
+	if(ctx->config->ack_disable) {
+		/* ACK is disabled, channel is ready */	
+		return 1;
+	}
+
 	cpart = ctx->cpart;
 
 	if (cpart[dst] == NULL)
 		return 0;
 
-    /* Don't check this, VW is not sending ACK messages */
-	/* DO check this, but allow to disable it */
 	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_field)) & 0x00ffffff;
 	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & 0x00ffffff;
 
