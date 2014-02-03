@@ -27,10 +27,10 @@
 #define SIG_TIME 0x102 
 #define TIME_DELTA 100000   /* tolerated time divergency from TS in usecs */
 #define TIME_DIV 1000000
-#define TIME_TIMEOUT 5000000	/* usec */
+#define TIME_TIMEOUT 1000000	/* usec */
 #define SKEY_TIMEOUT 500000000u /* usec */
 #define SKEY_CHG_TIMEOUT 500000000u /* usec */
-#define ACK_TIMEOUT 10000000	  /* usec */
+#define ACK_TIMEOUT 1000000	  /* usec */
 
 /* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
@@ -72,4 +72,5 @@ struct macan_config config = {
 	.skey_chg_timeout = SKEY_CHG_TIMEOUT,
 	.time_timeout = ACK_TIMEOUT,
 	.time_delta = TIME_DELTA,
+	.ack_disable = 1
 };
