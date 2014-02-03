@@ -37,7 +37,7 @@
 #include <errno.h>
 #include <poll.h>
 
-void sigint(int sig)
+void sigint()
 {
 	endwin();
 	exit(0);
@@ -45,6 +45,8 @@ void sigint(int sig)
 
 int main(int argc, char *argv[])
 {
+	/* don't complain about unused parameter */
+	(void)argv; (void)argc;
 
 	int s;
 	int ret;
@@ -95,7 +97,7 @@ int main(int argc, char *argv[])
 					 { .fd = s, .events = POLLIN } };
 		ret = poll(pfd, 2, 50);
 
-		ret = read(s, &cf, sizeof(cf));
+		ret = (int)read(s, &cf, sizeof(cf));
 		if (ret < 0 && errno != EAGAIN) {
 			endwin();
 			perror("read");
@@ -122,7 +124,7 @@ int main(int argc, char *argv[])
 			cf.can_id = 0x2c1;
 			cf.can_dlc = 4;
 			if (ch >= '1' && ch <= '4') {
-				cf.data[0] = 1 << (ch - '1');
+				cf.data[0] = (__u8) (1 << (ch - '1'));
 				write(s, &cf, sizeof(cf));
 			}
 		}

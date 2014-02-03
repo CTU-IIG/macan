@@ -456,9 +456,9 @@ void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	uint32_t time_ts;
-	uint64_t recent;
+	int64_t recent;
 	uint64_t time_ts_us;
-	uint64_t delta;
+	int64_t delta;
 
 	if (!is_skey_ready(ctx, ctx->config->time_server_id)) {
 		return;
@@ -466,7 +466,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 
 	memcpy(&time_ts, cf->data, 4);
 	time_ts_us = (uint64_t)time_ts * ctx->config->time_div;
-	recent = read_time() + ctx->time.offs; /* Estimated time on TS (us) */
+	recent = (int64_t)read_time() + ctx->time.offs; /* Estimated time on TS (us) */
 
 	if (ctx->time.chal_ts) {
 		/* Don't ask TS for authenticated time too often */
@@ -474,7 +474,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 			return;
 	}
 
-	delta = llabs((uint64_t)recent - (uint64_t)time_ts_us);
+	delta = llabs((int64_t)recent - (int64_t)time_ts_us);
 
 	if (delta > ctx->config->time_delta) {
 		print_msg(MSG_WARN,"time out of sync (%lld us = %"PRIu64" - %"PRIu64")\n", delta, recent, time_ts_us);
@@ -496,7 +496,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
 	uint8_t plain[12];
 	uint8_t *skey;
 	struct com_part **cpart;
-	uint64_t time_ts_us;
+	int64_t time_ts_us;
 
 	cpart = ctx->cpart;
 
@@ -518,7 +518,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
 		return;
 	}
 	
-	time_ts_us = (uint64_t)time_ts * ctx->config->time_div;
+	time_ts_us = (int64_t)time_ts * ctx->config->time_div;
 
 	ctx->time.offs += (time_ts_us - ctx->time.chal_ts);
 	ctx->time.chal_ts = 0;
@@ -589,7 +589,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	areq = (struct macan_sig_auth_req *)cf->data;
 	skey = cpart[ecuid]->skey;
 
-	plain[4] = ecuid;
+	plain[4] = (uint8_t)ecuid;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
@@ -762,7 +762,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
         // we have received 32 bit signal
         struct macan_signal *sig32 = (struct macan_signal *)cf->data;
         sig_num = sig32_num;
-        assert(sig_num < ctx->config->sig_count);
+        assert(sig_num < (int)ctx->config->sig_count);
         skey = cpart[ctx->config->sigspec[sig_num].src_id]->skey;
         if (!skey) {
 		fail_printf("No key to check signal %d\n", sig_num);
@@ -803,7 +803,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 #endif
 	if (!check_cmac(ctx, skey, cmac, plain, fill_time, plain_length)) {
 		if (sighand[sig_num]->invalid_cback)
-			sighand[sig_num]->invalid_cback(sig_num, sig_val);
+			sighand[sig_num]->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
 		else
 			fail_printf("CMAC error for signal %d\n", sig_num);
 		return;
@@ -890,7 +890,7 @@ void macan_request_keys(struct macan_ctx *ctx, int s)
  */
 uint64_t macan_get_time(struct macan_ctx *ctx)
 {
-	return (read_time() + ctx->time.offs) / ctx->config->time_div;
+	return (read_time() + (uint64_t)ctx->time.offs) / ctx->config->time_div;
 }
 
 /**

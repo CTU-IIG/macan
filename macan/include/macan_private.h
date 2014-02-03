@@ -99,7 +99,7 @@ struct macan_time {
 	int64_t offs;        /* contains the time difference between local time
    			        and TS time
 				i.e. TS_time = Local_time + offs */
-	uint64_t chal_ts;    /* local timestamp when request for signed time was sent  */
+	int64_t chal_ts;    /* local timestamp when request for signed time was sent  */
 	uint8_t chg[6];      /* challenge to the time server */
 	uint8_t is_time_ready; /* set to 1 when signed time was received */
 };

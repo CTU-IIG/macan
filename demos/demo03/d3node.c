@@ -149,7 +149,7 @@ void io_init(void)
 
 void handle_io(void)
 {
-	button_pressed = read_time() / 1000000 / 3;
+	button_pressed = (int)(read_time() / 1000000U / 3U);
 }
 #endif
 
@@ -177,7 +177,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 		if (signal_time < read_time() || last_pressed != button_pressed) {
 			signal_time = read_time() + TIME_EMIT_SIG;
 			last_pressed = button_pressed;
-			macan_send_sig(ctx, s, SIGNAL_CTU, button_pressed);
+			macan_send_sig(ctx, s, SIGNAL_CTU, (uint32_t)button_pressed);
 		}
 
 #ifndef __CPU_TC1798__

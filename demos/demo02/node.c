@@ -100,7 +100,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 
 void sig_callback(uint8_t sig_num, uint32_t sig_val)
 {
-	//printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
+	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
 }
 
 int main()
