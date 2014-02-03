@@ -61,7 +61,7 @@ unsigned char can_dlc2len(unsigned char can_dlc);
 /* map the sanitized data length to an appropriate data length code */
 unsigned char can_len2dlc(unsigned char len);
 
-unsigned char asc2nibble(char c);
+int asc2nibble(char c);
 /*
  * Returns the decimal value of a given ASCII hex character.
  *
@@ -69,7 +69,7 @@ unsigned char asc2nibble(char c);
  * On invalid characters the value 16 is returned for error handling.
  */
 
-int hexstring2data(char *arg, unsigned char *data, int maxdlen);
+int hexstring2data(char *arg, unsigned char *data, size_t maxdlen);
 /*
  * Converts a given ASCII hex string to a (binary) byte string.
  *

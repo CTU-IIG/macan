@@ -70,7 +70,7 @@ void generate_skey(struct sess_key *skey)
 	skey->valid = true;
 
 	for (i = 0; i < 16; i++)
-		skey->key[i] = rand(); /* TODO: This should use /dev/random or SHE. */
+		skey->key[i] = (uint8_t)rand(); /* TODO: This should use /dev/random or SHE. */
 }
 
 uint8_t lookup_skey(uint8_t src, uint8_t dst, struct sess_key **key_ret)
@@ -120,15 +120,13 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
 	print_hexn(wrap, 32);
 	print_hexn(plain, 24);
 
-	skey.flags_and_dst_id = FL_SESS_KEY << 6;
-	skey.flags_and_dst_id |= dst_id & 0x3F;
+	skey.flags_and_dst_id = (uint8_t)(FL_SESS_KEY << 6 | (dst_id & 0x3F));
 
 	cf.can_id = CANID(ctx, ctx->config->key_server_id);
 	cf.can_dlc = 8;
 
 	for (i = 0; i < 6; i++) {
-		skey.seq_and_len = i << 4; // seq
-		skey.seq_and_len |= (i == 5) ? 2 : 6; // len
+		skey.seq_and_len = (uint8_t)((i << 4) /* seq */ | ((i == 5) ? 2 : 6) /* len */);
 		memcpy(skey.data, wrap + (6 * i), 6);
 		memcpy(cf.data, &skey, 8);
 
@@ -155,7 +153,10 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	aes_set_encrypt_key(&cipher, 16, ltk);
 	chal = (struct macan_challenge *)cf->data;
 
-	dst_id = canid2ecuid(ctx, cf->can_id);
+	int ecuid = canid2ecuid(ctx, cf->can_id);
+	if (ecuid < 0)
+		return;
+	dst_id = (uint8_t)ecuid;
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
@@ -186,7 +187,7 @@ int main(int argc, char *argv[])
 	int s;
 	struct macan_config *config = NULL;
 
-	char opt;
+	int opt;
 	while ((opt = getopt(argc, argv, "c:")) != -1) {
 		switch (opt) {
 		case 'c': {
@@ -205,7 +206,7 @@ int main(int argc, char *argv[])
 	}
 
 	config->node_id = config->key_server_id;
-	srand(time(NULL));
+	srand((unsigned)time(NULL));
 	s = helper_init();
 	macan_init(&macan_ctx, config);
 

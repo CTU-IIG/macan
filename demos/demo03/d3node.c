@@ -204,7 +204,7 @@ void sig_invalid(uint8_t sig_num, uint32_t sig_val)
 #endif
 }
 
-int main(int argc, char *argv[])
+int main()
 {
 	int s;
 

@@ -27,6 +27,11 @@
 #include <macan_private.h>
 #include "common.h"
 
+/* TODO: A lot of functions (e.g. canid2ecuid) return either error as
+ * -1 or valid answer >= 0. This causes problems in conversion from
+ * signed to unsigned integers with -Wconversion. It would be better
+ * to rewrite the functions to return bool and have a pointer where to
+ * store the result as an additional agrument. */
 int canid2ecuid(struct macan_ctx *ctx, uint32_t canid)
 {
 	int i;
@@ -40,7 +45,7 @@ int canid2ecuid(struct macan_ctx *ctx, uint32_t canid)
 
 void print_hexn(const void *data, size_t len)
 {
-	int i;
+	size_t i;
 	const uint8_t *d = data;
 
 	for (i = 0; i < len; i++) {
@@ -53,7 +58,7 @@ void print_hexn(const void *data, size_t len)
 
 int memchk(const uint8_t *a, const uint8_t *b, size_t len)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < len; i++) {
 		if (a[i] != b[i])
@@ -79,7 +84,7 @@ void eval(const char *tname, int b)
 /**
  * memcpy_bw() - memcpy byte-wise */
 void memcpy_bw(void *dst, const void *src, size_t len) {
-        int i;
+        size_t i;
         uint8_t *dst8 = dst;
         const uint8_t *src8 = src;
 

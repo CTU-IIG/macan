@@ -31,14 +31,14 @@
 
 /* MaCAN message definitions */
 
-#define FL_REQ_CHALLENGE      0
-#define FL_CHALLENGE	      1
-#define FL_SESS_KEY	      2
-#define FL_ACK		      2
-#define FL_SESS_KEY_OR_ACK    2
-#define FL_SIGNAL	      3
-#define FL_AUTH_REQ	      3
-#define FL_SIGNAL_OR_AUTH_REQ 3
+#define FL_REQ_CHALLENGE      0U
+#define FL_CHALLENGE	      1U
+#define FL_SESS_KEY	      2U
+#define FL_ACK		      2U
+#define FL_SESS_KEY_OR_ACK    2U
+#define FL_SIGNAL	      3U
+#define FL_AUTH_REQ	      3U
+#define FL_SIGNAL_OR_AUTH_REQ 3U
 
 /* helpers for first byte in crypt frames */
 #define GET_FLAGS(byte) (((byte) & 0xC0) >> 6)
@@ -185,9 +185,9 @@ int write(int s, struct can_frame *cf, int len);
 uint64_t read_time(void);
 uint64_t macan_get_time(struct macan_ctx *ctx);
 void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
-void receive_signed_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
+void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf);
 int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
-int can_sid_to_sig_num(struct macan_ctx *ctx, uint16_t can_id);
+int can_sid_to_sig_num(struct macan_ctx *ctx, uint32_t can_id);
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf);
 int is_time_ready(struct macan_ctx *ctx);
 

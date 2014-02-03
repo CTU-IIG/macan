@@ -40,9 +40,9 @@ void lshift(uint8_t *dst, uint8_t *src)
 	int i;
 
 	for(i = 0; i < 15; i++) {
-		dst[i] = (src[i] << 1) | (src[i+1] >> 7);
+		dst[i] = (uint8_t)((src[i] << 1) | (src[i+1] >> 7));
 	}
-	dst[15] = src[15] << 1;
+	dst[15] = (uint8_t)(src[15] << 1);
 }
 
 /**
@@ -88,8 +88,8 @@ void aes_cmac(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
 	uint8_t lblock[16] = { 0 };
 	size_t block_size = 16;
 	uint8_t lblen;
-	int itcnt;
-	int i;
+	size_t itcnt;
+	size_t i;
 	int pad_flag = 0;
 
 	memset(dst, 0, 16);
@@ -109,7 +109,7 @@ void aes_cmac(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
 
   	for (i = 0; i < itcnt; i++, src += block_size) {
       		memxor(dst, src, block_size);
-      		aes_encrypt(ctx, block_size, dst, dst);
+      		aes_encrypt(ctx, (unsigned)block_size, dst, dst);
     	}
 
 	generate_subkey(key, key1, key2);
@@ -126,11 +126,11 @@ void aes_cmac(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
 		lblock[lblen] = 0x80;
 		memxor(dst, lblock, block_size);
 		memxor(dst, key2, block_size);
-      		aes_encrypt(ctx, block_size, dst, dst);
+      		aes_encrypt(ctx, (unsigned)block_size, dst, dst);
 	} else {
 		memxor(dst, src, block_size);
 		memxor(dst, key1, block_size);
-      		aes_encrypt(ctx, block_size, dst, dst);
+      		aes_encrypt(ctx, (unsigned)block_size, dst, dst);
 	}
 }
 

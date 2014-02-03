@@ -85,7 +85,7 @@ unsigned char can_len2dlc(unsigned char len)
 	return len2dlc[len];
 }
 
-unsigned char asc2nibble(char c) {
+int asc2nibble(char c) {
 
 	if ((c >= '0') && (c <= '9'))
 		return c - '0';
@@ -99,11 +99,11 @@ unsigned char asc2nibble(char c) {
 	return 16; /* error */
 }
 
-int hexstring2data(char *arg, unsigned char *data, int maxdlen) {
+int hexstring2data(char *arg, unsigned char *data, size_t maxdlen) {
 
-	int len = strlen(arg);
-	int i;
-	unsigned char tmp;
+	size_t len = strlen(arg);
+	unsigned i;
+	int tmp;
 
 	if (!len || len%2 || len > maxdlen*2)
 		return 1;
@@ -116,13 +116,13 @@ int hexstring2data(char *arg, unsigned char *data, int maxdlen) {
 		if (tmp > 0x0F)
 			return 1;
 
-		data[i] = (tmp << 4);
+		data[i] = (unsigned char)(tmp << 4);
 
 		tmp = asc2nibble(*(arg+(2*i)+1));
 		if (tmp > 0x0F)
 			return 1;
 
-		data[i] |= tmp;
+		data[i] |= (unsigned char)tmp;
 	}
 
 	return 0;

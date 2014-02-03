@@ -86,7 +86,10 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	struct com_part **cpart;
 
 	cpart = ctx->cpart;
-	dst_id = canid2ecuid(ctx, cf->can_id);
+	int ecuid = canid2ecuid(ctx, cf->can_id);
+	if (ecuid < 0)
+		return -1;
+	dst_id = (uint8_t)ecuid;
 
 	if (!is_skey_ready(ctx, dst_id)) {
 		print_msg(MSG_FAIL,"cannot send time, because don't have key\n");
@@ -196,7 +199,7 @@ int main(int argc, char *argv[])
 	int s;
 	struct macan_config *config = NULL;
 
-	char opt;
+	int opt;
 	while ((opt = getopt(argc, argv, "c:")) != -1) {
 		switch (opt) {
 		case 'c': {

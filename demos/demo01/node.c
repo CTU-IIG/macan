@@ -96,7 +96,7 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
 }
 
-int main(int argc, char *argv[])
+int main()
 {
 	int s;
 
