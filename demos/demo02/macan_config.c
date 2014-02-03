@@ -28,9 +28,9 @@ struct macan_sig_spec demo_sig_spec[] = {
 	[TIME_DUMMY3] = {.can_nsid = 0,   .can_sid = 0,   .src_id = TIME_SERVER, .dst_id = 3, .presc = 0},
 	[TIME_DUMMY2] = {.can_nsid = 0,   .can_sid = 0,   .src_id = TIME_SERVER, .dst_id = 2, .presc = 0},
 	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0,   .src_id = NODE1,       .dst_id = NODE2, .presc = 0}, // signal 1
-	/*[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 202, .src_id = NODE1,       .dst_id = NODE2, .presc = 0}, // signal 2
-	[SIGNAL_C]    = {.can_nsid = 103, .can_sid = 0,   .src_id = NODE1,       .dst_id = NODE2, .presc = 2}, // signal 3
-	[SIGNAL_D]    = {.can_nsid = 104, .can_sid = 204, .src_id = NODE1,       .dst_id = NODE2, .presc = 5}, // signal 4 */
+	[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 202, .src_id = NODE1,       .dst_id = NODE2, .presc = 0}, // signal 2
+	[SIGNAL_C]    = {.can_nsid = 113, .can_sid = 0,   .src_id = NODE1,       .dst_id = NODE2, .presc = 2}, // signal 3
+	[SIGNAL_D]    = {.can_nsid = 114, .can_sid = 204, .src_id = NODE1,       .dst_id = NODE2, .presc = 5}, // signal 4 
 };
 
 const uint32_t ecu2canid_map[] = {
@@ -65,4 +65,5 @@ struct macan_config config = {
 	.time_timeout = TIME_TIMEOUT,
 	.time_bcast_period = 1000000,
 	.time_delta = TIME_DELTA,
+	.ack_disable = 0
 };

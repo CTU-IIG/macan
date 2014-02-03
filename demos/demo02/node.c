@@ -87,9 +87,9 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 		if (signal_time < read_time()) {
 			signal_time = read_time() + TIME_EMIT_SIG;
 			macan_send_sig(ctx, s, SIGNAL_A, 10);
-			/*macan_send_sig(ctx, s, SIGNAL_B, 200000);
+			macan_send_sig(ctx, s, SIGNAL_B, 200000);
 			macan_send_sig(ctx, s, SIGNAL_C, 30);
-			macan_send_sig(ctx, s, SIGNAL_D, 400000);*/
+			macan_send_sig(ctx, s, SIGNAL_D, 400000);
 		}
 
 #ifndef __CPU_TC1798__
@@ -114,9 +114,9 @@ int main(int argc, char *argv[])
 
 	macan_init(&macan_ctx, &config);
 	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback, NULL);
-	/*macan_reg_callback(&macan_ctx, SIGNAL_B, sig_callback, NULL);
+	macan_reg_callback(&macan_ctx, SIGNAL_B, sig_callback, NULL);
 	macan_reg_callback(&macan_ctx, SIGNAL_C, sig_callback, NULL);
-	macan_reg_callback(&macan_ctx, SIGNAL_D, sig_callback, NULL);*/
+	macan_reg_callback(&macan_ctx, SIGNAL_D, sig_callback, NULL);
 	operate_ecu(&macan_ctx, s);
 
 	return 0;
