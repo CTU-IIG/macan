@@ -154,7 +154,7 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 		return -1;
 	ctx->ack_timeout_abs = read_time() + ctx->config->ack_timeout;
 
-	for (i = 2; i < ctx->config->node_count; i++) {
+	for (i = 0; i < ctx->config->node_count; i++) {
 		if (cpart[i] == NULL)
 			continue;
 
@@ -327,11 +327,9 @@ void gen_challenge(uint8_t *chal)
  * Processes one frame of the session key transmission protocol.
  * Returns node id if a complete key was sucessfully received.
  *
- * @return -1 if key receive failed. ID of the node the key is shared
- * with. Or 0 if the reception process is in progress.
- *
- * TODO: ID = 0 is probably a valid ID. We should return something
- * else for "in progress".
+ * @return RECEIVE_SKEY_ERR (-1) if key receive failed OR
+ *         ID of the node the key is shared with OR
+ *         RECEIVE_SKEY_IN_PROGRESS (-2) if the reception process is in progress.
  */
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 {
@@ -372,12 +370,12 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 		if (fwd_id >= ctx->config->node_count || cpart[fwd_id] == NULL) {
 			fail_printf("unexpected fwd_id %#x\n", fwd_id);
-			return -1;
+			return RECEIVE_SKEY_ERR;
 		}
 
 		if(!memchk(skey+18, cpart[fwd_id]->chg, 6)) {
 			fail_printf("check cmac from %d\n", fwd_id);
-			return -1;
+			return RECEIVE_SKEY_ERR;
 		}
 
 		cpart[fwd_id]->valid_until = read_time() + ctx->config->skey_validity;
@@ -393,7 +391,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 		return fwd_id;	/* FIXME: fwd_id can be 0 as well. What our callers do with the returned value? */
 	}
 
-	return 0;
+	return RECEIVE_SKEY_IN_PROGRESS;
 }
 
 /**
@@ -955,7 +953,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 	case FL_SESS_KEY_OR_ACK:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			fwd = receive_skey(ctx, cf);
-			if (fwd > 0) {
+			if (fwd >= 0) {
 				send_ack(ctx, s, (uint8_t)fwd);
 			}
 			break;

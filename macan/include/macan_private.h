@@ -46,6 +46,10 @@
 #define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
 #define GET_LEN(byte) ((byte) & 0x0F)
 
+/* return values for receive_skey */
+#define RECEIVE_SKEY_ERR -1
+#define RECEIVE_SKEY_IN_PROGRESS -2
+
 struct macan_crypt_frame {
 	uint8_t flags_and_dst_id;
 };

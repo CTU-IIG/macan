@@ -35,9 +35,9 @@ enum sig_id {
 };
 
 enum node_id {
+	NODE1,
 	KEY_SERVER,
 	TIME_SERVER,
-	NODE1,
 	NODE2,
 	NODE_COUNT
 };

@@ -162,6 +162,9 @@ void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 
+	/* reject frames that can't be challenge */
+	if (cf->can_dlc < 8)
+		return;
 	/* Reject non-crypt frames */
 	if (canid2ecuid(&macan_ctx, cf->can_id) == -1)
 		return;
