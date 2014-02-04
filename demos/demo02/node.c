@@ -60,12 +60,6 @@
 
 static struct macan_ctx macan_ctx;
 
-/* ltk stands for long term key; it is a key shared with the key server */
-uint8_t ltk[] = {
-	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-  	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
-};
-
 void can_recv_cb(int s, struct can_frame *cf)
 {
 	macan_process_frame(&macan_ctx, s, cf);

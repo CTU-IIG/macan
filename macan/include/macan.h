@@ -50,7 +50,7 @@ struct macan_sig_spec {
 
 struct macan_config {
 	uint8_t node_id;		       /* Our ECU-ID (0-63) */
-	uint8_t ltk[16];                       /* Long-term key shared with the key server */
+	const uint8_t (*ltk)[16];                       /* Long-term key map */
 	uint32_t sig_count;		       /* Number of sinals in sig_spec */
 	const struct macan_sig_spec *sigspec;
 	uint8_t node_count;		       /* Number of nodes (ECUs) in our network */
@@ -73,7 +73,6 @@ typedef void (*sig_cback)(uint8_t sig_num, uint32_t sig_val);
 
 /* MaCAN API functions */
 int  macan_init(struct macan_ctx *ctx, const struct macan_config *config);
-void macan_set_ltk(struct macan_ctx *ctx, uint8_t *key);
 void macan_request_keys(struct macan_ctx *ctx, int s);
 int  macan_wait_for_key_acks(struct macan_ctx *ctx, int s);
 int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc, sig_cback invalid_cmac);

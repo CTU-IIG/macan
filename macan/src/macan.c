@@ -345,7 +345,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	if (seq == 5) {
 
-		unwrap_key(ctx->config->ltk, 32, skey, keywrap);
+		unwrap_key(ctx->config->ltk[ctx->config->node_id], 32, skey, keywrap);
 		fwd_id = skey[17];
 
 #ifdef DEBUG

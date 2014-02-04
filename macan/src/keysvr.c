@@ -45,11 +45,6 @@
 
 #define NODE_COUNT 64
 
-uint8_t ltk[] = {
-	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-  	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
-};
-
 struct sess_key {
 	bool valid;
 	uint8_t key[16];
@@ -150,7 +145,6 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	uint8_t dst_id, fwd_id;
 	uint8_t *chg;
 
-	aes_set_encrypt_key(&cipher, 16, ltk);
 	chal = (struct macan_challenge *)cf->data;
 
 	int ecuid = canid2ecuid(ctx, cf->can_id);
@@ -160,6 +154,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
+	aes_set_encrypt_key(&cipher, 16, ctx->config->ltk[dst_id]);
 	send_skey(ctx, s, &cipher, dst_id, fwd_id, chg);
 }
 
