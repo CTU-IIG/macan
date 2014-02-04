@@ -150,8 +150,8 @@ uint64_t read_time()
 	clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
 	ts.tv_sec -= buz.tv_sec;
 	ts.tv_nsec -= buz.tv_nsec;
-	time = (uint64_t)ts.tv_sec * 1000000;
-	time += (uint64_t)ts.tv_nsec / 1000;
+	time = (uint64_t) (ts.tv_sec * 1000000);
+	time += (uint64_t) (ts.tv_nsec / 1000);
 
 	return time;
 }
