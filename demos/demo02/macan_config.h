@@ -31,8 +31,6 @@ enum sig_id {
 	SIGNAL_B,
 	SIGNAL_C,
 	SIGNAL_D,
-	TIME_DUMMY2,
-	TIME_DUMMY3,
 	SIG_COUNT
 };
 

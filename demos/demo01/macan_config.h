@@ -30,8 +30,6 @@ enum sig_id {
 	ENGINE,
 	BRAKE,
 	TRAMIS,
-	TIME_DUMMY2,
-	TIME_DUMMY3,
 	SIG_COUNT
 };
 

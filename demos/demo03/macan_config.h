@@ -29,8 +29,6 @@
 enum sig_id {
 	SIGNAL_VW,
 	SIGNAL_CTU,
-	TIME_DUMMY2,
-	TIME_DUMMY3,
 	SIG_COUNT
 };
 

@@ -87,27 +87,43 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config)
 	ctx->sighand = malloc(config->sig_count * sizeof(struct sig_handle *));
 	memset(ctx->sighand, 0, config->sig_count * sizeof(struct sig_handle *));
 
-	for (i = 0; i < config->sig_count; i++) {
-		if (config->sigspec[i].src_id == config->node_id) {
-			cp = config->sigspec[i].dst_id;
-
-			if (ctx->cpart[cp] == NULL) {
-				init_cpart(ctx, cp);
+	if(config->node_id == config->time_server_id) {
+		/* We are timeserver, we need to init communication with
+		 * every other node */
+		for(i = 0; i < config->node_count; i++) {
+			if(i == config->key_server_id || i == config->time_server_id) {
+				/* skip KS and TS */
+				continue;
 			}
+			init_cpart(ctx, (uint8_t)i);
 		}
-		if (config->sigspec[i].dst_id == config->node_id) {
-			cp = config->sigspec[i].src_id;
+	} else {
+		/* We are normal node */
+		for (i = 0; i < config->sig_count; i++) {
+			if (config->sigspec[i].src_id == config->node_id) {
+				cp = config->sigspec[i].dst_id;
 
-			if (ctx->cpart[cp] == NULL) {
-				init_cpart(ctx, cp);
+				if (ctx->cpart[cp] == NULL) {
+					init_cpart(ctx, cp);
+				}
 			}
+			if (config->sigspec[i].dst_id == config->node_id) {
+				cp = config->sigspec[i].src_id;
+
+				if (ctx->cpart[cp] == NULL) {
+					init_cpart(ctx, cp);
+				}
+			}
+
+			ctx->sighand[i] = malloc(sizeof(struct sig_handle));
+			ctx->sighand[i]->presc = SIG_DONTSIGN; //SIG_DONTSIGN;
+			ctx->sighand[i]->presc_cnt = 0;
+			ctx->sighand[i]->flags = 0;
+			ctx->sighand[i]->cback = NULL;
 		}
 
-		ctx->sighand[i] = malloc(sizeof(struct sig_handle));
-		ctx->sighand[i]->presc = SIG_DONTSIGN; //SIG_DONTSIGN;
-		ctx->sighand[i]->presc_cnt = 0;
-		ctx->sighand[i]->flags = 0;
-		ctx->sighand[i]->cback = NULL;
+		/* also need to communicate with TS */
+		init_cpart(ctx,config->time_server_id);
 	}
 
 	return 0;

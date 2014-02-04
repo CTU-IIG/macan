@@ -36,9 +36,6 @@
 struct macan_sig_spec demo_sig_spec[] = {
 	[SIGNAL_VW]    = {.can_nsid = 0,   .can_sid = 0x2C1,  .src_id = NODE_VW,     .dst_id = NODE_CTU, .presc = 1},
 	[SIGNAL_CTU]    = {.can_nsid = 0,   .can_sid = 0x2D1,  .src_id = NODE_CTU,    .dst_id = NODE_VW,  .presc = 0},
-	/* FIXME: Why we need time dummy signals? Time should be handled automatically. */
-	[TIME_DUMMY2] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_VW,  .presc = 0},
-	[TIME_DUMMY3] = {.can_nsid = 0,   .can_sid = 0,     .src_id = TIME_SERVER, .dst_id = NODE_CTU, .presc = 0},
 };
 
 /* struct macan_node_spec demo_node_spec[] = { */
