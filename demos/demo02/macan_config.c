@@ -47,28 +47,20 @@ const uint8_t ltk_map[][16] = {
 	[NODE2]       = {0x0C, 0x0D, 0x0C, 0x0D, 0x0C, 0x0D, 0x0C, 0x0D, 0x0C, 0x0D, 0x0C, 0x0D, 0x0C, 0x0D, 0x0C, 0x0D},
 };
 
-#define SIG_TIME 0x104
-#define TIME_DELTA 1000000   /* tolerated time divergency from TS in usecs */
-#define TIME_DIV 1000000
-#define TIME_TIMEOUT 1000000	/* usec */
-#define SKEY_TIMEOUT 60000000 /* 60 sec. */
-#define SKEY_CHG_TIMEOUT 5000000 /* 5 sec. */
-#define ACK_TIMEOUT 1000000	  /* 1 sec. */
-
 struct macan_config config = {
-	.ltk = ltk_map,
-	.sig_count = SIG_COUNT,
-	.sigspec = demo_sig_spec,
-	.node_count = NODE_COUNT,
-	.ecu2canid = ecu2canid_map,
-	.key_server_id = KEY_SERVER,
-	.time_server_id = TIME_SERVER,
-	.time_div = TIME_DIV,
-	.ack_timeout = ACK_TIMEOUT,
-	.skey_validity = SKEY_TIMEOUT,
-	.skey_chg_timeout = SKEY_CHG_TIMEOUT,
-	.time_timeout = TIME_TIMEOUT,
+	.ltk               = ltk_map,
+	.sig_count         = SIG_COUNT,
+	.sigspec           = demo_sig_spec,
+	.node_count        = NODE_COUNT,
+	.ecu2canid         = ecu2canid_map,
+	.key_server_id     = KEY_SERVER,
+	.time_server_id    = TIME_SERVER,
+	.time_div          = 1000000,
+	.ack_timeout       = 1000000,
+	.skey_validity     = 60000000,
+	.skey_chg_timeout  = 5000000,
+	.time_timeout      = 1000000,
 	.time_bcast_period = 1000000,
-	.time_delta = TIME_DELTA,
-	.ack_disable = 0
+	.time_delta        = 1000000,
+	.ack_disable       = 0
 };
