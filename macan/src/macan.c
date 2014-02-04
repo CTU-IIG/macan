@@ -753,7 +753,6 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	struct sig_handle **sighand;
 	uint8_t plain_length;
 	int ecuid = canid2ecuid(ctx, cf->can_id);
-	assert(ecuid >= 0);
 
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
@@ -779,6 +778,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		fill_time = plain+4;
     } else {
         // we have received 16 bit signal
+		assert(ecuid >= 0);
 	    struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
 
 		memcpy(plain + 4, &ecuid, 1);
