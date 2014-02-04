@@ -757,43 +757,43 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
 
-    if(sig32_num >= 0) {
-        // we have received 32 bit signal
-        struct macan_signal *sig32 = (struct macan_signal *)cf->data;
-        sig_num = sig32_num;
-        assert(sig_num < (int)ctx->config->sig_count);
-        skey = cpart[ctx->config->sigspec[sig_num].src_id]->skey;
-        if (!skey) {
-		fail_printf("No key to check signal %d\n", sig_num);
-		return;
-        }
-        assert(skey);
-        cmac = sig32->cmac;
-        memcpy(&sig_val, sig32->sig, 4);
+	if(sig32_num >= 0) {
+		// we have received 32 bit signal
+		struct macan_signal *sig32 = (struct macan_signal *)cf->data;
+		sig_num = sig32_num;
+		assert(sig_num < (int)ctx->config->sig_count);
+		skey = cpart[ctx->config->sigspec[sig_num].src_id]->skey;
+		if (!skey) {
+			fail_printf("No key to check signal %d\n", sig_num);
+			return;
+		}
+		assert(skey);
+		cmac = sig32->cmac;
+		memcpy(&sig_val, sig32->sig, 4);
 
-        //plain[4] = ctx->config->sigspec[sig_num].src_id;
+		//plain[4] = ctx->config->sigspec[sig_num].src_id;
 		memcpy(plain,&sig_val,4);
 		memcpy(plain + 8,&(cf->can_id),2);
-        plain_length = 10;
+		plain_length = 10;
 		fill_time = plain+4;
-    } else {
-        // we have received 16 bit signal
+	} else {
+		// we have received 16 bit signal
 		assert(ecuid >= 0);
-	    struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
+		struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
 
 		memcpy(plain + 4, &ecuid, 1);
 		memcpy(plain + 5, &(ctx->config->node_id), 1);
-	    memcpy(plain + 6, sig16->signal, 2);
-        plain_length = 8;
-		
-        skey = cpart[ecuid]->skey;
-        assert(skey);
+		memcpy(plain + 6, sig16->signal, 2);
+		plain_length = 8;
 
-        cmac = sig16->cmac;
-        sig_num = sig16->sig_num;
-        memcpy(&sig_val, sig16->signal, 2);
+		skey = cpart[ecuid]->skey;
+		assert(skey);
+
+		cmac = sig16->cmac;
+		sig_num = sig16->sig_num;
+		memcpy(&sig_val, sig16->signal, 2);
 		fill_time = plain;
-    }
+	}
 
 	//plain[5] = ctx->config->node_id;
 
