@@ -43,29 +43,29 @@ struct can_frame;
 struct macan_sig_spec {
 	uint16_t can_nsid;  /* can non-secured id */
 	uint16_t can_sid;   /* can secured id */
-	uint8_t src_id;    /* node dispathing this signal */
-	uint8_t dst_id;    /* node receiving this signal */
-	uint8_t presc;     /* prescaler */
+	uint8_t src_id;     /* node dispathing this signal */
+	uint8_t dst_id;     /* node receiving this signal */
+	uint8_t presc;      /* prescaler */
 };
 
 struct macan_config {
-	uint8_t node_id;		       /* Our ECU-ID (0-63) */
-	const uint8_t (*ltk)[16];                       /* Long-term key map */
-	uint32_t sig_count;		       /* Number of sinals in sig_spec */
-	const struct macan_sig_spec *sigspec;
-	uint8_t node_count;		       /* Number of nodes (ECUs) in our network */
-	const uint32_t *ecu2canid;	       /* Mapping from ECU-ID to crypt-frame CAN-ID */
-	uint8_t key_server_id;		       /* ECU-ID of the key server */
-	uint8_t time_server_id;		       /* ECU-ID of the time server */
-	uint32_t can_id_time;		       /* CAN-ID of time signal (both authenticated and non-auth.) */
-	uint32_t time_div;		       /* Number of microseconds in one MaCAN time unit */
-	uint32_t ack_timeout;		       /* Timeout in microseconds for waiting for key acknowledge */
-	uint64_t skey_validity;		       /* Session key expiration time in microseconds */
-	uint32_t skey_chg_timeout;	       /* ??? when to change the session key (microseconds) ??? */
-	uint32_t time_timeout;		       /* Don't ask for authenticated time more often than this value (microseconds) */
-	uint32_t time_bcast_period;         /* Timeserver broadcast period for plain time */
-	uint32_t time_delta;		       /* When our estimated time differs from timerserver time by this number of microseconds, we ask for authenticated time */
-	int ack_disable;					/* disable ACK messages (to be compatible with VW implementation) */
+	uint8_t node_id;                      /* Our ECU-ID (0-63) */
+	const uint8_t (*ltk)[16];             /* Long-term key map (for communication with KS) */
+	uint32_t sig_count;                   /* Number of sinals in sig_spec */
+	const struct macan_sig_spec *sigspec; /* Signal specification */
+	uint8_t node_count;                   /* Number of nodes (ECUs) in our network */
+	const uint32_t *ecu2canid;            /* Mapping from ECU-ID to crypt-frame CAN-ID */
+	uint8_t key_server_id;                /* ECU-ID of the key server */
+	uint8_t time_server_id;               /* ECU-ID of the time server */
+	uint32_t can_id_time;                 /* CAN-ID of time signal (both authenticated and non-auth.) */
+	uint32_t time_div;                    /* Number of microseconds in one MaCAN time unit */
+	uint32_t ack_timeout;                 /* Timeout for waiting for key acknowledge (microseconds) */
+	uint64_t skey_validity;               /* Session key expiration time (microseconds) */
+	uint32_t skey_chg_timeout;            /* Timeout for waiting for session key (microseconds) */
+	uint32_t time_timeout;                /* Timeout for authenticated time (microseconds) */
+	uint32_t time_bcast_period;           /* Timeserver broadcast period for plain time (microseconds) */
+	uint32_t time_delta;                  /* Maximum time divergency between our clock and TS (microseconds) */ 
+	int ack_disable;                      /* Disable ACK messages (to be compatible with VW implementation) */
 };
 
 /* signal callback signature */
