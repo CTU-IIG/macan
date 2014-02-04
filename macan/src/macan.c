@@ -917,7 +917,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 	/* ToDo: crypto frame or else */
 	if(cf->can_id == CANID(ctx, ctx->config->node_id))
 		return 1;
-	if (cf->can_id == ctx->config->can_id_time) {
+	if (cf->can_id == CANID(ctx,ctx->config->time_server_id)) {
 		switch(cf->can_dlc) {
 		case 4:
 			receive_time(ctx, s, cf);

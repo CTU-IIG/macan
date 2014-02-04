@@ -102,7 +102,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	memcpy(plain + 4, ch->chg, 6);
 	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id), 2);
 
-	canf.can_id = ctx->config->can_id_time;
+	canf.can_id = CANID(ctx,ctx->config->time_server_id);
 	canf.can_dlc = 8;
 	memcpy(canf.data, &macan_time, 4);
 	sign(skey, canf.data + 4, plain, 12);
@@ -169,7 +169,7 @@ void broadcast_time(struct macan_ctx *ctx, int s, uint64_t *bcast_time)
 	usec = read_time();
 	macan_time = usec / ctx->config->time_div;
 
-	cf.can_id = ctx->config->can_id_time;
+	cf.can_id = CANID(ctx,ctx->config->time_server_id);
 	cf.can_dlc = 4;
 	memcpy(cf.data, &macan_time, 4);
 

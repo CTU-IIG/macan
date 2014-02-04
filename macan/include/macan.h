@@ -57,7 +57,6 @@ struct macan_config {
 	const uint32_t *ecu2canid;            /* Mapping from ECU-ID to crypt-frame CAN-ID */
 	uint8_t key_server_id;                /* ECU-ID of the key server */
 	uint8_t time_server_id;               /* ECU-ID of the time server */
-	uint32_t can_id_time;                 /* CAN-ID of time signal (both authenticated and non-auth.) */
 	uint32_t time_div;                    /* Number of microseconds in one MaCAN time unit */
 	uint32_t ack_timeout;                 /* Timeout for waiting for key acknowledge (microseconds) */
 	uint64_t skey_validity;               /* Session key expiration time (microseconds) */

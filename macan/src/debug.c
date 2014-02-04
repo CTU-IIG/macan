@@ -49,7 +49,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);
 	if (ctx && ctx->config) {
-		if (cf->can_id == ctx->config->can_id_time) {
+		if (cf->can_id == CANID(ctx,ctx->config->time_server_id)) {
 			uint32_t time;
 			memcpy(&time, cf->data, 4); /* FIXME: Handle endian */
 			if (cf->can_dlc == 4) {

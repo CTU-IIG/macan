@@ -71,7 +71,6 @@ struct macan_config config = {
 	.ecu2canid = ecu2canid_map,
 	.key_server_id = KEY_SERVER,
 	.time_server_id = TIME_SERVER,
-	.can_id_time = SIG_TIME,
 	.time_div = TIME_DIV,
 	.ack_timeout = ACK_TIMEOUT,
 	.skey_validity = SKEY_TIMEOUT,
