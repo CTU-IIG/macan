@@ -998,7 +998,9 @@ bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, uint32_t *ecu_id)
 
 	for (i = 0; i < ctx->config->node_count; i++) {
 		if (ctx->config->ecu2canid[i] == can_id) {
-			*ecu_id = i;
+			if(ecu_id != NULL) {
+				*ecu_id = i;
+			}
 			return true;
 		}
 	}
