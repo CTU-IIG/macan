@@ -26,6 +26,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <can_frame.h>
 #include <macan.h>
 
@@ -161,7 +162,7 @@ struct macan_ctx {
 
 #define CANID(ctx, ecuid) ((ctx)->config->ecu2canid[ecuid])
 
-int canid2ecuid(struct macan_ctx *ctx, uint32_t canid);
+bool canid2ecuid(struct macan_ctx *ctx, uint32_t canid, uint32_t *ecuid);
 void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
 int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 int init(void);

@@ -24,24 +24,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include <macan_private.h>
 #include "common.h"
-
-/* TODO: A lot of functions (e.g. canid2ecuid) return either error as
- * -1 or valid answer >= 0. This causes problems in conversion from
- * signed to unsigned integers with -Wconversion. It would be better
- * to rewrite the functions to return bool and have a pointer where to
- * store the result as an additional agrument. */
-int canid2ecuid(struct macan_ctx *ctx, uint32_t canid)
-{
-	int i;
-
-	for (i = 0; i < ctx->config->node_count; i++) {
-		if (ctx->config->ecu2canid[i] == canid)
-			return i;
-	}
-	return -1;
-}
 
 void print_hexn(const void *data, size_t len)
 {

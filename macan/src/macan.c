@@ -273,25 +273,29 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
  */
 int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	int id;
+	uint32_t ecu_id;
 	struct com_part *cp;
 	struct macan_ack *ack = (struct macan_ack *)cf->data;
 	uint8_t plain[8];
 	uint8_t *skey;
 	struct com_part **cpart;
 
-	cpart = ctx->cpart;
+	if (!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
+		/* failed to find node with this CAN-ID */
+		return -1;
+	}
 
-	id = canid2ecuid(ctx, cf->can_id);
-	assert(0 <= id && id < ctx->config->node_count);
+	assert(ecu_id < ctx->config->node_count);
+
+	cpart = ctx->cpart;
 
 	/* ToDo: overflow check */
 	/* ToDo: what if ack contains me */
 	/* ToDo: add groups communication */
-	if (cpart[id] == NULL)
+	if (cpart[ecu_id] == NULL)
 		return -1;
 
-	cp = cpart[id];
+	cp = cpart[ecu_id];
 	skey = cp->skey;
 
 	plain[4] = ack->flags_and_dst_id & 0x3f;
@@ -590,23 +594,28 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	uint8_t plain[8];
 	uint8_t sig_num;
     int can_sid,can_nsid;
+	uint32_t ecu_id;
 	struct macan_sig_auth_req *areq;
 	struct com_part **cpart;
 	struct sig_handle **sighand;
 
+	if (!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
+		/* failed to find node with this CAN-ID */
+		return;
+	}
+
+	assert(ecu_id < ctx->config->node_count);
+
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
 
-	int ecuid = canid2ecuid(ctx, cf->can_id);
-	assert(ecuid >= 0);
-
-	if (cpart[ecuid] == NULL)
+	if (cpart[ecu_id] == NULL)
 		return;
 
 	areq = (struct macan_sig_auth_req *)cf->data;
-	skey = cpart[ecuid]->skey;
+	skey = cpart[ecu_id]->skey;
 
-	plain[4] = (uint8_t)ecuid;
+	plain[4] = (uint8_t)ecu_id;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
@@ -769,7 +778,6 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	struct com_part **cpart;
 	struct sig_handle **sighand;
 	uint8_t plain_length;
-	int ecuid = canid2ecuid(ctx, cf->can_id);
 
 	cpart = ctx->cpart;
 	sighand = ctx->sighand;
@@ -795,15 +803,22 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		fill_time = plain+4;
 	} else {
 		// we have received 16 bit signal
-		assert(ecuid >= 0);
+		uint32_t ecu_id;
+		if (!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
+			/* failed to find node with this CAN-ID */
+			return;
+		}
+
+		assert(ecu_id < ctx->config->node_count);
+
 		struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
 
-		memcpy(plain + 4, &ecuid, 1);
+		memcpy(plain + 4, &ecu_id, 1);
 		memcpy(plain + 5, &(ctx->config->node_id), 1);
 		memcpy(plain + 6, sig16->signal, 2);
 		plain_length = 8;
 
-		skey = cpart[ecuid]->skey;
+		skey = cpart[ecu_id]->skey;
 		assert(skey);
 
 		cmac = sig16->cmac;
@@ -964,9 +979,12 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 
 		/* ToDo: what if ack CMAC fails, there should be no response */
 		if (receive_ack(ctx, cf) == 1) {
-			int ecuid = canid2ecuid(ctx, cf->can_id);
-			if (ecuid >= 0)
-				send_ack(ctx, s, (uint8_t)ecuid);
+			uint32_t ecu_id;
+			if (canid2ecuid(ctx, cf->can_id, &ecu_id)) {
+				assert(ecu_id < ctx->config->node_count);
+				send_ack(ctx, s, (uint8_t)ecu_id);
+			}
+
 		}
 		break;
 	case FL_SIGNAL_OR_AUTH_REQ:
@@ -1000,3 +1018,27 @@ int can_sid_to_sig_num(struct macan_ctx *ctx, uint32_t can_id) {
     return -1;
 
 }
+
+/*
+ * Get node's ECU-ID from CAN-ID.
+ *
+ *
+ * @param[in]  ctx   Macan context.
+ * @param[in]  canid CAN-ID of node
+ * @param[out] ecuid Pointer where to save ECU-ID
+ *
+ * @return True if node with passed CAN-ID was found, false otherwise.
+ */
+bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, uint32_t *ecu_id)
+{
+	uint32_t i;
+
+	for (i = 0; i < ctx->config->node_count; i++) {
+		if (ctx->config->ecu2canid[i] == can_id) {
+			*ecu_id = i;
+			return true;
+		}
+	}
+	return false;
+}
+

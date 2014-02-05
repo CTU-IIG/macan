@@ -144,13 +144,14 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	struct macan_challenge *chal;
 	uint8_t dst_id, fwd_id;
 	uint8_t *chg;
+	uint32_t ecu_id;
 
 	chal = (struct macan_challenge *)cf->data;
 
-	int ecuid = canid2ecuid(ctx, cf->can_id);
-	if (ecuid < 0)
+	if(!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
 		return;
-	dst_id = (uint8_t)ecuid;
+	}
+	dst_id = (uint8_t)ecu_id;
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
@@ -164,9 +165,6 @@ void can_recv_cb(int s, struct can_frame *cf)
 
 	/* reject frames that can't be challenge */
 	if (cf->can_dlc < 8)
-		return;
-	/* Reject non-crypt frames */
-	if (canid2ecuid(&macan_ctx, cf->can_id) == -1)
 		return;
 	if (GET_DST_ID(cryf->flags_and_dst_id) != macan_ctx.config->key_server_id)
 		return;

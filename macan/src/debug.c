@@ -44,7 +44,7 @@ void debug_printf(const char* format, ...)
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 {
 	char frame[80], comment[80];
-	int src;
+	uint32_t src;
 	const char *color = "";
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);
@@ -60,7 +60,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				sprintf(comment, "authenticated time %u", time);
 			}
 		}
-		else if ((src = canid2ecuid(ctx, cf->can_id)) >= 0) {
+		else if (canid2ecuid(ctx, cf->can_id, &src)) {
 			/* Crypt frame */
 			if (cf->can_dlc < 2) {
 				sprintf(comment, "broken crypt frame");
