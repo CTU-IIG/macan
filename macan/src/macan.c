@@ -155,6 +155,9 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 	ctx->ack_timeout_abs = read_time() + ctx->config->ack_timeout;
 
 	for (i = 0; i < ctx->config->node_count; i++) {
+		if (i == ctx->config->time_server_id)
+			continue;
+
 		if (cpart[i] == NULL)
 			continue;
 
