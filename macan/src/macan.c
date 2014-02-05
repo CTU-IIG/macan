@@ -1022,7 +1022,6 @@ int can_sid_to_sig_num(struct macan_ctx *ctx, uint32_t can_id) {
 /*
  * Get node's ECU-ID from CAN-ID.
  *
- *
  * @param[in]  ctx   Macan context.
  * @param[in]  canid CAN-ID of node
  * @param[out] ecuid Pointer where to save ECU-ID
