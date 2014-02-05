@@ -67,6 +67,7 @@ void init_cpart(struct macan_ctx *ctx, uint8_t i)
 	cpart[i] = malloc(sizeof(struct com_part));
 	memset(cpart[i], 0, sizeof(struct com_part));
 	cpart[i]->wait_for = 1U << i | 1U << ctx->config->node_id;
+	cpart[i]->ecu_id = i;
 }
 
 /**
@@ -270,32 +271,19 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
  *
  * Returns 1 if the incoming ack does not contain this node in its
  * group field. Therefore, the updated ack should be broadcasted.
+ * TODO: add groups communication
+ * TODO: what if ack contains me
  */
 int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	uint32_t ecu_id;
 	struct com_part *cp;
 	struct macan_ack *ack = (struct macan_ack *)cf->data;
 	uint8_t plain[8];
 	uint8_t *skey;
-	struct com_part **cpart;
 
-	if (!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
-		/* failed to find node with this CAN-ID */
+	if(!(cp = get_cpart(ctx, cf->can_id)))
 		return -1;
-	}
-
-	assert(ecu_id < ctx->config->node_count);
-
-	cpart = ctx->cpart;
-
-	/* ToDo: overflow check */
-	/* ToDo: what if ack contains me */
-	/* ToDo: add groups communication */
-	if (cpart[ecu_id] == NULL)
-		return -1;
-
-	cp = cpart[ecu_id];
+	
 	skey = cp->skey;
 
 	plain[4] = ack->flags_and_dst_id & 0x3f;
@@ -594,28 +582,19 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	uint8_t plain[8];
 	uint8_t sig_num;
     int can_sid,can_nsid;
-	uint32_t ecu_id;
 	struct macan_sig_auth_req *areq;
-	struct com_part **cpart;
+	struct com_part *cp;
 	struct sig_handle **sighand;
 
-	if (!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
-		/* failed to find node with this CAN-ID */
+	if(!(cp = get_cpart(ctx, cf->can_id)))
 		return;
-	}
 
-	assert(ecu_id < ctx->config->node_count);
-
-	cpart = ctx->cpart;
 	sighand = ctx->sighand;
 
-	if (cpart[ecu_id] == NULL)
-		return;
-
 	areq = (struct macan_sig_auth_req *)cf->data;
-	skey = cpart[ecu_id]->skey;
+	skey = cp->skey;
 
-	plain[4] = (uint8_t)ecu_id;
+	plain[4] = (uint8_t)cp->ecu_id;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
@@ -775,64 +754,50 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	uint32_t sig_val = 0;
 	uint8_t *skey;
     uint8_t *cmac;
-	struct com_part **cpart;
+	struct com_part *cp;
 	struct sig_handle **sighand;
 	uint8_t plain_length;
 
-	cpart = ctx->cpart;
 	sighand = ctx->sighand;
 
 	if(sig32_num >= 0) {
 		// we have received 32 bit signal
 		struct macan_signal *sig32 = (struct macan_signal *)cf->data;
 		sig_num = sig32_num;
+
 		assert(sig_num < (int)ctx->config->sig_count);
-		skey = cpart[ctx->config->sigspec[sig_num].src_id]->skey;
-		if (!skey) {
-			fail_printf("No key to check signal %d\n", sig_num);
-			return;
-		}
-		assert(skey);
+		
 		cmac = sig32->cmac;
 		memcpy(&sig_val, sig32->sig, 4);
-
-		//plain[4] = ctx->config->sigspec[sig_num].src_id;
 		memcpy(plain,&sig_val,4);
 		memcpy(plain + 8,&(cf->can_id),2);
+
 		plain_length = 10;
 		fill_time = plain+4;
 	} else {
 		// we have received 16 bit signal
-		uint32_t ecu_id;
-		if (!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
-			/* failed to find node with this CAN-ID */
-			return;
-		}
-
-		assert(ecu_id < ctx->config->node_count);
-
 		struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
+		sig_num = sig16->sig_num;
 
-		memcpy(plain + 4, &ecu_id, 1);
-		memcpy(plain + 5, &(ctx->config->node_id), 1);
-		memcpy(plain + 6, sig16->signal, 2);
-		plain_length = 8;
-
-		skey = cpart[ecu_id]->skey;
-		assert(skey);
+		assert(sig_num < (int)ctx->config->sig_count);
 
 		cmac = sig16->cmac;
-		sig_num = sig16->sig_num;
+		memcpy(plain + 4, &(ctx->config->sigspec[sig_num].src_id), 1);
+		memcpy(plain + 5, &(ctx->config->node_id), 1);
+		memcpy(plain + 6, sig16->signal, 2);
 		memcpy(&sig_val, sig16->signal, 2);
+
+		plain_length = 8;
 		fill_time = plain;
 	}
 
-	//plain[5] = ctx->config->node_id;
+	// check session key
+	cp = ctx->cpart[ctx->config->sigspec[sig_num].src_id];
+	if (!(skey = cp->skey)) {
+		fail_printf("No key to check signal %d\n", sig_num);
+		return;
+	}
 
-
-#ifdef DEBUG_TS
-	printf("receive_sig: (local=%d, in msg=%d)\n", get_macan_time(ctx) / TIME_DIV, *(uint32_t *)sig->cmac);
-#endif
 	if (!check_cmac(ctx, skey, cmac, plain, fill_time, plain_length)) {
 		if (sighand[sig_num]->invalid_cback)
 			sighand[sig_num]->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
@@ -981,7 +946,6 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		if (receive_ack(ctx, cf) == 1) {
 			uint32_t ecu_id;
 			if (canid2ecuid(ctx, cf->can_id, &ecu_id)) {
-				assert(ecu_id < ctx->config->node_count);
 				send_ack(ctx, s, (uint8_t)ecu_id);
 			}
 
@@ -1041,3 +1005,26 @@ bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, uint32_t *ecu_id)
 	return false;
 }
 
+/*
+ * Get information about communication partner from given CAN-ID
+ *
+ * @param[in]  ctx    Macan context.
+ * @param[in]  can_id CAN-ID of communication partner
+ *
+ * @return Pointer to com_part of communication partner or pointer
+ * to NULL if given CAN-ID does not belong to any communication partner
+ */
+struct com_part *get_cpart(struct macan_ctx *ctx, uint32_t can_id)
+{
+	uint32_t ecu_id;
+
+	if(!canid2ecuid(ctx, can_id, &ecu_id)) {
+		/* there is no node with given CAN-ID */
+		return NULL;
+	}
+	
+	/* if ECU-ID is not our communication partner
+	 * it's cpart pointer is initialized to NULL,
+	 * so we can directly return it. */
+	return ctx->cpart[ecu_id];
+}

@@ -83,22 +83,19 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	uint8_t *skey;
 	uint8_t plain[12];
 	uint8_t dst_id;
-	uint32_t ecu_id;
-	struct com_part **cpart;
+	struct com_part *cp;
 
-	cpart = ctx->cpart;
-	if (!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
+	if(!(cp = get_cpart(ctx, cf->can_id)))
 		return -1;
-	}
 
-	dst_id = (uint8_t)ecu_id;
+	dst_id = (uint8_t) (cp->ecu_id);
 
 	if (!is_skey_ready(ctx, dst_id)) {
 		print_msg(MSG_FAIL,"cannot send time, because don't have key\n");
 		return -1;
 	}
 
-	skey = cpart[dst_id]->skey;
+	skey = cp->skey;
 
 	memcpy(plain, &macan_time, 4);
 	memcpy(plain + 4, ch->chg, 6);

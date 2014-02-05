@@ -125,6 +125,7 @@ struct com_part {
 	uint8_t flags;
 	uint32_t group_field;	/* Bitmask of known key sharing */
 	uint32_t wait_for;	/* The value of group_field we are waiting for  */
+	uint32_t ecu_id; /* ECU-ID of communication partner */
 };
 
 /**
@@ -195,5 +196,6 @@ int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
 int can_sid_to_sig_num(struct macan_ctx *ctx, uint32_t can_id);
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf);
 int is_time_ready(struct macan_ctx *ctx);
+struct com_part *get_cpart(struct macan_ctx *ctx, uint32_t can_id);
 
 #endif /* MACAN_PRIVATE_H */
