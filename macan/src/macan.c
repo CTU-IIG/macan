@@ -851,7 +851,15 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 
 	return ((grp & wf) == wf);
 }
-int is_time_ready(struct macan_ctx *ctx) {
+
+/*
+ * Check whether we have clock synchronized with TS
+ *
+ * @param[in] ctx Macan context.
+ * @return true if time is ready, false otherwise.
+ */
+bool is_time_ready(struct macan_ctx *ctx)
+{
 	return ctx->time.is_time_ready;	
 }
 
