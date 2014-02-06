@@ -95,17 +95,17 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
-	struct sess_key *key;
+	struct sess_key *skey;
 	struct can_frame cf = {0};
-	struct macan_sess_key skey;
+	struct macan_sess_key macan_skey;
 	int i;
 
 	/* ToDo: solve name inconsistency - key */
-	if (lookup_skey(dst_id, fwd_id, &key)) {
+	if (lookup_skey(dst_id, fwd_id, &skey)) {
 		send_challenge(ctx, s, fwd_id, dst_id, NULL);
 	}
 
-	memcpy(plain, key, 16);
+	memcpy(plain, skey->key, 16);
 	plain[16] = dst_id;
 	plain[17] = fwd_id;
 	memcpy(plain + 18, chal, 6);
@@ -115,15 +115,15 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
 	print_hexn(wrap, 32);
 	print_hexn(plain, 24);
 
-	skey.flags_and_dst_id = (uint8_t)(FL_SESS_KEY << 6 | (dst_id & 0x3F));
+	macan_skey.flags_and_dst_id = (uint8_t)(FL_SESS_KEY << 6 | (dst_id & 0x3F));
 
 	cf.can_id = CANID(ctx, ctx->config->key_server_id);
 	cf.can_dlc = 8;
 
 	for (i = 0; i < 6; i++) {
-		skey.seq_and_len = (uint8_t)((i << 4) /* seq */ | ((i == 5) ? 2 : 6) /* len */);
-		memcpy(skey.data, wrap + (6 * i), 6);
-		memcpy(cf.data, &skey, 8);
+		macan_skey.seq_and_len = (uint8_t)((i << 4) /* seq */ | ((i == 5) ? 2 : 6) /* len */);
+		memcpy(macan_skey.data, wrap + (6 * i), 6);
+		memcpy(cf.data, &macan_skey, 8);
 
 		/* ToDo: check all writes for success */
 		write(s, &cf, sizeof(struct can_frame));
