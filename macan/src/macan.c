@@ -310,10 +310,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 
 void gen_challenge(uint8_t *chal)
 {
-	int i;
-
-	for (i = 0; i < 6; i++)
-		chal[i] = (uint8_t)rand(); /* TODO: Use RNG from SHE or /dev/random */
+	gen_rand_data(chal, 6);
 }
 
 /**

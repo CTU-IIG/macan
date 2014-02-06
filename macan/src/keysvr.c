@@ -60,12 +60,8 @@ static struct macan_ctx macan_ctx;
 
 void generate_skey(struct sess_key *skey)
 {
-	int i;
-
 	skey->valid = true;
-
-	for (i = 0; i < 16; i++)
-		skey->key[i] = (uint8_t)rand(); /* TODO: This should use /dev/random or SHE. */
+	gen_rand_data(skey->key, 16);
 }
 
 uint8_t lookup_skey(uint8_t src, uint8_t dst, struct sess_key **key_ret)
@@ -203,7 +199,6 @@ int main(int argc, char *argv[])
 	}
 
 	config->node_id = config->key_server_id;
-	srand((unsigned)time(NULL));
 	s = helper_init();
 	macan_init(&macan_ctx, config);
 

@@ -155,3 +155,22 @@ uint64_t read_time()
 
 	return time;
 }
+
+/*
+ * Generate random bytes
+ *
+ * @param[in] dest Pointer to location where to store bytes
+ * @param[in] len  Number of random bytes to be written
+ */
+void gen_rand_data(void *dest, size_t len)
+{
+	FILE *fp;
+
+	if(!(fp = fopen("/dev/urandom","r"))) {
+		return;
+	}
+	if(fread(dest, 1, len, fp) != len) {
+		return;
+	}
+	fclose(fp);
+}
