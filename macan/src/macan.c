@@ -907,10 +907,10 @@ uint64_t macan_get_time(struct macan_ctx *ctx)
 int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	// test if can_id is can_sid of any signal
-	int sig32_num = can_sid_to_sig_num(ctx, cf->can_id);
-	if(sig32_num >= 0) {
+	uint32_t sig32_num; 
+	if(cansid2signum(ctx, cf->can_id,&sig32_num)) {
 		// received frame is 32bit signal frame
-		receive_sig(ctx,cf,sig32_num);    
+		receive_sig(ctx,cf,(int)sig32_num);    
 		return 1;
 	}
 
@@ -980,22 +980,32 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
  * @param[in] sig_num Signal number
  * @return true if signal is 32bit, false otherwise.
  */
-bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num) {
+bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num)
+{
     return (ctx->config->sigspec[sig_num].can_sid != 0 ? true : false);
 }
-int can_sid_to_sig_num(struct macan_ctx *ctx, uint32_t can_id) {
-    uint8_t i;
+
+/* 
+ * Get signal number of 32bit signal from it's secure CAN-ID.
+ * 
+ * @param[in]  ctx     Macan context.
+ * @param[in]  can_id  secure CAN-ID of signal
+ * @param[out] sig_num Pointer where signal number will be written 
+ * @return true if singal number was found, false otherwise.
+ */
+bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
+{
+	uint32_t i;
    
-    if(can_id == 0) /* FIXME: MS: Why this? */
-       return -1; 
-
-    for(i = 0; i < ctx->config->sig_count; i++) {
-       if(ctx->config->sigspec[i].can_sid == can_id) {
-           return i;
-       }
-    } 
-    return -1;
-
+	for(i = 0; i < ctx->config->sig_count; i++) {
+		if(ctx->config->sigspec[i].can_sid == can_id) {
+			if(sig_num != NULL) {
+				*sig_num = i;
+			}
+			return true;
+		}
+	} 
+	return false;
 }
 
 /*

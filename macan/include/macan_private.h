@@ -193,7 +193,7 @@ uint64_t macan_get_time(struct macan_ctx *ctx);
 void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
 void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf);
 bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
-int can_sid_to_sig_num(struct macan_ctx *ctx, uint32_t can_id);
+bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num);
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf);
 bool is_time_ready(struct macan_ctx *ctx);
 struct com_part *get_cpart(struct macan_ctx *ctx, uint32_t can_id);
