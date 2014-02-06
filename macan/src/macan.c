@@ -973,8 +973,15 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 	return 0;
 }
 
-int is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num) {
-    return (ctx->config->sigspec[sig_num].can_sid != 0);
+/* 
+ * Check if signal with given sig_num is 32bit or not
+ *
+ * @param[in] ctx     Macan context.
+ * @param[in] sig_num Signal number
+ * @return true if signal is 32bit, false otherwise.
+ */
+bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num) {
+    return (ctx->config->sigspec[sig_num].can_sid != 0 ? true : false);
 }
 int can_sid_to_sig_num(struct macan_ctx *ctx, uint32_t can_id) {
     uint8_t i;
