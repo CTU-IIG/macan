@@ -440,7 +440,7 @@ void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 
 	cpart = ctx->cpart;
 	fwd_id = ch->fwd_id;
-	assert(0 < fwd_id && fwd_id < ctx->config->node_count);
+	assert(fwd_id < ctx->config->node_count);
 
 	if (cpart[fwd_id] == NULL) {
 		cpart[fwd_id] = malloc(sizeof(struct com_part));
