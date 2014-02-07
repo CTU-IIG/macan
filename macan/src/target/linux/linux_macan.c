@@ -169,8 +169,7 @@ void gen_rand_data(void *dest, size_t len)
 	if(!(fp = fopen("/dev/urandom","r"))) {
 		return;
 	}
-	if(fread(dest, 1, len, fp) != len) {
-		return;
-	}
+
+	fread(dest, 1, len, fp);
 	fclose(fp);
 }
