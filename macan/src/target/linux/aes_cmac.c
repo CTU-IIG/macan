@@ -30,22 +30,6 @@
 #include <common.h>
 
 /**
- * lshift() - left shift by one
- *
- * Can be used in-place.
- */
-void lshift(uint8_t *dst, uint8_t *src)
-{
-	/* TODO: This is not Linux specific - move it to the common code */
-	int i;
-
-	for(i = 0; i < 15; i++) {
-		dst[i] = (uint8_t)((src[i] << 1) | (src[i+1] >> 7));
-	}
-	dst[15] = (uint8_t)(src[15] << 1);
-}
-
-/**
  * generate_subkey() - generates K1 and K2 for AES-CMAC
  */
 void generate_subkey(uint8_t *key, uint8_t *key1, uint8_t *key2)

@@ -23,4 +23,3 @@
 
 void aes_cmac(struct aes_ctx *ctx,size_t length,uint8_t *dst,const uint8_t *src);
 void generate_subkey(uint8_t *key,uint8_t *key1,uint8_t *key2);
-void lshift(uint8_t *dst,uint8_t *src);

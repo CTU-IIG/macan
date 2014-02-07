@@ -57,5 +57,6 @@ int memchk(const uint8_t *a, const uint8_t *b, size_t len);
 void print_hexn(const void *data, size_t len);
 void memcpy_bw(void *dst, const void *src, size_t len);
 void print_msg(msg_type type, const char *format, ...);
+void lshift(uint8_t *dst, const uint8_t *src);
 
 #endif /* COMMON_H */
