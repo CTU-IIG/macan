@@ -1,2 +1,2 @@
 include_HEADERS = can_frame.h common.h debug.h helper.h macan.h	\
-                  macan_private.h
+                  macan_private.h cryptlib.h

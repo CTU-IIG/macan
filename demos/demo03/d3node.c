@@ -53,7 +53,6 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <nettle/aes.h>
 #endif /* __CPU_TC1798__ */
 #include "helper.h"
 #include "macan_private.h"

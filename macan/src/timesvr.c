@@ -30,7 +30,6 @@
 #include <fcntl.h>
 #include <errno.h>
 #include "common.h"
-#include "target/linux/aes_keywrap.h"
 #ifdef TC1798
 #include "can_frame.h"
 #include "Std_Types.h"
@@ -50,12 +49,12 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include <nettle/aes.h>
-#include "target/linux/aes_cmac.h"
 #endif /* TC1798 */
 #include "helper.h"
 #include <macan.h>
 #include <macan_private.h>
 #include <dlfcn.h>
+#include <cryptlib.h>
 
 /* ToDo
  *   implement groups
@@ -104,7 +103,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	canf.can_id = CANID(ctx,ctx->config->time_server_id);
 	canf.can_dlc = 8;
 	memcpy(canf.data, &macan_time, 4);
-	sign(skey, canf.data + 4, plain, 12);
+	crypt_sign(skey, canf.data + 4, plain, 12);
 
 	write(s, &canf, sizeof(canf));
 

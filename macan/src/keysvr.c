@@ -34,14 +34,13 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <nettle/aes.h>
 #include "common.h"
 #include "helper.h"
-#include "target/linux/aes_keywrap.h"
 #include "macan_private.h"
 #include <stdbool.h>
 #include <time.h>
 #include <dlfcn.h>
+#include "cryptlib.h"
 
 #define NODE_COUNT 64
 
@@ -87,7 +86,7 @@ uint8_t lookup_skey(uint8_t src, uint8_t dst, struct sess_key **key_ret)
 	return 0;
 }
 
-void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t dst_id, uint8_t fwd_id, uint8_t *chal)
+void send_skey(struct macan_ctx *ctx, int s, const uint8_t *key, uint8_t dst_id, uint8_t fwd_id, uint8_t *chal)
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
@@ -105,7 +104,7 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
 	plain[16] = dst_id;
 	plain[17] = fwd_id;
 	memcpy(plain + 18, chal, 6);
-	aes_wrap(cipher, 24, wrap, plain);
+	crypt_aes_wrap(key, 24, wrap, plain);
 
 	print_msg(MSG_INFO,"send KEY (wrap, plain):\n");
 	print_hexn(wrap, 32);
@@ -136,7 +135,6 @@ void send_skey(struct macan_ctx *ctx, int s, struct aes_ctx * cipher, uint8_t ds
  */
 void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
-	struct aes_ctx cipher;
 	struct macan_challenge *chal;
 	uint8_t dst_id, fwd_id;
 	uint8_t *chg;
@@ -152,8 +150,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
-	aes_set_encrypt_key(&cipher, 16, ctx->config->ltk[dst_id]);
-	send_skey(ctx, s, &cipher, dst_id, fwd_id, chg);
+	send_skey(ctx, s, ctx->config->ltk[dst_id], dst_id, fwd_id, chg);
 }
 
 void can_recv_cb(int s, struct can_frame *cf)

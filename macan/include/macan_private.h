@@ -164,10 +164,7 @@ struct macan_ctx {
 #define CANID(ctx, ecuid) ((ctx)->config->ecu2canid[ecuid])
 
 bool canid2ecuid(struct macan_ctx *ctx, uint32_t canid, uint32_t *ecuid);
-void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
-int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
 int init(void);
-void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
 void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_num);
 int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal);
 int is_channel_ready(struct macan_ctx *ctx, uint8_t dst);

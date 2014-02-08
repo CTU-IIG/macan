@@ -34,10 +34,8 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <nettle/aes.h>
 #include "common.h"
 #include "helper.h"
-#include "target/linux/aes_keywrap.h"
 #include "macan_private.h"
 #include <stdbool.h>
 #include <time.h>

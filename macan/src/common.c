@@ -94,21 +94,3 @@ void print_msg(msg_type type, const char *format, ...) {
 	printf("%s: ",msg_type_strings[type]);
 	vprintf(format,ap);
 }
-/**
- * lshift() - left shift 16 bytes by one bit
- * Can be used in-place.
- *
- * @param[out] dst Destination pointer
- * @param[in]  src Source pointer
- */
-void lshift(uint8_t *dst, const uint8_t *src)
-{
-	/* TODO: This is not Linux specific - move it to the common code */
-	int i;
-
-	for(i = 0; i < 15; i++) {
-		dst[i] = (uint8_t)((src[i] << 1) | (src[i+1] >> 7));
-	}
-	dst[15] = (uint8_t)(src[15] << 1);
-}
-

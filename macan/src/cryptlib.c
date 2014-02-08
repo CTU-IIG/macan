@@ -25,9 +25,8 @@
 #include <string.h>
 #include <assert.h>
 #include <endian.h>
-#include <nettle/aes.h>
-#include <nettle/memxor.h>
 #include "common.h"
+#include "cryptlib.h"
 
 /* ToDo:
  * 	consider endianness
@@ -35,7 +34,7 @@
 
 /**
  * aes_wrap() - AES key wrap algorithm
- * @ctx:     AES context with _encryption_ key set
+ * @kye:     AES key
  * @length:  length of src
  * @dst:     cipher text will be written to, i.e. (length + 8) bytes
  * @src:     plain text
@@ -43,7 +42,7 @@
  * aes_wrap() ciphers data at src to produce cipher text at dst. It is
  * implemented as specified in RFC 3394.
  */
-void aes_wrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *src)
+void crypt_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src)
 {
 	uint8_t a[8] = { 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6 };
 	uint8_t b[16];
@@ -61,12 +60,12 @@ void aes_wrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
 		for (i = 1; i < n + 1; i++) {
 			memcpy(b, a, 8);
 			memcpy(b + 8, dst + (8 * i), 8);
-			aes_encrypt(ctx, (unsigned)block_size, b, b);
+			crypt_aes_encrypt(key, (unsigned)block_size, b, b);
 
 			memcpy(a, b, 8);
 			t = (n*j) + i;
 			af = (uint32_t *)(a + 4);
-			*af = *af ^ htobe32((unsigned)t);
+			*af = *af ^ htobe32((unsigned)t); // this function will be missing in Tricore
 
 			memcpy(dst + (8 * i), b + 8, 8);   /* ToDo: write to dst */
 		}
@@ -77,7 +76,7 @@ void aes_wrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
 
 /**
  * aes_unwrap() - AES key unwrap algorithm
- * @ctx:     AES context with _decryption_ key set
+ * @key:     AES key
  * @length:  length of src in bytes
  * @dst:     plain text will be written to, i.e. (length - 8) bytes
  * @src:     cipher text
@@ -86,7 +85,7 @@ void aes_wrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, const uint8_t *s
  * The function unwraps key data stored at src. An auxiliary buffer tmp is
  * required, although it is possible to supply src as tmp.
  */
-int aes_unwrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp)
+int crypt_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp)
 {
 	uint8_t iv[8] = { 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6 };
 	uint8_t b[16];
@@ -105,11 +104,11 @@ int aes_unwrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, uint8_t *src, u
 		for (i = n; i > 0; i--) {
 			t = (n*(uint32_t)j) + i;
 			af = (uint32_t *)(tmp + 4);
-			*af = *af ^ htobe32(t);
+			*af = *af ^ htobe32(t); // this will not be available on Tricore
 
 			memcpy(b, tmp, 8);
 			memcpy(b + 8, tmp + (8 * i), 8);
-			aes_decrypt(ctx, (unsigned)block_size, b, b);
+			crypt_aes_decrypt(key, (unsigned)block_size, b, b);
 
 			memcpy(tmp, b, 8);
 			memcpy(tmp + (8 * i), b + 8, 8);   /* ToDo: write to dst */
@@ -121,4 +120,63 @@ int aes_unwrap(struct aes_ctx *ctx, size_t length, uint8_t *dst, uint8_t *src, u
 	memcpy(dst, tmp + 8, length - 8);
 
 	return 0;
+}
+
+/**
+ * checks a message authenticity
+ *
+ * The function computes CMAC of the given plain text and compares
+ * it against cmac4. Returns 1 if CMACs matches.
+ *
+ * @param skey  128-bit session key
+ * @param cmac4: points to CMAC message part, i.e. 4 bytes CMAC
+ * @param plain: plain text to be CMACked and checked against
+ * @param len:   length of plain text in bytes
+ */
+int crypt_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
+{
+	uint8_t cmac[16];
+	uint64_t time;
+	int32_t *ftime = (int32_t *)fill_time;
+	int i;
+
+	if (!fill_time) {
+		crypt_aes_cmac(skey, len, cmac, plain);
+		return memchk(cmac4, cmac, 4);
+	}
+
+	time = macan_get_time(ctx);
+
+	for (i = -1; i <= 1; i++) {
+		*ftime = (int)time + i;
+		crypt_aes_cmac(skey, len, cmac, plain);
+
+		if (memchk(cmac4, cmac, 4) == 1) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+/**
+ * sign() - signs a message with CMAC
+ * @skey:  128-bit session key
+ * @cmac4: 4 bytes of the CMAC signature will be written to
+ * @plain: a plain text to sign
+ * @len:   length of the plain text
+ */
+void crypt_sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
+{
+	uint8_t cmac[16];
+	crypt_aes_cmac(skey, len, cmac, plain);
+	memcpy(cmac4, cmac, 4);
+}
+
+/**
+ * unwrap_key() - deciphers AES-WRAPed key
+ */
+void crypt_unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
+{
+	crypt_aes_unwrap(key, len, dst, src, src);
 }

@@ -49,11 +49,11 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <nettle/aes.h>
 #endif /* __CPU_TC1798__ */
 #include <macan.h>
 #include "macan_private.h"
 #include "debug.h"
+#include "cryptlib.h"
 
 /**
  * Initialize communication partner.
@@ -252,7 +252,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 #ifdef DEBUG_TS
 	memcpy(ack.cmac, &time, 4);
 #else
-	sign(skey, ack.cmac, plain, sizeof(plain));
+	crypt_sign(skey, ack.cmac, plain, sizeof(plain));
 #endif
 	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 8;
@@ -290,7 +290,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	memcpy(plain + 5, ack->group, 3);
 
 	/* ToDo: make difference between wrong CMAC and not having the key */
-	if (!check_cmac(ctx, skey, ack->cmac, plain, plain, sizeof(plain))) {
+	if (!crypt_check_cmac(ctx, skey, ack->cmac, plain, plain, sizeof(plain))) {
 		fail_printf("%s\n","error: ACK CMAC failed");
 		return -1;
 	}
@@ -351,14 +351,8 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	if (seq == 5) {
 
-		unwrap_key(ctx->config->ltk[ctx->config->node_id], 32, skey, keywrap);
+		crypt_unwrap_key(ctx->config->ltk[ctx->config->node_id], 32, skey, keywrap);
 		fwd_id = skey[17];
-
-#ifdef DEBUG
-		printf(ANSI_COLOR_CYAN "RECV Session key\n" ANSI_COLOR_RESET);
-		printf("Unwrapped: ");
-		print_hexn(skey,24);
-#endif
 
 		if (fwd_id >= ctx->config->node_count || cpart[fwd_id] == NULL) {
 			fail_printf("unexpected fwd_id %#x\n", fwd_id);
@@ -518,7 +512,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
 	memcpy(plain + 4, ctx->time.chg, 6); // challenge
 	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id),2); /* FIXME: Endianing problem */
 
-	if (!check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
+	if (!crypt_check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
 		/* not a fatal error, we possibly received signed time for different node */
 		//fail_printf("check cmac time %d\n", time_ts);
 		return;
@@ -564,7 +558,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num
 	areq.flags_and_dst_id = FL_AUTH_REQ << 6 | dst_id;
 	areq.sig_num = sig_num;
 	areq.prescaler = prescaler;
-	sign(skey, areq.cmac, plain, sizeof(plain));
+	crypt_sign(skey, areq.cmac, plain, sizeof(plain));
 
 	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 7;
@@ -598,7 +592,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	/* Check CMAC only if can_dlc is 7 */
 	if(cf->can_dlc == 7) {
-		if (!check_cmac(ctx, skey, areq->cmac, plain, plain, sizeof(plain))) {
+		if (!crypt_check_cmac(ctx, skey, areq->cmac, plain, plain, sizeof(plain))) {
 			printf("error: sig_auth cmac is incorrect\n");
 		}
 	}
@@ -682,7 +676,7 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 #ifdef DEBUG_TS
 	memcpy(cmac, &time, 4);
 #else
-	sign(skey, cmac, plain, plain_length);
+	crypt_sign(skey, cmac, plain, plain_length);
 #endif
 
 	cf.can_dlc = 8;
@@ -795,7 +789,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		return;
 	}
 
-	if (!check_cmac(ctx, skey, cmac, plain, fill_time, plain_length)) {
+	if (!crypt_check_cmac(ctx, skey, cmac, plain, fill_time, plain_length)) {
 		if (sighand[sig_num]->invalid_cback)
 			sighand[sig_num]->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
 		else

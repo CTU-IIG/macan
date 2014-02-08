@@ -31,7 +31,6 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "common.h"
-#include "aes_keywrap.h"
 #include <unistd.h>
 #include <net/if.h>
 #include <sys/types.h>
@@ -39,97 +38,7 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <nettle/aes.h>
-#include "aes_cmac.h"
 #include "macan_private.h"
-
-/**
- * checks a message authenticity
- *
- * The function computes CMAC of the given plain text and compares
- * it against cmac4. Returns 1 if CMACs matches.
- *
- * @param skey  128-bit session key
- * @param cmac4: points to CMAC message part, i.e. 4 bytes CMAC
- * @param plain: plain text to be CMACked and checked against
- * @param len:   length of plain text in bytes
- */
-int check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
-{
-	struct aes_ctx cipher;
-	uint8_t cmac[16];
-	uint64_t time;
-	int32_t *ftime = (int32_t *)fill_time;
-	int i,ret;
-
-	aes_set_encrypt_key(&cipher, 16, skey);
-
-	if (!fill_time) {
-		aes_cmac(&cipher, len, cmac, plain);
-		ret = memchk(cmac4, cmac, 4);
-#ifdef DEBUG
-		if(ret == 0) {
-			// check failed, print more info
-			printf(ANSI_COLOR_RED "CMAC check failed\n" ANSI_COLOR_RESET);
-			printf("plain: "); print_hexn(plain,len);
-			printf("session key: "); print_hexn(&cipher,16);
-			printf("expected cmac: "); print_hexn(cmac4,4);
-			printf("computed cmac: "); print_hexn(&cmac,4);
-		}
-#endif
-		return ret;
-	}
-
-	time = macan_get_time(ctx);
-
-	for (i = -1; i <= 1; i++) {
-		*ftime = (int)time + i;
-		aes_cmac(&cipher, len, cmac, plain);
-
-		if (memchk(cmac4, cmac, 4) == 1) {
-			return 1;
-		}
-	}
-
-#if DEBUG
-	printf(ANSI_COLOR_RED "CMAC check failed\n" ANSI_COLOR_RESET);
-	printf("plain: "); print_hexn(plain,len);
-	printf("session key: "); print_hexn(&cipher,16);
-	printf("expected cmac: "); print_hexn(cmac4,4);
-	printf("time ±1: %"PRIu64"\n", time);
-#endif
-
-	return 0;
-}
-
-/**
- * sign() - signs a message with CMAC
- * @skey:  128-bit session key
- * @cmac4: 4 bytes of the CMAC signature will be written to
- * @plain: a plain text to sign
- * @len:   length of the plain text
- */
-void sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
-{
-	struct aes_ctx cipher;
-	uint8_t cmac[16];
-
-	aes_set_encrypt_key(&cipher, 16, skey);
-	aes_cmac(&cipher, len, cmac, plain);
-
-	memcpy(cmac4, cmac, 4);
-}
-
-/**
- * unwrap_key() - deciphers AES-WRAPed key
- */
-void unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
-{
-	struct aes_ctx cipher;
-
-	aes_set_decrypt_key(&cipher, 16, key);
-	aes_unwrap(&cipher, len, dst, src, src);
-}
 
 /**
  * read_time() - returns time in microseconds

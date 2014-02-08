@@ -21,11 +21,18 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef AES_KEYWRAP_H
-#define AES_KEYWRAP_H
-struct aes_ctx;
+#include "macan_private.h"
 
-int aes_unwrap(struct aes_ctx *ctx,size_t length,uint8_t *dst,uint8_t *src,uint8_t *tmp);
-void aes_wrap(struct aes_ctx *ctx,size_t length,uint8_t *dst,const uint8_t *src);
+#ifndef CRYPTLIB_H
+#define CRYPTLIB_H
 
-#endif /* AES_KEYWRAP_H */
+void crypt_aes_cmac(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src);
+void crypt_aes_encrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8_t *src);
+void crypt_aes_decrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8_t *src);
+void crypt_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src);
+int crypt_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp);
+int crypt_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len);
+void crypt_sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len);
+void crypt_unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src);
+
+#endif /* CRYPTLIB_H */
