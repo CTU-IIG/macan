@@ -230,7 +230,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	uint32_t time;
 	uint8_t *skey;
 	struct can_frame cf = {0};
-	ssize_t res;
+	volatile int res;
 	struct com_part **cpart;
 
 	cpart = ctx->cpart;

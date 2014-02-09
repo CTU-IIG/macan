@@ -31,7 +31,6 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "common.h"
-#include "aes_keywrap.h"
 #include "can_frame.h"
 #include "Std_Types.h"
 #include "Mcu.h"

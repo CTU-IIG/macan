@@ -116,7 +116,7 @@ void led_set(uint8_t value) {
 
 void handle_io(void)
 {
-	static int last_blink = 0;
+	static uint64_t last_blink = 0;
 
 	button_pressed = !P7_IN.B.P5;
 	P4_OUT.B.P7 = !button_pressed; // One blue LED shows the button state
