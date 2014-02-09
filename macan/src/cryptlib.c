@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <endian.h>
+#include "endian.h"
 #include "common.h"
 #include "cryptlib.h"
 
