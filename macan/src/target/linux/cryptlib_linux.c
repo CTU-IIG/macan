@@ -37,7 +37,7 @@
  * @param[out] dst Destination pointer
  * @param[in]  src Source pointer
  */
-void lshift(uint8_t *dst, const uint8_t *src)
+static void lshift(uint8_t *dst, const uint8_t *src)
 {
 	/* TODO: This is not Linux specific - move it to the common code */
 	/* Ondrej K.: The function itself, is not Linux specific, but is used exclusively
@@ -55,7 +55,7 @@ void lshift(uint8_t *dst, const uint8_t *src)
 /**
  * generate_subkey() - generates K1 and K2 for AES-CMAC
  */
-void generate_subkey(const uint8_t *key, uint8_t *key1, uint8_t *key2)
+static void generate_subkey(const uint8_t *key, uint8_t *key1, uint8_t *key2)
 {
 	const uint8_t zero[16] = { 0 };
 	uint8_t rb[16] = { 0 };
