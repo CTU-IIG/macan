@@ -258,7 +258,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	cf.can_dlc = 8;
 	memcpy(cf.data, &ack, 8);
 
-	res = write(s, &cf, sizeof(struct can_frame));
+	res = (int) write(s, &cf, sizeof(struct can_frame));
 	if (res != 16) {
 		fail_printf("%s\n","failed to send some bytes of ack");
 	}
