@@ -36,7 +36,9 @@ static inline uint32_t bswap_32(uint32_t x)
 			((x >> 24) & 0x000000ff );
 }
 
-#define htobe32(x) bswap_32(x);
+#define htobe32(x) bswap_32(x)
+#define htole32(x) (x)
+#define le32toh(x) (x)
 
 #else
 

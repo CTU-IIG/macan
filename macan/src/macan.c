@@ -54,6 +54,7 @@
 #include "macan_private.h"
 #include "debug.h"
 #include "cryptlib.h"
+#include "endian.h"
 
 /**
  * Initialize communication partner.
