@@ -66,7 +66,7 @@ void init_cpart(struct macan_ctx *ctx, uint8_t i)
 	struct com_part **cpart = ctx->cpart;
 	cpart[i] = malloc(sizeof(struct com_part));
 	memset(cpart[i], 0, sizeof(struct com_part));
-	cpart[i]->wait_for = 1U << i | 1U << ctx->config->node_id;
+	cpart[i]->wait_for = htole32(1U << i | 1U << ctx->config->node_id);
 	cpart[i]->ecu_id = i;
 }
 
@@ -242,15 +242,15 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 		return;
 
 	skey = cpart[dst_id]->skey;
-	memcpy(&ack.group, &cpart[dst_id]->group_field, 3);
+	memcpy(&ack.group, &(cpart[dst_id]->group_field), 3);
 	time = (uint32_t)macan_get_time(ctx);
 
-	memcpy(plain, &time, 4);
+	memcpy(plain, &htole32(time), 4);
 	plain[4] = dst_id;
 	memcpy(plain + 5, ack.group, 3);
 
 #ifdef DEBUG_TS
-	memcpy(ack.cmac, &time, 4);
+	memcpy(ack.cmac, &htole32(time), 4);
 #else
 	crypt_sign(skey, ack.cmac, plain, sizeof(plain));
 #endif
@@ -295,7 +295,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 		return -1;
 	}
 
-	uint32_t is_present = 1U << ctx->config->node_id;
+	uint32_t is_present = htole32(1U << ctx->config->node_id);
 	uint32_t ack_group = 0;
 	memcpy(&ack_group, ack->group, 3);
 
@@ -368,7 +368,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 		memcpy(cpart[fwd_id]->skey, skey, 16);
 		
 		// initialize group field - this will work only for ecu_id <= 23
-		cpart[fwd_id]->group_field |= 1U << ctx->config->node_id; // FIXME: Possible endianing problems
+		cpart[fwd_id]->group_field |= htole32(1U << ctx->config->node_id);
 
 		// print key
 		print_msg(MSG_OK,"KEY (%d -> %d) is ", ctx->config->node_id, fwd_id);
@@ -440,7 +440,7 @@ void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 		cpart[fwd_id] = malloc(sizeof(struct com_part));
 		memset(cpart[fwd_id], 0, sizeof(struct com_part));
 
-		cpart[fwd_id]->wait_for = 1U << fwd_id | 1U << ctx->config->node_id;
+		cpart[fwd_id]->wait_for = htole32(1U << fwd_id | 1U << ctx->config->node_id);
 	}
 
 	cpart[fwd_id]->valid_until = read_time() + ctx->config->skey_chg_timeout;
@@ -465,6 +465,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	}
 
 	memcpy(&time_ts, cf->data, 4);
+	time_ts = le32toh(time_ts);
 	time_ts_us = (uint64_t)time_ts * ctx->config->time_div;
 	recent = (int64_t)read_time() + ctx->time.offs; /* Estimated time on TS (us) */
 
@@ -510,13 +511,16 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
 	skey = cpart[ctx->config->time_server_id]->skey;
 	memcpy(plain, &time_ts, 4); // received time
 	memcpy(plain + 4, ctx->time.chg, 6); // challenge
-	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id),2); /* FIXME: Endianing problem */
+	memcpy(plain + 10, &htole32(CANID(ctx, ctx->config->time_server_id)),2);
 
 	if (!crypt_check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
 		/* not a fatal error, we possibly received signed time for different node */
 		//fail_printf("check cmac time %d\n", time_ts);
 		return;
 	}
+
+	/* cmac check ok, convert to our endianess */
+	time_ts = le32toh(time_ts);
 	
 	time_ts_us = (int64_t)time_ts * ctx->config->time_div;
 
@@ -549,7 +553,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num
 	t = macan_get_time(ctx);
 	skey = cpart[dst_id]->skey;
 
-	memcpy(plain, &t, 4);
+	memcpy(plain, &htole32(t), 4);
 	plain[4] = ctx->config->node_id;
 	plain[5] = dst_id;
 	plain[6] = sig_num;
@@ -646,12 +650,12 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 
 	if(is_32bit_signal(ctx,sig_num)) {
 		/* changed to be compatible with VW macangw */
-		memcpy(plain+4, &t, 4);
+		memcpy(plain+4, &htole32(t), 4);
 		struct macan_signal *sig32 = (struct macan_signal *) sig;
 		// changed to be compatible with macangw
-		memcpy(plain, &signal, 4);
+		memcpy(plain, &htole32(signal), 4);
 		memcpy(plain+8, &ctx->config->sigspec[sig_num].can_sid,2); 
-		memcpy(sig32->sig, &signal, 4);
+		memcpy(sig32->sig, &htole32(signal), 4);
 		cf.can_id = ctx->config->sigspec[sig_num].can_sid;
 		plain_length = 10;
 		cmac = sig32->cmac;
@@ -662,10 +666,10 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 		sig16->sig_num = sig_num;
 		memcpy(&sig16->signal, &signal, 2);
 
-		memcpy(plain, &t, 4);
+		memcpy(plain, &htole32(t), 4);
 		memcpy(plain + 4, &(ctx->config->node_id), 1);
 		memcpy(plain + 5, &dst_id, 1);
-		memcpy(plain + 6, &signal, 2);
+		memcpy(plain + 6, &htole32(signal), 2);
 		plain_length = 8;
 
 		cf.can_id = CANID(ctx, ctx->config->node_id);
@@ -760,7 +764,8 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		
 		cmac = sig32->cmac;
 		memcpy(&sig_val, sig32->sig, 4);
-		memcpy(plain,&sig_val,4);
+		sig_val = le32toh(sig_val);
+		memcpy(plain,&sig32->sig,4);
 		memcpy(plain + 8,&(cf->can_id),2);
 
 		plain_length = 10;
@@ -777,6 +782,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		memcpy(plain + 5, &(ctx->config->node_id), 1);
 		memcpy(plain + 6, sig16->signal, 2);
 		memcpy(&sig_val, sig16->signal, 2);
+		sig_val = le32toh(sig_val);
 
 		plain_length = 8;
 		fill_time = plain;
@@ -814,7 +820,7 @@ int is_skey_ready(struct macan_ctx *ctx, uint8_t dst_id)
 	if (ctx->cpart[dst_id] == NULL)
 		return 0;
 
-	return (ctx->cpart[dst_id]->group_field & 1U << ctx->config->node_id) ? 1 : 0;
+	return (ctx->cpart[dst_id]->group_field & htole32(1U << ctx->config->node_id)) ? 1 : 0;
 }
 
 /**
@@ -837,8 +843,8 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 	if (cpart[dst] == NULL)
 		return 0;
 
-	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_field)) & 0x00ffffff;
-	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & 0x00ffffff;
+	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_field)) & htole32(0x00ffffff);
+	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & htole32(0x00ffffff);
 
 	return ((grp & wf) == wf);
 }

@@ -65,7 +65,7 @@ void crypt_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8
 			memcpy(a, b, 8);
 			t = (n*j) + i;
 			af = (uint32_t *)(a + 4);
-			*af = *af ^ htobe32((unsigned)t); // this function will be missing in Tricore
+			*af = *af ^ htobe32((unsigned)t);
 
 			memcpy(dst + (8 * i), b + 8, 8);   /* ToDo: write to dst */
 		}
@@ -104,7 +104,7 @@ int crypt_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *s
 		for (i = n; i > 0; i--) {
 			t = (n*(uint32_t)j) + i;
 			af = (uint32_t *)(tmp + 4);
-			*af = *af ^ htobe32(t); // this will not be available on Tricore
+			*af = *af ^ htobe32(t);
 
 			memcpy(b, tmp, 8);
 			memcpy(b + 8, tmp + (8 * i), 8);
@@ -148,7 +148,7 @@ int crypt_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4,
 	time = macan_get_time(ctx);
 
 	for (i = -1; i <= 1; i++) {
-		*ftime = (int)time + i;
+		*ftime = htole32((int)time + i);
 		crypt_aes_cmac(skey, len, cmac, plain);
 
 		if (memchk(cmac4, cmac, 4) == 1) {
