@@ -27,9 +27,21 @@
 #include <stdint.h>
 
 #ifdef __CPU_TC1798__
-uint32_t htobe32(uint32_t host_32bits);
+
+static inline uint32_t bswap_32(uint32_t x)
+{
+	return	((x << 24) & 0xff000000 ) |
+			((x <<  8) & 0x00ff0000 ) |
+			((x >>  8) & 0x0000ff00 ) |
+			((x >> 24) & 0x000000ff );
+}
+
+#define htobe32(x) bswap_32(x);
+
 #else
+
 #include <endian.h>
+
 #endif /* __CPU_TC1798__ */
 
 #endif /* ENDIAN_H_ */
