@@ -30,6 +30,8 @@
 #include <common.h>
 #include "cryptlib.h"
 
+static void lshift(uint8_t *dst, const uint8_t *src);
+static void generate_subkey(const uint8_t *key, uint8_t *key1, uint8_t *key2);
 /**
  * lshift() - left shift 16 bytes by one bit
  * Can be used in-place.
