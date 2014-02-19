@@ -105,6 +105,10 @@ int main()
 	// put node id to config struct
 	config.node_id = NODE_ID;
 
+#define MACAN_CONFIG_LTK(NODE_ID) &macan_ltk_node ## NODE_ID
+
+	//config.ltk = MACAN_CONFIG_LTK(NODE_ID);
+
 	macan_init(&macan_ctx, &config);
 	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback, NULL);
 	macan_reg_callback(&macan_ctx, SIGNAL_B, sig_callback, NULL);
