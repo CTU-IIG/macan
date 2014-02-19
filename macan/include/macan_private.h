@@ -30,6 +30,10 @@
 #include <can_frame.h>
 #include <macan.h>
 
+/* Return values of functions returning bool */
+#define SUCCESS true
+#define ERROR	false
+
 /* MaCAN message definitions */
 
 #define FL_REQ_CHALLENGE      0U
