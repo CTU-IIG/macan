@@ -11,4 +11,5 @@ d2node3_LIBS = macan nettle rt
 shared_LIBRARIES = demo02cfg
 demo02cfg_SOURCES = macan_config.c
 
-shared_LIBRARIES += demo02keys demo02keys_SOURCES = ltk2.c ltk3.c
+shared_LIBRARIES += demo02keys
+demo02keys_SOURCES = ltk2.c ltk3.c
