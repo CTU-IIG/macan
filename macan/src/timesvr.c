@@ -189,7 +189,7 @@ void operate_ts(struct macan_ctx *ctx, int s)
 
 void print_help(char *argv0)
 {
-	fprintf(stderr, "Usage: %s -c <config_shlib>\n", argv0);
+	fprintf(stderr, "Usage: %s -c <config_shlib> -k <key_shlib>\n", argv0);
 }
 
 int main(int argc, char *argv[])
@@ -198,11 +198,28 @@ int main(int argc, char *argv[])
 	struct macan_config *config = NULL;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "c:")) != -1) {
+	while ((opt = getopt(argc, argv, "c:k:")) != -1) {
 		switch (opt) {
 		case 'c': {
 			void *handle = dlopen(optarg, RTLD_LAZY);
 			config = dlsym(handle, "config");
+			break;
+		}
+		case 'k': {
+			void *handle = dlopen(optarg, RTLD_LAZY);
+			if(!handle) {
+			   fprintf(stderr, "%s\n", dlerror());
+			   exit(1);
+			}
+			char str[100];
+			int cnt = sprintf(str,"%s","macan_ltk_node");
+			sprintf(str+cnt,"%u",config->time_server_id);
+			config->ltk = dlsym(handle,"macan_ltk_node1");
+			char *error = dlerror();
+			if(error != NULL) {
+				print_msg(MSG_FAIL,"Unable to load ltk key from shared library\nReason: %s\n",error);
+				exit(1);
+			}
 			break;
 		}
 		default: /* '?' */

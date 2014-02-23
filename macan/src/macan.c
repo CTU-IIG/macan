@@ -352,7 +352,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	if (seq == 5) {
 
-		crypt_unwrap_key(ctx->config->ltk[ctx->config->node_id], 32, skey, keywrap);
+		crypt_unwrap_key(ctx->config->ltk, 32, skey, keywrap);
 		fwd_id = skey[17];
 
 		if (fwd_id >= ctx->config->node_count || cpart[fwd_id] == NULL) {

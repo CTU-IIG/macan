@@ -58,6 +58,7 @@
 #define TIME_EMIT_SIG 1000000
 
 static struct macan_ctx macan_ctx;
+extern const uint8_t MACAN_CONFIG_LTK(NODE_ID);
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
@@ -105,9 +106,7 @@ int main()
 	// put node id to config struct
 	config.node_id = NODE_ID;
 
-#define MACAN_CONFIG_LTK(NODE_ID) &macan_ltk_node ## NODE_ID
-
-	//config.ltk = MACAN_CONFIG_LTK(NODE_ID);
+	config.ltk = &MACAN_CONFIG_LTK(NODE_ID);
 
 	macan_init(&macan_ctx, &config);
 	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback, NULL);

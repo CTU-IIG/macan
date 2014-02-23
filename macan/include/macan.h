@@ -50,7 +50,7 @@ struct macan_sig_spec {
 
 struct macan_config {
 	uint8_t node_id;                      /* Our ECU-ID (0-63) */
-	const uint8_t (*ltk)[16];             /* Long-term key map (for communication with KS) */
+	const uint8_t *ltk;             /* Long-term key map (for communication with KS) */
 	uint32_t sig_count;                   /* Number of sinals in sig_spec */
 	const struct macan_sig_spec *sigspec; /* Signal specification */
 	uint8_t node_count;                   /* Number of nodes (ECUs) in our network */

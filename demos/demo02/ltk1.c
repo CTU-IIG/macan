@@ -21,27 +21,9 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MACAN_CONFIG_H
-#define MACAN_CONFIG_H
-
 #include <macan.h>
 
-enum sig_id {
-	SIGNAL_A,
-	SIGNAL_B,
-	SIGNAL_C,
-	SIGNAL_D,
-	SIG_COUNT
-};
-
-enum node_id {
-	KEY_SERVER,
-	TIME_SERVER,
-	NODE1,
-	NODE2,
-	NODE_COUNT
-};
-
-extern struct macan_config config;
-
-#endif /* MACAN_CONFIG_H */
+/* TODO: Add new type (strct) for keys */
+const uint8_t macan_ltk_node1[] = {
+	0x00, 0x01, 0x02, 0x09, 0x04, 0x05, 0x06, 0x07,
+  	0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F };

@@ -56,6 +56,7 @@ struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {
 };
 
 static struct macan_ctx macan_ctx;
+static void *ltk_handle;
 
 void generate_skey(struct sess_key *skey)
 {
@@ -139,6 +140,10 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	uint8_t dst_id, fwd_id;
 	uint8_t *chg;
 	uint32_t ecu_id;
+	const uint8_t *ltk;
+	char node_id_str[100];
+	int cnt;
+	char *error;
 
 	chal = (struct macan_challenge *)cf->data;
 
@@ -150,7 +155,16 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
-	send_skey(ctx, s, ctx->config->ltk[dst_id], dst_id, fwd_id, chg);
+	cnt = sprintf(node_id_str,"%s","macan_ltk_node");
+	sprintf(node_id_str+cnt,"%u",dst_id);
+	ltk = dlsym(ltk_handle,node_id_str);
+	error = dlerror();
+	if(error != NULL) {
+		print_msg(MSG_FAIL,"Unable to load ltk key for node #%u from shared library\nReason: %s\n",dst_id,error);
+		return;
+	}
+	print_hexn(ltk, 16);
+	send_skey(ctx, s, ltk, dst_id, fwd_id, chg);
 }
 
 void can_recv_cb(int s, struct can_frame *cf)
@@ -172,7 +186,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 
 void print_help(char *argv0)
 {
-	fprintf(stderr, "Usage: %s -c <config_shlib>\n", argv0);
+	fprintf(stderr, "Usage: %s -c <config_shlib> -k <ltk_lib>\n", argv0);
 }
 
 int main(int argc, char *argv[])
@@ -181,13 +195,20 @@ int main(int argc, char *argv[])
 	struct macan_config *config = NULL;
 
 	int opt;
-	while ((opt = getopt(argc, argv, "c:")) != -1) {
+	while ((opt = getopt(argc, argv, "c:k:")) != -1) {
 		switch (opt) {
 		case 'c': {
 			void *handle = dlopen(optarg, RTLD_LAZY);
 			config = dlsym(handle, "config");
 			break;
 		}
+		case 'k':
+			ltk_handle = dlopen(optarg, RTLD_LAZY);
+			if(!ltk_handle) {
+			   fprintf(stderr, "%s\n", dlerror());
+			   exit(1);
+			}
+			break;
 		default: /* '?' */
 			print_help(argv[0]);
 			exit(1);
