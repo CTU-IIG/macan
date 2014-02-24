@@ -108,7 +108,7 @@ void send_skey(struct macan_ctx *ctx, int s, const uint8_t *key, macan_ecuid dst
 	plain[16] = dst_id;
 	plain[17] = fwd_id;
 	memcpy(plain + 18, chal, 6);
-	crypt_aes_wrap(key, 24, wrap, plain);
+	macan_aes_wrap(key, 24, wrap, plain);
 
 	print_msg(MSG_INFO,"send KEY (wrap, plain):\n");
 	print_hexn(wrap, 32);

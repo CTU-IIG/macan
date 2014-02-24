@@ -42,7 +42,7 @@
  * aes_wrap() ciphers data at src to produce cipher text at dst. It is
  * implemented as specified in RFC 3394.
  */
-void crypt_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src)
+void macan_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src)
 {
 	uint8_t a[8] = { 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6 };
 	uint8_t b[16];
@@ -60,7 +60,7 @@ void crypt_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8
 		for (i = 1; i < n + 1; i++) {
 			memcpy(b, a, 8);
 			memcpy(b + 8, dst + (8 * i), 8);
-			crypt_aes_encrypt(key, (unsigned)block_size, b, b);
+			macan_aes_encrypt(key, (unsigned)block_size, b, b);
 
 			memcpy(a, b, 8);
 			t = (n*j) + i;
@@ -85,7 +85,7 @@ void crypt_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8
  * The function unwraps key data stored at src. An auxiliary buffer tmp is
  * required, although it is possible to supply src as tmp.
  */
-int crypt_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp)
+int macan_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp)
 {
 	uint8_t iv[8] = { 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6 };
 	uint8_t b[16];
@@ -108,7 +108,7 @@ int crypt_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *s
 
 			memcpy(b, tmp, 8);
 			memcpy(b + 8, tmp + (8 * i), 8);
-			crypt_aes_decrypt(key, (unsigned)block_size, b, b);
+			macan_aes_decrypt(key, (unsigned)block_size, b, b);
 
 			memcpy(tmp, b, 8);
 			memcpy(tmp + (8 * i), b + 8, 8);   /* ToDo: write to dst */
@@ -133,7 +133,7 @@ int crypt_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *s
  * @param plain: plain text to be CMACked and checked against
  * @param len:   length of plain text in bytes
  */
-int crypt_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
+int macan_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
 {
 	uint8_t cmac[16];
 	uint64_t time;
@@ -141,7 +141,7 @@ int crypt_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4,
 	int i;
 
 	if (!fill_time) {
-		crypt_aes_cmac(skey, len, cmac, plain);
+		macan_aes_cmac(skey, len, cmac, plain);
 		return memchk(cmac4, cmac, 4);
 	}
 
@@ -149,7 +149,7 @@ int crypt_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4,
 
 	for (i = -1; i <= 1; i++) {
 		*ftime = htole32((int)time + i);
-		crypt_aes_cmac(skey, len, cmac, plain);
+		macan_aes_cmac(skey, len, cmac, plain);
 
 		if (memchk(cmac4, cmac, 4) == 1) {
 			return 1;
@@ -166,17 +166,17 @@ int crypt_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4,
  * @plain: a plain text to sign
  * @len:   length of the plain text
  */
-void crypt_sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
+void macan_sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
 {
 	uint8_t cmac[16];
-	crypt_aes_cmac(skey, len, cmac, plain);
+	macan_aes_cmac(skey, len, cmac, plain);
 	memcpy(cmac4, cmac, 4);
 }
 
 /**
  * unwrap_key() - deciphers AES-WRAPed key
  */
-void crypt_unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
+void macan_unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
 {
-	crypt_aes_unwrap(key, len, dst, src, src);
+	macan_aes_unwrap(key, len, dst, src, src);
 }

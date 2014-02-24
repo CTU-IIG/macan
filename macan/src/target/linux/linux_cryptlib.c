@@ -64,7 +64,7 @@ static void generate_subkey(const uint8_t *key, uint8_t *key1, uint8_t *key2)
 	uint8_t l[16];
 
 	rb[15] = 0x87;
-	crypt_aes_encrypt(key, 16, l, zero);
+	macan_aes_encrypt(key, 16, l, zero);
 
 	lshift(key1, l);
 	if (l[0] & 0x80) {
@@ -88,7 +88,7 @@ static void generate_subkey(const uint8_t *key, uint8_t *key1, uint8_t *key2)
  * This function calculates cipher-based message authentication code (CMAC) of
  * the given message. Further see RFC 4493.
  */
-void crypt_aes_cmac(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src)
+void macan_aes_cmac(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src)
 {
 	uint8_t key1[16], key2[16];
 	uint8_t lblock[16] = { 0 };
@@ -114,7 +114,7 @@ void crypt_aes_cmac(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *sr
 
   	for (i = 0; i < itcnt; i++, src += block_size) {
 		memxor(dst, src, block_size);
-		crypt_aes_encrypt(key, (unsigned)block_size, dst, dst);
+		macan_aes_encrypt(key, (unsigned)block_size, dst, dst);
 	}
 
 	generate_subkey(key, key1, key2);
@@ -124,18 +124,18 @@ void crypt_aes_cmac(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *sr
 		lblock[lblen] = 0x80;
 		memxor(dst, lblock, block_size);
 		memxor(dst, key2, block_size);
-		crypt_aes_encrypt(key, (unsigned)block_size, dst, dst);
+		macan_aes_encrypt(key, (unsigned)block_size, dst, dst);
 	} else {
 		memxor(dst, src, block_size);
 		memxor(dst, key1, block_size);
-		crypt_aes_encrypt(key, (unsigned)block_size, dst, dst);
+		macan_aes_encrypt(key, (unsigned)block_size, dst, dst);
 	}
 }
 
 /*
- * crypt_aes_encrypt() - encrypt block of data
+ * macan_aes_encrypt() - encrypt block of data
  */
-void crypt_aes_encrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8_t *src)
+void macan_aes_encrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8_t *src)
 {
 	struct aes_ctx cipher;
 
@@ -144,9 +144,9 @@ void crypt_aes_encrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8
 }
 
 /*
- * crypt_aes_decrypt() - decrypt block of data
+ * macan_aes_decrypt() - decrypt block of data
  */
-void crypt_aes_decrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8_t *src)
+void macan_aes_decrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8_t *src)
 {
 	struct aes_ctx cipher;
 
