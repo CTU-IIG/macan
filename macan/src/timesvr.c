@@ -81,7 +81,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
 	uint8_t *skey;
 	uint8_t plain[12];
-	uint8_t dst_id;
+	macan_ecuid dst_id;
 	struct com_part *cp;
 
 	if(!(cp = get_cpart(ctx, cf->can_id)))

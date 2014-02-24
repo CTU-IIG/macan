@@ -61,12 +61,12 @@ struct macan_crypt_frame {
 
 struct macan_req_challenge {
 	uint8_t flags_and_dst_id;
-	uint8_t fwd_id;
+	macan_ecuid fwd_id;
 };
 
 struct macan_challenge {
 	uint8_t flags_and_dst_id;
-	uint8_t fwd_id;
+	macan_ecuid fwd_id;
 	uint8_t chg[6];
 };
 
@@ -129,7 +129,7 @@ struct com_part {
 	uint8_t flags;
 	uint32_t group_field;	/* Bitmask of known key sharing */
 	uint32_t wait_for;	/* The value of group_field we are waiting for  */
-	uint32_t ecu_id; /* ECU-ID of communication partner */
+	macan_ecuid ecu_id; /* ECU-ID of communication partner */
 };
 
 /**
@@ -167,23 +167,23 @@ struct macan_ctx {
 
 #define CANID(ctx, ecuid) ((ctx)->config->ecu2canid[ecuid])
 
-bool canid2ecuid(struct macan_ctx *ctx, uint32_t canid, uint32_t *ecuid);
+bool canid2ecuid(struct macan_ctx *ctx, uint32_t canid, macan_ecuid *ecuid);
 int init(void);
 void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_num);
-int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal);
+int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint32_t signal);
 int is_channel_ready(struct macan_ctx *ctx, uint8_t dst);
-int is_skey_ready(struct macan_ctx *ctx, uint8_t dst_id);
+int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id);
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf);
-void send_auth_req(struct macan_ctx *ctx, int s,uint8_t dst_id,uint8_t sig_num,uint8_t prescaler);
+void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id,uint8_t sig_num,uint8_t prescaler);
 void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf);
-void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg);
+void send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg);
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf);
 void gen_challenge(uint8_t *chal);
 extern uint8_t *key_ptr;
 extern uint8_t keywrap[32];
 extern uint8_t g_chg[6];
 extern uint8_t seq;
-void send_ack(struct macan_ctx *ctx, int s,uint8_t dst_id);
+void send_ack(struct macan_ctx *ctx, int s,macan_ecuid dst_id);
 int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf);
 extern uint8_t skey[24];
 #ifdef __CPU_TC1798__

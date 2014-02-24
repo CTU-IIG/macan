@@ -64,20 +64,20 @@ void generate_skey(struct sess_key *skey)
 	gen_rand_data(skey->key, 16);
 }
 
-uint8_t lookup_skey(uint8_t src, uint8_t dst, struct sess_key **key_ret)
+uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct sess_key **key_ret)
 {
-	uint8_t tmp;
+	macan_ecuid tmp;
 	struct sess_key *key;
 
-	assert(src != dst);
+	assert(src_id != dst_id);
 
-	if (src > dst) {
-		tmp = src;
-		src = dst;
-		dst = tmp;
+	if (src_id > dst_id) {
+		tmp = src_id;
+		src_id = dst_id;
+		dst_id = tmp;
 	}
 
-	key = &skey_map[src][dst];
+	key = &skey_map[src_id][dst_id];
 	*key_ret = key;
 
 	if (!key->valid) {
@@ -87,7 +87,7 @@ uint8_t lookup_skey(uint8_t src, uint8_t dst, struct sess_key **key_ret)
 	return 0;
 }
 
-void send_skey(struct macan_ctx *ctx, int s, const uint8_t *key, uint8_t dst_id, uint8_t fwd_id, uint8_t *chal)
+void send_skey(struct macan_ctx *ctx, int s, const uint8_t *key, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chal)
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
@@ -111,7 +111,7 @@ void send_skey(struct macan_ctx *ctx, int s, const uint8_t *key, uint8_t dst_id,
 	print_hexn(wrap, 32);
 	print_hexn(plain, 24);
 
-	macan_skey.flags_and_dst_id = (uint8_t)(FL_SESS_KEY << 6 | (dst_id & 0x3F));
+	macan_skey.flags_and_dst_id = (macan_ecuid)(FL_SESS_KEY << 6 | (dst_id & 0x3F));
 
 	cf.can_id = CANID(ctx, ctx->config->key_server_id);
 	cf.can_dlc = 8;
@@ -137,9 +137,9 @@ void send_skey(struct macan_ctx *ctx, int s, const uint8_t *key, uint8_t dst_id,
 void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
 	struct macan_challenge *chal;
-	uint8_t dst_id, fwd_id;
+	macan_ecuid dst_id, fwd_id;
 	uint8_t *chg;
-	uint32_t ecu_id;
+	macan_ecuid ecu_id;
 	const uint8_t *ltk;
 	char node_id_str[100];
 	int cnt;
@@ -151,7 +151,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 		return;
 	}
 
-	dst_id = (uint8_t)ecu_id;
+	dst_id = ecu_id;
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 

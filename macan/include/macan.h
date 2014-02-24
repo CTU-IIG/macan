@@ -29,6 +29,8 @@
 struct macan_ctx;
 struct can_frame;
 
+typedef uint8_t macan_ecuid;
+
 /*
  * Frame types for sending signals:
  * - Standard frame without signature (max 64 bit signals) - ID = can_nsid
@@ -49,14 +51,14 @@ struct macan_sig_spec {
 };
 
 struct macan_config {
-	uint8_t node_id;                      /* Our ECU-ID (0-63) */
+	macan_ecuid node_id;                      /* Our ECU-ID (0-63) */
 	const uint8_t *ltk;             /* Long-term key map (for communication with KS) */
 	uint32_t sig_count;                   /* Number of sinals in sig_spec */
 	const struct macan_sig_spec *sigspec; /* Signal specification */
 	uint8_t node_count;                   /* Number of nodes (ECUs) in our network */
 	const uint32_t *ecu2canid;            /* Mapping from ECU-ID to crypt-frame CAN-ID */
-	uint8_t key_server_id;                /* ECU-ID of the key server */
-	uint8_t time_server_id;               /* ECU-ID of the time server */
+	macan_ecuid key_server_id;                /* ECU-ID of the key server */
+	macan_ecuid time_server_id;               /* ECU-ID of the time server */
 	uint32_t time_div;                    /* Number of microseconds in one MaCAN time unit */
 	uint32_t ack_timeout;                 /* Timeout for waiting for key acknowledge (microseconds) */
 	uint64_t skey_validity;               /* Session key expiration time (microseconds) */

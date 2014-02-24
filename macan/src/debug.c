@@ -44,7 +44,7 @@ void debug_printf(const char* format, ...)
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 {
 	char frame[80], comment[80];
-	uint32_t src;
+	macan_ecuid src;
 	const char *color = "";
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);

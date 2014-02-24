@@ -62,7 +62,7 @@
  * Allocates com_part and sets it to the default value, i.e. wait
  * for this node and its counterpart to share the key.
  */
-void init_cpart(struct macan_ctx *ctx, uint8_t i)
+void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
 {
 	struct com_part **cpart = ctx->cpart;
 	cpart[i] = malloc(sizeof(struct com_part));
@@ -336,7 +336,7 @@ void gen_challenge(uint8_t *chal)
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	struct macan_sess_key *sk;
-	uint8_t fwd_id;
+	macan_ecuid fwd_id;
 	static uint8_t keywrap[32];
 	uint8_t skey[24];
 	uint8_t seq, len;
@@ -402,7 +402,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
  * This function sends the CHALLENGE message to the socket s. It is
  * used to request a key from KS or to request a signed time from TS.
  */
-void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id, uint8_t *chg)
+void send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
 {
 	struct can_frame cf = {0};
 	struct macan_challenge chal = { .flags_and_dst_id = (uint8_t)((FL_CHALLENGE << 6) | (dst_id & 0x3F)), .fwd_id = fwd_id };
@@ -438,7 +438,7 @@ void send_challenge(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t fwd_id
  */
 void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
-	uint8_t fwd_id;
+	macan_ecuid fwd_id;
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
 	struct com_part **cpart;
 
@@ -550,7 +550,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
  * @param sig_num  signal id
  * @param prescaler
  */
-void send_auth_req(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint8_t prescaler)
+void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint8_t prescaler)
 {
 	uint64_t t;
 	uint8_t plain[8];
@@ -599,7 +599,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	areq = (struct macan_sig_auth_req *)cf->data;
 	skey = cp->skey;
 
-	plain[4] = (uint8_t)cp->ecu_id;
+	plain[4] = (macan_ecuid)cp->ecu_id;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
@@ -639,7 +639,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
  *
  * Signs signal using CMAC and transmits it.
  */
-int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, uint32_t signal)
+int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint32_t signal)
 {
 	struct can_frame cf = {0};
 	uint8_t plain[10],sig[8];
@@ -714,7 +714,7 @@ int macan_write(struct macan_ctx *ctx, int s, uint8_t dst_id, uint8_t sig_num, u
 /* ToDo: return result */
 void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t signal)
 {
-	uint8_t dst_id;
+	macan_ecuid dst_id;
 	struct sig_handle **sighand;
 	const struct macan_sig_spec *sigspec;
 
@@ -825,7 +825,7 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
  * @param dst_id  id of a node to whom check if has the key
  * @return        1 if has the key, otherwise 0
  */
-int is_skey_ready(struct macan_ctx *ctx, uint8_t dst_id)
+int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
 {
 	if (ctx->cpart[dst_id] == NULL)
 		return 0;
@@ -959,7 +959,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 
 		/* ToDo: what if ack CMAC fails, there should be no response */
 		if (receive_ack(ctx, cf) == 1) {
-			uint32_t ecu_id;
+			macan_ecuid ecu_id;
 			if (canid2ecuid(ctx, cf->can_id, &ecu_id)) {
 				send_ack(ctx, s, (uint8_t)ecu_id);
 			}
@@ -1024,9 +1024,9 @@ bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
  *
  * @return True if node with passed CAN-ID was found, false otherwise.
  */
-bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, uint32_t *ecu_id)
+bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, macan_ecuid *ecu_id)
 {
-	uint32_t i;
+	macan_ecuid i;
 
 	for (i = 0; i < ctx->config->node_count; i++) {
 		if (ctx->config->ecu2canid[i] == can_id) {
@@ -1050,7 +1050,7 @@ bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, uint32_t *ecu_id)
  */
 struct com_part *get_cpart(struct macan_ctx *ctx, uint32_t can_id)
 {
-	uint32_t ecu_id;
+	macan_ecuid ecu_id;
 
 	if(!canid2ecuid(ctx, can_id, &ecu_id)) {
 		/* there is no node with given CAN-ID */
