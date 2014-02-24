@@ -134,23 +134,17 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config)
 /**
  * Establishes authenticated channel.
  *
- * The ACK messages are broadcasted in order to create the authenticated
- * communication channel. Once there is such a channel the AUTH_REQ is
- * send.
+ * ACK messages are broadcasted in order to create authenticated
+ * communication channel. This function sends ACK messages, if channel
+ * is not ready (given we already have received key from KS)
  */
-/* ToDo: reconsider name or move signal requests */
 int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 {
 	uint8_t i;
 	int r = 0;
-	uint8_t cp, presc;
 	struct com_part **cpart;
-	struct sig_handle **sighand;
-	const struct macan_sig_spec *sigspec;
 
 	cpart = ctx->cpart;
-	sighand = ctx->sighand;
-	sigspec = ctx->config->sigspec;
 
 	if (ctx->ack_timeout_abs > read_time())
 		return -1;
@@ -172,6 +166,23 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 			continue;
 		}
 	}
+
+	return 0;
+}
+/**
+ * Sends signal requests
+ *
+ * Signal request are send if channel and time is ready
+ */
+void macan_send_signal_requests(struct macan_ctx *ctx, int s)
+{
+
+	uint8_t cp, presc, i;
+	const struct macan_sig_spec *sigspec;
+	struct sig_handle **sighand;
+
+	sighand = ctx->sighand;
+	sigspec = ctx->config->sigspec;
 
 	/* ToDo: repeat auth_req for the case the signal source will restart */
 	for (i = 0; i < ctx->config->sig_count; i++) {
@@ -196,8 +207,6 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 			send_auth_req(ctx, s, cp, i, presc);
 		}
 	}
-
-	return r;
 }
 
 /**

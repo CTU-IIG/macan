@@ -78,6 +78,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 
 		macan_request_keys(ctx, s);
 		macan_wait_for_key_acks(ctx, s);
+		macan_send_signal_requests(ctx, s);
 		if (signal_time < read_time()) {
 			signal_time = read_time() + TIME_EMIT_SIG;
 			macan_send_sig(ctx, s, SIGNAL_A, 10);

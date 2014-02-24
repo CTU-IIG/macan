@@ -172,6 +172,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 
 		macan_request_keys(ctx, s);
 		macan_wait_for_key_acks(ctx, s);
+		macan_send_signal_requests(ctx, s);
 
 		static int last_pressed = 0;
 		if (signal_time < read_time() || last_pressed != button_pressed) {
