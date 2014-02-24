@@ -26,6 +26,11 @@
 
 #include <macan.h>
 
+#define MACAN_CONFIG_LTKX(NODE_ID) macan_ltk_node ## NODE_ID
+#define MACAN_CONFIG_LTK(NODE_ID) MACAN_CONFIG_LTKX(NODE_ID)
+#define STRX(x) #x
+#define STR(x) STRX(x)
+
 enum sig_id {
 	SIGNAL_A,
 	SIGNAL_B,
