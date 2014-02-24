@@ -198,7 +198,7 @@ bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num);
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf);
 bool is_time_ready(struct macan_ctx *ctx);
 struct com_part *get_cpart(struct macan_ctx *ctx, uint32_t can_id);
-void gen_rand_data(void *dest, size_t len);
+bool gen_rand_data(void *dest, size_t len);
 void macan_send_signal_requests(struct macan_ctx *ctx, int s);
 
 #endif /* MACAN_PRIVATE_H */

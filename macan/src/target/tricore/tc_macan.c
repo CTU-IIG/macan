@@ -86,7 +86,7 @@ uint64_t read_time()
  * @param[in] dest Pointer to location where to store bytes
  * @param[in] len  Number of random bytes to be written
  */
-void gen_rand_data(void *dest, size_t len)
+bool gen_rand_data(void *dest, size_t len)
 {
 	uint8_t *p = (uint8_t *) dest;
 
@@ -94,5 +94,6 @@ void gen_rand_data(void *dest, size_t len)
 	while(len--) {
 		p[len] = (uint8_t) rand();
 	}
+	return SUCCESS;
 
 }

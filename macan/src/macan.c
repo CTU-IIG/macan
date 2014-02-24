@@ -320,7 +320,10 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 
 void gen_challenge(uint8_t *chal)
 {
-	gen_rand_data(chal, 6);
+	if(!gen_rand_data(chal, 6)) {
+		print_msg(MSG_FAIL,"Failed to read enough random bytes.\n");
+		exit(1);
+	}
 }
 
 /**

@@ -61,7 +61,10 @@ static void *ltk_handle;
 void generate_skey(struct sess_key *skey)
 {
 	skey->valid = true;
-	gen_rand_data(skey->key, 16);
+	if(!gen_rand_data(skey->key, 16)) {
+		print_msg(MSG_FAIL,"Failed to read enough random bytes.\n");
+		exit(1);
+	}
 }
 
 uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct sess_key **key_ret)
