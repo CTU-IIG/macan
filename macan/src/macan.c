@@ -992,7 +992,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
  */
 bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num)
 {
-    return (ctx->config->sigspec[sig_num].can_sid != 0 ? true : false);
+    return (ctx->config->sigspec[sig_num].can_sid != 0 ? SUCCESS : ERROR);
 }
 
 /* 
@@ -1012,10 +1012,10 @@ bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
 			if(sig_num != NULL) {
 				*sig_num = i;
 			}
-			return true;
+			return SUCCESS;
 		}
 	} 
-	return false;
+	return ERROR;
 }
 
 /*
@@ -1036,10 +1036,10 @@ bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, macan_ecuid *ecu_id)
 			if(ecu_id != NULL) {
 				*ecu_id = i;
 			}
-			return true;
+			return SUCCESS; 
 		}
 	}
-	return false;
+	return ERROR;
 }
 
 /*
