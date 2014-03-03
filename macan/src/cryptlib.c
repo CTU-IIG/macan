@@ -103,6 +103,9 @@ int macan_aes_unwrap(const struct macan_key *key, size_t length, uint8_t *dst, u
 		for (i = n; i > 0; i--) {
 			t = (n*(uint32_t)j) + i;
 			t = htobe32(t);
+			/* We must do bytewise XOR because operands might not be aligned naturally,
+			 * we got traps on Tricore.
+			 */
 			for (k = 0; k < 4; k++) {
 				*(tmp + 4 + k) = *(tmp + 4 + k) ^ *(((uint8_t *)&t) + k);
 			}
@@ -143,6 +146,7 @@ int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_
 
 	if (!fill_time) {
 		macan_aes_cmac(skey, len, cmac, plain);
+		/* add memcmp instead of memchk */
 		return memchk(cmac4, cmac, 4);
 	}
 
@@ -152,7 +156,7 @@ int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_
 		*ftime = htole32((int)time + i);
 		macan_aes_cmac(skey, len, cmac, plain);
 
-		if (memchk(cmac4, cmac, 4) == 1) {
+		if (memcmp(cmac4, cmac, 4) == 0) {
 			return 1;
 		}
 	}
