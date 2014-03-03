@@ -90,7 +90,7 @@ uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct sess_key **ke
 	return 0;
 }
 
-void send_skey(struct macan_ctx *ctx, int s, const uint8_t *key, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chal)
+void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chal)
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
@@ -143,7 +143,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	macan_ecuid dst_id, fwd_id;
 	uint8_t *chg;
 	macan_ecuid ecu_id;
-	const uint8_t *ltk;
+	const struct macan_key *ltk;
 	char node_id_str[100];
 	int cnt;
 	char *error;

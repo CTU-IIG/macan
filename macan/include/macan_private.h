@@ -123,7 +123,7 @@ struct macan_time {
  * @param stat  comunication channel status
  */
 struct com_part {
-	uint8_t skey[16];	/* Session key (from key server) */
+	struct macan_key skey;	/* Session key (from key server) */
 	uint64_t valid_until;	/* Local time of key expiration */
 	uint8_t chg[6];		/* Challenge for communication with key server */
 	uint8_t flags;

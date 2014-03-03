@@ -52,7 +52,7 @@ struct macan_sig_spec {
 
 struct macan_config {
 	macan_ecuid node_id;                      /* Our ECU-ID (0-63) */
-	const uint8_t *ltk;             /* Long-term key map (for communication with KS) */
+	const struct macan_key *ltk;             /* Long-term key map (for communication with KS) */
 	uint32_t sig_count;                   /* Number of sinals in sig_spec */
 	const struct macan_sig_spec *sigspec; /* Signal specification */
 	uint8_t node_count;                   /* Number of nodes (ECUs) in our network */
@@ -67,6 +67,10 @@ struct macan_config {
 	uint32_t time_bcast_period;           /* Timeserver broadcast period for plain time (microseconds) */
 	uint32_t time_delta;                  /* Maximum time divergency between our clock and TS (microseconds) */ 
 	int ack_disable;                      /* Disable ACK messages (to be compatible with VW implementation) */
+};
+
+struct macan_key {
+	uint8_t data[16];
 };
 
 /* signal callback signature */

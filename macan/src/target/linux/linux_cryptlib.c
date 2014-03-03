@@ -31,7 +31,7 @@
 #include "cryptlib.h"
 
 static void lshift(uint8_t *dst, const uint8_t *src);
-static void generate_subkey(const uint8_t *key, uint8_t *key1, uint8_t *key2);
+static void generate_subkey(const struct macan_key *key, uint8_t *key1, uint8_t *key2);
 /**
  * lshift() - left shift 16 bytes by one bit
  * Can be used in-place.
@@ -57,7 +57,7 @@ static void lshift(uint8_t *dst, const uint8_t *src)
 /**
  * generate_subkey() - generates K1 and K2 for AES-CMAC
  */
-static void generate_subkey(const uint8_t *key, uint8_t *key1, uint8_t *key2)
+static void generate_subkey(const struct macan_key *key, uint8_t *key1, uint8_t *key2)
 {
 	const uint8_t zero[16] = { 0 };
 	uint8_t rb[16] = { 0 };
@@ -88,7 +88,7 @@ static void generate_subkey(const uint8_t *key, uint8_t *key1, uint8_t *key2)
  * This function calculates cipher-based message authentication code (CMAC) of
  * the given message. Further see RFC 4493.
  */
-void macan_aes_cmac(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src)
+void macan_aes_cmac(const struct macan_key *key, size_t length, uint8_t *dst, uint8_t *src)
 {
 	uint8_t key1[16], key2[16];
 	uint8_t lblock[16] = { 0 };
@@ -135,22 +135,22 @@ void macan_aes_cmac(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *sr
 /*
  * macan_aes_encrypt() - encrypt block of data
  */
-void macan_aes_encrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8_t *src)
+void macan_aes_encrypt(const struct macan_key *key, size_t len, uint8_t *dst, const uint8_t *src)
 {
 	struct aes_ctx cipher;
 
-	aes_set_encrypt_key(&cipher, 16, key);
+	aes_set_encrypt_key(&cipher, 16, key->data);
 	aes_encrypt(&cipher, (unsigned)len, dst, src);
 }
 
 /*
  * macan_aes_decrypt() - decrypt block of data
  */
-void macan_aes_decrypt(const uint8_t *key, size_t len, uint8_t *dst, const uint8_t *src)
+void macan_aes_decrypt(const struct macan_key *key, size_t len, uint8_t *dst, const uint8_t *src)
 {
 	struct aes_ctx cipher;
 
-	aes_set_decrypt_key(&cipher, 16, key);
+	aes_set_decrypt_key(&cipher, 16, key->data);
 	aes_decrypt(&cipher, (unsigned)len, dst, src);
 }
 

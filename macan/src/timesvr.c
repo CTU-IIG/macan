@@ -79,7 +79,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 {
 	struct can_frame canf;
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
-	uint8_t *skey;
+	struct macan_key skey;
 	uint8_t plain[12];
 	macan_ecuid dst_id;
 	struct com_part *cp;
@@ -103,7 +103,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	canf.can_id = CANID(ctx,ctx->config->time_server_id);
 	canf.can_dlc = 8;
 	memcpy(canf.data, &macan_time, 4);
-	macan_sign(skey, canf.data + 4, plain, 12);
+	macan_sign(&skey, canf.data + 4, plain, 12);
 
 	write(s, &canf, sizeof(canf));
 

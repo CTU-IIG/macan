@@ -62,7 +62,7 @@
 #define TIME_EMIT_SIG 1000000
 
 static struct macan_ctx macan_ctx;
-extern const uint8_t macan_ltk_node4[];
+extern const struct macan_key macan_ltk_node4;
 
 int button_pressed;
 
@@ -209,7 +209,7 @@ int main()
 {
 	int s;
 
-	config.ltk = macan_ltk_node4;
+	config.ltk = &macan_ltk_node4;
 
 	s = helper_init();
 	io_init();

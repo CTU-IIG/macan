@@ -238,7 +238,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	struct macan_ack ack = { .flags_and_dst_id = (uint8_t)(FL_ACK << 6 | (dst_id & 0x3f)), .group = {0}, .cmac = {0}};
 	uint8_t plain[8] = {0};
 	uint32_t time;
-	uint8_t *skey;
+	struct macan_key skey;
 	struct can_frame cf = {0};
 	volatile int res;
 	struct com_part **cpart;
@@ -262,7 +262,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 #ifdef DEBUG_TS
 	memcpy(ack.cmac, &htole32(time), 4);
 #else
-	macan_sign(skey, ack.cmac, plain, sizeof(plain));
+	macan_sign(&skey, ack.cmac, plain, sizeof(plain));
 #endif
 	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 8;
@@ -289,7 +289,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	struct com_part *cp;
 	struct macan_ack *ack = (struct macan_ack *)cf->data;
 	uint8_t plain[8];
-	uint8_t *skey;
+	struct macan_key skey;
 
 	if(!(cp = get_cpart(ctx, cf->can_id)))
 		return -1;
@@ -300,7 +300,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	memcpy(plain + 5, ack->group, 3);
 
 	/* ToDo: make difference between wrong CMAC and not having the key */
-	if (!macan_check_cmac(ctx, skey, ack->cmac, plain, plain, sizeof(plain))) {
+	if (!macan_check_cmac(ctx, &skey, ack->cmac, plain, plain, sizeof(plain))) {
 		fail_printf("%s\n","error: ACK CMAC failed");
 		return -1;
 	}
@@ -341,7 +341,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	struct macan_sess_key *sk;
 	macan_ecuid fwd_id;
 	static uint8_t keywrap[32];
-	uint8_t skey[24];
+	uint8_t unwrapped[24];
 	uint8_t seq, len;
 	struct com_part **cpart;
 
@@ -364,28 +364,28 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	if (seq == 5) {
 
-		macan_unwrap_key(ctx->config->ltk, 32, skey, keywrap);
-		fwd_id = skey[17];
+		macan_unwrap_key(ctx->config->ltk, 32, unwrapped, keywrap);
+		fwd_id = unwrapped[17];
 
 		if (fwd_id >= ctx->config->node_count || cpart[fwd_id] == NULL) {
 			fail_printf("unexpected fwd_id %#x\n", fwd_id);
 			return RECEIVE_SKEY_ERR;
 		}
 
-		if(!memchk(skey+18, cpart[fwd_id]->chg, 6)) {
+		if(!memchk(unwrapped+18, cpart[fwd_id]->chg, 6)) {
 			fail_printf("check cmac from %d\n", fwd_id);
 			return RECEIVE_SKEY_ERR;
 		}
 
 		cpart[fwd_id]->valid_until = read_time() + ctx->config->skey_validity;
-		memcpy(cpart[fwd_id]->skey, skey, 16);
+		memcpy(cpart[fwd_id]->skey.data, unwrapped, 16);
 		
 		// initialize group field - this will work only for ecu_id <= 23
 		cpart[fwd_id]->group_field |= htole32(1U << ctx->config->node_id);
 
 		// print key
 		print_msg(MSG_OK,"KEY (%d -> %d) is ", ctx->config->node_id, fwd_id);
-		print_hexn(cpart[fwd_id]->skey, 16);
+		print_hexn(cpart[fwd_id]->skey.data, 16);
 
 		return fwd_id;	/* FIXME: fwd_id can be 0 as well. What our callers do with the returned value? */
 	}
@@ -508,7 +508,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t time_ts;
 	uint8_t plain[12];
-	uint8_t *skey;
+	struct macan_key skey;
 	struct com_part **cpart;
 	int64_t time_ts_us;
 
@@ -526,7 +526,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
 	memcpy(plain + 4, ctx->time.chg, 6); // challenge
 	memcpy(plain + 10, &htole32(CANID(ctx, ctx->config->time_server_id)),2);
 
-	if (!macan_check_cmac(ctx, skey, cf->data + 4, plain, NULL, sizeof(plain))) {
+	if (!macan_check_cmac(ctx, &skey, cf->data + 4, plain, NULL, sizeof(plain))) {
 		/* not a fatal error, we possibly received signed time for different node */
 		//fail_printf("check cmac time %d\n", time_ts);
 		return;
@@ -557,7 +557,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig
 {
 	uint64_t t;
 	uint8_t plain[8];
-	uint8_t *skey;
+	struct macan_key skey;
 	struct can_frame cf = {0};
 	struct macan_sig_auth_req areq;
 	struct com_part **cpart;
@@ -575,7 +575,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig
 	areq.flags_and_dst_id = FL_AUTH_REQ << 6 | dst_id;
 	areq.sig_num = sig_num;
 	areq.prescaler = prescaler;
-	macan_sign(skey, areq.cmac, plain, sizeof(plain));
+	macan_sign(&skey, areq.cmac, plain, sizeof(plain));
 
 	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 7;
@@ -586,7 +586,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig
 
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	uint8_t *skey;
+	struct macan_key skey;
 	uint8_t plain[8];
 	uint8_t sig_num;
     int can_sid,can_nsid;
@@ -609,7 +609,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	/* Check CMAC only if can_dlc is 7 */
 	if(cf->can_dlc == 7) {
-		if (!macan_check_cmac(ctx, skey, areq->cmac, plain, plain, sizeof(plain))) {
+		if (!macan_check_cmac(ctx, &skey, areq->cmac, plain, plain, sizeof(plain))) {
 			printf("error: sig_auth cmac is incorrect\n");
 		}
 	}
@@ -648,7 +648,7 @@ int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_nu
 	uint8_t plain[10],sig[8];
 	uint8_t plain_length;
 	uint32_t t;
-	uint8_t *skey;
+	struct macan_key skey;
     uint8_t *cmac;
 	struct com_part **cpart;
 
@@ -693,7 +693,7 @@ int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_nu
 #ifdef DEBUG_TS
 	memcpy(cmac, &time, 4);
 #else
-	macan_sign(skey, cmac, plain, plain_length);
+	macan_sign(&skey, cmac, plain, plain_length);
 #endif
 
 	cf.can_dlc = 8;
@@ -760,11 +760,12 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 	uint8_t *fill_time;
     int sig_num;
 	uint32_t sig_val = 0;
-	uint8_t *skey;
+	struct macan_key skey;
     uint8_t *cmac;
 	struct com_part *cp;
 	struct sig_handle **sighand;
 	uint8_t plain_length;
+	macan_ecuid src_id;
 
 	sighand = ctx->sighand;
 
@@ -801,14 +802,16 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		fill_time = plain;
 	}
 
-	// check session key
-	cp = ctx->cpart[ctx->config->sigspec[sig_num].src_id];
-	if (!(skey = cp->skey)) {
+	src_id = ctx->config->sigspec[sig_num].src_id;
+	if (!is_skey_ready(ctx,src_id)) {
 		fail_printf("No key to check signal %d\n", sig_num);
 		return;
 	}
 
-	if (!macan_check_cmac(ctx, skey, cmac, plain, fill_time, plain_length)) {
+	cp = ctx->cpart[ctx->config->sigspec[sig_num].src_id];
+	skey = cp->skey;
+
+	if (!macan_check_cmac(ctx, &skey, cmac, plain, fill_time, plain_length)) {
 		if (sighand[sig_num]->invalid_cback)
 			sighand[sig_num]->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
 		else

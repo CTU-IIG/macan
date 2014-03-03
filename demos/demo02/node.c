@@ -58,7 +58,7 @@
 #define TIME_EMIT_SIG 1000000
 
 static struct macan_ctx macan_ctx;
-extern const uint8_t MACAN_CONFIG_LTK(NODE_ID);
+extern const struct macan_key MACAN_CONFIG_LTK(NODE_ID);
 
 void can_recv_cb(int s, struct can_frame *cf)
 {

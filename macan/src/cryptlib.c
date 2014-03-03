@@ -42,7 +42,7 @@
  * aes_wrap() ciphers data at src to produce cipher text at dst. It is
  * implemented as specified in RFC 3394.
  */
-void macan_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8_t *src)
+void macan_aes_wrap(const struct macan_key *key, size_t length, uint8_t *dst, const uint8_t *src)
 {
 	uint8_t a[8] = { 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6 };
 	uint8_t b[16];
@@ -85,13 +85,12 @@ void macan_aes_wrap(const uint8_t *key, size_t length, uint8_t *dst, const uint8
  * The function unwraps key data stored at src. An auxiliary buffer tmp is
  * required, although it is possible to supply src as tmp.
  */
-int macan_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp)
+int macan_aes_unwrap(const struct macan_key *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp)
 {
 	uint8_t iv[8] = { 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6, 0xa6 };
 	uint8_t b[16];
 	size_t block_size = 16;
 	uint32_t t, n;
-	uint32_t *af;
 	unsigned i;
 	int j,k;
 
@@ -135,7 +134,7 @@ int macan_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *s
  * @param plain: plain text to be CMACked and checked against
  * @param len:   length of plain text in bytes
  */
-int macan_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
+int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
 {
 	uint8_t cmac[16];
 	uint64_t time;
@@ -168,7 +167,7 @@ int macan_check_cmac(struct macan_ctx *ctx, uint8_t *skey, const uint8_t *cmac4,
  * @plain: a plain text to sign
  * @len:   length of the plain text
  */
-void macan_sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
+void macan_sign(struct macan_key *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
 {
 	uint8_t cmac[16];
 	macan_aes_cmac(skey, len, cmac, plain);
@@ -178,7 +177,7 @@ void macan_sign(uint8_t *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
 /**
  * unwrap_key() - deciphers AES-WRAPed key
  */
-void macan_unwrap_key(const uint8_t *key, size_t len, uint8_t *dst, uint8_t *src)
+void macan_unwrap_key(const struct macan_key *key, size_t len, uint8_t *dst, uint8_t *src)
 {
 	macan_aes_unwrap(key, len, dst, src, src);
 }
