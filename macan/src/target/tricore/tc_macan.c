@@ -43,9 +43,11 @@
 #include "macan_config.h"
 #include "macan.h"
 #include "macan_private.h"
+#include "macan_bench.h"
 
 #define f_STM 100000000
 #define TIME_USEC (f_STM / 1000000)
+#define TIME_NSEC (f_STM / 100000000)
 #define CAN_IF 1
 
 /**
@@ -96,4 +98,28 @@ bool gen_rand_data(void *dest, size_t len)
 	}
 	return SUCCESS;
 
+}
+/*
+ * used for benchmarking only
+ * not used in MaCAN
+ */
+static uint64_t bench_time;
+static uint64_t read_time_bench()
+{
+	uint64_t time;
+	uint32_t *time32 = (uint32_t *)&time;
+	time32[0] = STM_TIM0.U;
+	time32[1] = STM_TIM6.U;
+
+	return time;
+}
+void bench_tick(void)
+{
+	bench_time = read_time_bench();
+}
+void bench_tack(char *s)
+{
+	uint64_t stop = read_time_bench();
+
+	printf("%s: %.2f us\n",(stop - bench_time) / 100.0);
 }
