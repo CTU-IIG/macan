@@ -93,7 +93,7 @@ int macan_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *s
 	uint32_t t, n;
 	uint32_t *af;
 	unsigned i;
-	int j;
+	int j,k;
 
 	assert((length % 8) == 0 && length > 0);
 
@@ -103,8 +103,10 @@ int macan_aes_unwrap(const uint8_t *key, size_t length, uint8_t *dst, uint8_t *s
 	for (j = 5; j >= 0; j--) {
 		for (i = n; i > 0; i--) {
 			t = (n*(uint32_t)j) + i;
-			af = (uint32_t *)(tmp + 4);
-			*af = *af ^ htobe32(t);
+			t = htobe32(t);
+			for (k = 0; k < 4; k++) {
+				*(tmp + 4 + k) = *(tmp + 4 + k) ^ *(((uint8_t *)&t) + k);
+			}
 
 			memcpy(b, tmp, 8);
 			memcpy(b + 8, tmp + (8 * i), 8);
