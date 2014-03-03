@@ -25,7 +25,7 @@
 #include "macan_config.h"
 
 #define SIG_TIME 0x102 
-#define TIME_DELTA 100000   /* tolerated time divergency from TS in usecs */
+#define TIME_DELTA 1000000   /* tolerated time divergency from TS in usecs */
 #define TIME_DIV 1000000
 #define TIME_TIMEOUT 1000000	/* usec */
 #define SKEY_TIMEOUT 500000000u /* usec */
