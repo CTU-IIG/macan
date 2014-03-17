@@ -1,0 +1,18 @@
+test_PROGRAMS = d4node2 d4node3
+
+d4node2_SOURCES = node.c macan_config.c ltk2.c
+d4node2_CPPFLAGS = -DNODE_ID=2
+d4node2_LIBS = macan nettle rt
+
+d4node3_SOURCES = node.c macan_config.c ltk3.c
+d4node3_CPPFLAGS = -DNODE_ID=3
+d4node3_LIBS = macan nettle rt
+
+shared_LIBRARIES = demo04cfg
+demo04cfg_SOURCES = macan_config.c
+
+shared_LIBRARIES += demo04keys
+demo04keys_SOURCES = ltk2.c ltk3.c ltk1.c
+
+shared_LIBRARIES += demo04tskey
+demo04tskey_SOURCES = ltk1.c
