@@ -359,12 +359,11 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	/* this is because of VW macan sends len 6 in last key packet */
 	if(seq == 5) len = 2;
-    
-	assert(seq <= 5);
-	assert((seq != 5 && len == 6) || (seq == 5 && len == 2));
+
+	if (!((seq <= 5) && ((seq != 5 && len == 6) || (seq == 5 && len == 2))))
+		return;
 
 	memcpy(keywrap + 6 * seq, sk->data, len);
-    
 
 	if (seq == 5) {
 
@@ -775,7 +774,8 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		struct macan_signal *sig32 = (struct macan_signal *)cf->data;
 		sig_num = sig32_num;
 
-		assert(sig_num < (int)ctx->config->sig_count);
+		if (sig_num >= (int)ctx->config->sig_count)
+			return;
 		
 		cmac = sig32->cmac;
 		memcpy(&sig_val, sig32->sig, 4);
@@ -790,7 +790,8 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 		struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
 		sig_num = sig16->sig_num;
 
-		assert(sig_num < (int)ctx->config->sig_count);
+		if (sig_num >= (int)ctx->config->sig_count)
+			return;
 
 		cmac = sig16->cmac;
 		memcpy(plain + 4, &(ctx->config->sigspec[sig_num].src_id), 1);
