@@ -827,9 +827,9 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 	struct macan_key skey;
 	struct com_part *cp;
 	const struct macan_sig_spec *sigspec = &ctx->config->sigspec[sig_num];
-	struct sig_handle **sighand;
+	struct sig_handle *sighand;
 
-	sighand = ctx->sighand;
+	sighand = ctx->sighand[sig_num];
 
 	if (!is_skey_ready(ctx, sigspec->src_id)) {
 		fail_printf("No key to check signal from %d\n", sigspec->src_id);
@@ -842,8 +842,8 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 	skey = cp->skey;
 
 	if (!macan_check_cmac(ctx, &skey, cmac, plain, fill_time, plain_length)) {
-		if (sighand[sig_num]->invalid_cback)
-			sighand[sig_num]->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
+		if (sighand && sighand->invalid_cback)
+			sighand->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
 		else
 			fail_printf("CMAC error for signal %d\n", sig_num);
 		return;
@@ -851,8 +851,8 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 
 	print_msg(MSG_SIGNAL,"Received signal #%d, value: %d\n", sig_num, sig_val);
 
-	if (sighand[sig_num]->cback)
-		sighand[sig_num]->cback((uint8_t)sig_num, sig_val);
+	if (sighand && sighand->cback)
+		sighand->cback((uint8_t)sig_num, sig_val);
 }
 
 /**
