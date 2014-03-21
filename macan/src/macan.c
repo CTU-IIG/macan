@@ -451,9 +451,11 @@ void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 
 	cpart = ctx->cpart;
 	fwd_id = ch->fwd_id;
-	assert(fwd_id < ctx->config->node_count);
+	if (fwd_id >= ctx->config->node_count)
+		return;
 
 	if (cpart[fwd_id] == NULL) {
+		/* TODO: When can this happen? In key server only? */
 		cpart[fwd_id] = malloc(sizeof(struct com_part));
 		memset(cpart[fwd_id], 0, sizeof(struct com_part));
 
