@@ -72,7 +72,8 @@ uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct sess_key **ke
 	macan_ecuid tmp;
 	struct sess_key *key;
 
-	assert(src_id != dst_id);
+	if (src_id == dst_id)
+		return 0;
 
 	if (src_id > dst_id) {
 		tmp = src_id;
@@ -157,6 +158,9 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	dst_id = ecu_id;
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
+
+	if (fwd_id >= ctx->config->node_count)
+		return;
 
 	cnt = sprintf(node_id_str,"%s","macan_ltk_node");
 	sprintf(node_id_str+cnt,"%u",dst_id);
