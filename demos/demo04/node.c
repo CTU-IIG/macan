@@ -31,7 +31,6 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "common.h"
-#include <pthread.h>
 #ifdef __CPU_TC1798__
 #include "can_frame.h"
 #include "Std_Types.h"
@@ -50,6 +49,7 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <pthread.h>
 #endif /* __CPU_TC1798__ */
 #include "helper.h"
 #include "macan.h"
@@ -58,12 +58,18 @@
 
 #define TIME_EMIT_SIG 1000000
 
+#ifdef __CPU_TC1798__
+struct macan_ctx macan_ctx;
+#else
 static struct macan_ctx macan_ctx;
+#endif
 static uint32_t speed;
 static int cont = 1;
 extern const struct macan_key MACAN_CONFIG_LTK(NODE_ID);
 
+#ifndef __CPU_TC1798__
 void *console_menu(void *ptr);
+#endif
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
@@ -96,6 +102,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 	}
 }
 
+#ifndef __CPU_TC1798__
 int main()
 {
 	int s;
@@ -130,3 +137,4 @@ void *console_menu(void *ptr)
 	cont = 0;
 	pthread_exit(NULL);
 }
+#endif
