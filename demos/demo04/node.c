@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "common.h"
+#include <pthread.h>
 #ifdef __CPU_TC1798__
 #include "can_frame.h"
 #include "Std_Types.h"
@@ -58,7 +59,11 @@
 #define TIME_EMIT_SIG 1000000
 
 static struct macan_ctx macan_ctx;
+static uint32_t speed;
+static int cont = 1;
 extern const struct macan_key MACAN_CONFIG_LTK(NODE_ID);
+
+void *console_menu(void *ptr);
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
@@ -69,7 +74,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 {
 	uint64_t signal_time = 0;
 
-	while(1) {
+	while(cont) {
 #ifdef __CPU_TC1798__
 		poll_can_fifo(ctx, can_recv_cb);
 #else
@@ -82,7 +87,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 
 		if (signal_time < read_time()) {
 			signal_time = read_time() + TIME_EMIT_SIG;
-			macan_send_sig(ctx, s, SIGNAL_A, 10);
+			macan_send_sig(ctx, s, SIGNAL_A, speed);
 		}
 
 #ifndef __CPU_TC1798__
@@ -94,7 +99,7 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 int main()
 {
 	int s;
-
+	pthread_t cons;
 	s = helper_init();
 
 	// put node id to config struct
@@ -104,8 +109,24 @@ int main()
 	macan_init(&macan_ctx, &config);
 
 	macan_reg_callback(&macan_ctx, SIGNAL_A, NULL, NULL);
-
+	pthread_create(&cons, NULL, console_menu, NULL);
 	operate_ecu(&macan_ctx, s);
 
 	return 0;
+}
+
+void *console_menu(void *ptr)
+{
+	int buff;
+	while(1){
+		printf("Enter new speed in rpm or negative number to exit");
+		scanf("%d",&buff);
+		if(buff < 0){
+			break;
+		} else {
+			speed = (uint32_t)buff;
+		}
+	}
+	cont = 0;
+	pthread_exit(NULL);
 }
