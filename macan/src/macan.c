@@ -592,7 +592,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	struct macan_key skey;
 	uint8_t plain[8];
 	uint8_t sig_num;
-    int can_sid,can_nsid;
+	int can_sid,can_nsid;
 	struct macan_sig_auth_req *areq;
 	struct com_part *cp;
 	struct sig_handle **sighand;
@@ -624,19 +624,19 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 #endif
 	sig_num = areq->sig_num;
     
-    can_sid = ctx->config->sigspec[sig_num].can_sid;
-    can_nsid = ctx->config->sigspec[sig_num].can_nsid;
+	can_sid = ctx->config->sigspec[sig_num].can_sid;
+	can_nsid = ctx->config->sigspec[sig_num].can_nsid;
     
-    if((can_nsid == 0 && can_sid == 0) ||
-       (can_nsid == 0 && can_sid != 0)) {
-        // ignore prescaler
-        sighand[sig_num]->presc = 1;
-        sighand[sig_num]->presc_cnt = 0;
-    } else {
-        /* ToDo: assert sig_num range */
-        sighand[sig_num]->presc = areq->prescaler;
-        sighand[sig_num]->presc_cnt = (uint8_t)(areq->prescaler - 1);
-    }
+	if((can_nsid == 0 && can_sid == 0) ||
+	   (can_nsid == 0 && can_sid != 0)) {
+		// ignore prescaler
+		sighand[sig_num]->presc = 1;
+		sighand[sig_num]->presc_cnt = 0;
+	} else {
+		/* ToDo: assert sig_num range */
+		sighand[sig_num]->presc = areq->prescaler;
+		sighand[sig_num]->presc_cnt = (uint8_t)(areq->prescaler - 1);
+	}
 
 }
 
