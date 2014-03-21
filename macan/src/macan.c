@@ -56,6 +56,15 @@
 #include "cryptlib.h"
 #include "endian.h"
 
+static inline struct com_part *get_cpart(struct macan_ctx *ctx, macan_ecuid i)
+{
+	if (i < ctx->config->node_count) {
+		return ctx->cpart[i];
+	} else {
+		return NULL;
+	}
+}
+
 /**
  * Initialize communication partner.
  *
@@ -241,9 +250,6 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	struct macan_key skey;
 	struct can_frame cf = {0};
 	volatile int res;
-	struct com_part **cpart;
-
-	cpart = ctx->cpart;
 
 	if (!is_skey_ready(ctx, dst_id))
 		return;
@@ -251,8 +257,8 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	if(!is_time_ready(ctx)) 
 		return;
 
-	skey = cpart[dst_id]->skey;
-	memcpy(&ack.group, &(cpart[dst_id]->group_field), 3);
+	skey = get_cpart(ctx, dst_id)->skey;
+	memcpy(&ack.group, &(get_cpart(ctx, dst_id)->group_field), 3);
 	time = (uint32_t)macan_get_time(ctx);
 
 	memcpy(plain, &htole32(time), 4);
@@ -343,9 +349,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	static uint8_t keywrap[32];
 	uint8_t unwrapped[24];
 	uint8_t seq, len;
-	struct com_part **cpart;
 
-	cpart = ctx->cpart;
 	sk = (struct macan_sess_key *)cf->data;
 
 	/* it reads wrong values, dirty hack to read directly from CAN frame 
@@ -367,25 +371,25 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 		macan_unwrap_key(ctx->config->ltk, 32, unwrapped, keywrap);
 		fwd_id = unwrapped[17];
 
-		if (fwd_id >= ctx->config->node_count || cpart[fwd_id] == NULL) {
+		if (fwd_id >= ctx->config->node_count || get_cpart(ctx, fwd_id) == NULL) {
 			fail_printf("unexpected fwd_id %#x\n", fwd_id);
 			return RECEIVE_SKEY_ERR;
 		}
 
-		if(!memchk(unwrapped+18, cpart[fwd_id]->chg, 6)) {
+		if(!memchk(unwrapped+18, get_cpart(ctx, fwd_id)->chg, 6)) {
 			fail_printf("check cmac from %d\n", fwd_id);
 			return RECEIVE_SKEY_ERR;
 		}
 
-		cpart[fwd_id]->valid_until = read_time() + ctx->config->skey_validity;
-		memcpy(cpart[fwd_id]->skey.data, unwrapped, 16);
+		get_cpart(ctx, fwd_id)->valid_until = read_time() + ctx->config->skey_validity;
+		memcpy(get_cpart(ctx, fwd_id)->skey.data, unwrapped, 16);
 		
 		// initialize group field - this will work only for ecu_id <= 23
-		cpart[fwd_id]->group_field |= htole32(1U << ctx->config->node_id);
+		get_cpart(ctx, fwd_id)->group_field |= htole32(1U << ctx->config->node_id);
 
 		// print key
 		print_msg(MSG_OK,"KEY (%d -> %d) is ", ctx->config->node_id, fwd_id);
-		print_hexn(cpart[fwd_id]->skey.data, 16);
+		print_hexn(get_cpart(ctx, fwd_id)->skey.data, 16);
 
 		return fwd_id;	/* FIXME: fwd_id can be 0 as well. What our callers do with the returned value? */
 	}
@@ -560,11 +564,9 @@ void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig
 	struct macan_key skey;
 	struct can_frame cf = {0};
 	struct macan_sig_auth_req areq;
-	struct com_part **cpart;
 
-	cpart = ctx->cpart;
 	t = macan_get_time(ctx);
-	skey = cpart[dst_id]->skey;
+	skey = get_cpart(ctx, dst_id)->skey;
 
 	memcpy(plain, &htole32(t), 4);
 	plain[4] = ctx->config->node_id;
@@ -649,15 +651,12 @@ int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_nu
 	uint8_t plain_length;
 	uint32_t t;
 	struct macan_key skey;
-    uint8_t *cmac;
-	struct com_part **cpart;
-
-	cpart = ctx->cpart;
+	uint8_t *cmac;
 
 	if (!is_channel_ready(ctx, dst_id))
 		return -1;
 
-	skey = cpart[dst_id]->skey;
+	skey = get_cpart(ctx, dst_id)->skey;
 	t = (uint32_t)macan_get_time(ctx);
 	
 
@@ -833,10 +832,10 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
  */
 int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
 {
-	if (ctx->cpart[dst_id] == NULL)
+	if (get_cpart(ctx, dst_id) == NULL)
 		return 0;
 
-	return (ctx->cpart[dst_id]->group_field & htole32(1U << ctx->config->node_id)) ? 1 : 0;
+	return (get_cpart(ctx, dst_id)->group_field & htole32(1U << ctx->config->node_id)) ? 1 : 0;
 }
 
 /**
@@ -847,20 +846,16 @@ int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
  */
 int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 {
-	struct com_part **cpart;
-
 	if(ctx->config->ack_disable) {
 		/* ACK is disabled, channel is ready */	
 		return 1;
 	}
 
-	cpart = ctx->cpart;
-
-	if (cpart[dst] == NULL)
+	if (get_cpart(ctx, dst) == NULL)
 		return 0;
 
-	uint32_t grp = (*((uint32_t *)&cpart[dst]->group_field)) & htole32(0x00ffffff);
-	uint32_t wf = (*((uint32_t *)&cpart[dst]->wait_for)) & htole32(0x00ffffff);
+	uint32_t grp = (*((uint32_t *)&get_cpart(ctx, dst)->group_field)) & htole32(0x00ffffff);
+	uint32_t wf = (*((uint32_t *)&get_cpart(ctx, dst)->wait_for)) & htole32(0x00ffffff);
 
 	return ((grp & wf) == wf);
 }
@@ -1066,5 +1061,5 @@ struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id)
 	/* if ECU-ID is not our communication partner
 	 * it's cpart pointer is initialized to NULL,
 	 * so we can directly return it. */
-	return ctx->cpart[ecu_id];
+	return get_cpart(ctx, ecu_id);
 }
