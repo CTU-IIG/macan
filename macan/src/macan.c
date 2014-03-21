@@ -759,10 +759,10 @@ void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_nu
 {
 	uint8_t plain[10];
 	uint8_t *fill_time;
-    int sig_num;
+	int sig_num;
 	uint32_t sig_val = 0;
 	struct macan_key skey;
-    uint8_t *cmac;
+	uint8_t *cmac;
 	struct com_part *cp;
 	struct sig_handle **sighand;
 	uint8_t plain_length;
