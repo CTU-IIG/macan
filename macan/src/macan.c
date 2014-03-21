@@ -361,7 +361,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	if(seq == 5) len = 2;
 
 	if (!((seq <= 5) && ((seq != 5 && len == 6) || (seq == 5 && len == 2))))
-		return;
+		return RECEIVE_SKEY_ERR;
 
 	memcpy(keywrap + 6 * seq, sk->data, len);
 
