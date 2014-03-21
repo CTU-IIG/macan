@@ -291,7 +291,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	uint8_t plain[8];
 	struct macan_key skey;
 
-	if(!(cp = get_cpart(ctx, cf->can_id)))
+	if(!(cp = canid2cpart(ctx, cf->can_id)))
 		return -1;
 	
 	skey = cp->skey;
@@ -594,7 +594,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	struct com_part *cp;
 	struct sig_handle **sighand;
 
-	if(!(cp = get_cpart(ctx, cf->can_id)))
+	if(!(cp = canid2cpart(ctx, cf->can_id)))
 		return;
 
 	sighand = ctx->sighand;
@@ -1054,7 +1054,7 @@ bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, macan_ecuid *ecu_id)
  * @return Pointer to com_part of communication partner or pointer
  * to NULL if given CAN-ID does not belong to any communication partner
  */
-struct com_part *get_cpart(struct macan_ctx *ctx, uint32_t can_id)
+struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id)
 {
 	macan_ecuid ecu_id;
 
