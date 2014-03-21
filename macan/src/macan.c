@@ -605,6 +605,9 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	areq = (struct macan_sig_auth_req *)cf->data;
 	skey = cp->skey;
 
+	if (areq->sig_num >= ctx->config->sig_count)
+		return;
+
 	plain[4] = (macan_ecuid)cp->ecu_id;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
@@ -612,8 +615,10 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	/* Check CMAC only if can_dlc is 7 */
 	if(cf->can_dlc == 7) {
+		/* TODO: Why this? We should never react on non-auth request. VW_COMPAT?   */
 		if (!macan_check_cmac(ctx, &skey, areq->cmac, plain, plain, sizeof(plain))) {
 			printf("error: sig_auth cmac is incorrect\n");
+			/* TODO: return missing? */
 		}
 	}
 
@@ -633,7 +638,6 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 		sighand[sig_num]->presc = 1;
 		sighand[sig_num]->presc_cnt = 0;
 	} else {
-		/* ToDo: assert sig_num range */
 		sighand[sig_num]->presc = areq->prescaler;
 		sighand[sig_num]->presc_cnt = (uint8_t)(areq->prescaler - 1);
 	}
