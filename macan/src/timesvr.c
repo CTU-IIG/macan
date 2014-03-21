@@ -143,7 +143,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 		if (cf->can_dlc == 7)
 			receive_auth_req(ctx, cf);
 		else
-			receive_sig(ctx, cf, -1);
+			receive_sig16(ctx, cf);
 		break;
 	}
 }

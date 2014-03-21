@@ -752,69 +752,93 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sign
 	}
 }
 
+static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_val, uint8_t *cmac,
+			  uint8_t plain[10], uint8_t *fill_time, uint8_t plain_length);
+
 /**
  * Receive signal.
  *
  * Receives signal, checks its CMAC and calls appropriate callback.
  */
 /* ToDo: receive signal frame with 32bits */
-void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_num)
+void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t sig_num)
 {
 	uint8_t plain[10];
 	uint8_t *fill_time;
-	int sig_num;
 	uint32_t sig_val = 0;
-	struct macan_key skey;
 	uint8_t *cmac;
-	struct com_part *cp;
-	struct sig_handle **sighand;
 	uint8_t plain_length;
-	macan_ecuid src_id;
+
+	// we have received 32 bit signal
+	struct macan_signal *sig32 = (struct macan_signal *)cf->data;
+
+	if (sig_num >= ctx->config->sig_count)
+		return;
+
+	cmac = sig32->cmac;
+	memcpy(&sig_val, sig32->sig, 4);
+	sig_val = le32toh(sig_val);
+
+	/* Prepare plain text for CMAC */
+	plain_length = 10;
+	memcpy(plain,&sig32->sig,4);
+	fill_time = plain+4;
+	memcpy(plain + 8,&(cf->can_id),2);
+
+
+	__receive_sig(ctx, sig_num, sig_val, cmac, plain, fill_time, plain_length);
+}
+
+void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
+{
+	uint8_t plain[10];
+	uint8_t *fill_time;
+	uint32_t sig_num;
+	uint32_t sig_val = 0;
+	uint8_t *cmac;
+	uint8_t plain_length;
+	const struct macan_sig_spec *sigspec;
+
+	struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
+	sig_num = sig16->sig_num;
+
+	if (sig_num >= ctx->config->sig_count)
+		return;
+
+	sigspec = &ctx->config->sigspec[sig_num];
+
+	cmac = sig16->cmac;
+	memcpy(&sig_val, sig16->signal, 2);
+	sig_val = le32toh(sig_val);
+
+	/* Prepare plain text for CMAC */
+	plain_length = 8;
+	fill_time = plain;
+	memcpy(plain + 4, &(sigspec->src_id), 1);
+	memcpy(plain + 5, &(ctx->config->node_id), 1);
+	memcpy(plain + 6, sig16->signal, 2);
+
+	__receive_sig(ctx, sig_num, sig_val, cmac, plain, fill_time, plain_length);
+}
+
+static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_val, uint8_t *cmac,
+			  uint8_t plain[10], uint8_t *fill_time, uint8_t plain_length)
+{
+	struct macan_key skey;
+	struct com_part *cp;
+	const struct macan_sig_spec *sigspec = &ctx->config->sigspec[sig_num];
+	struct sig_handle **sighand;
 
 	sighand = ctx->sighand;
 
-	if(sig32_num >= 0) {
-		// we have received 32 bit signal
-		struct macan_signal *sig32 = (struct macan_signal *)cf->data;
-		sig_num = sig32_num;
-
-		if (sig_num >= (int)ctx->config->sig_count)
-			return;
-		
-		cmac = sig32->cmac;
-		memcpy(&sig_val, sig32->sig, 4);
-		sig_val = le32toh(sig_val);
-		memcpy(plain,&sig32->sig,4);
-		memcpy(plain + 8,&(cf->can_id),2);
-
-		plain_length = 10;
-		fill_time = plain+4;
-	} else {
-		// we have received 16 bit signal
-		struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
-		sig_num = sig16->sig_num;
-
-		if (sig_num >= (int)ctx->config->sig_count)
-			return;
-
-		cmac = sig16->cmac;
-		memcpy(plain + 4, &(ctx->config->sigspec[sig_num].src_id), 1);
-		memcpy(plain + 5, &(ctx->config->node_id), 1);
-		memcpy(plain + 6, sig16->signal, 2);
-		memcpy(&sig_val, sig16->signal, 2);
-		sig_val = le32toh(sig_val);
-
-		plain_length = 8;
-		fill_time = plain;
-	}
-
-	src_id = ctx->config->sigspec[sig_num].src_id;
-	if (!is_skey_ready(ctx,src_id)) {
-		fail_printf("No key to check signal %d\n", sig_num);
+	if (!is_skey_ready(ctx, sigspec->src_id)) {
+		fail_printf("No key to check signal from %d\n", sigspec->src_id);
 		return;
 	}
 
-	cp = ctx->cpart[ctx->config->sigspec[sig_num].src_id];
+	cp = get_cpart(ctx, sigspec->src_id);
+	if (!cp)
+		return;
 	skey = cp->skey;
 
 	if (!macan_check_cmac(ctx, &skey, cmac, plain, fill_time, plain_length)) {
@@ -924,8 +948,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 	// test if can_id is can_sid of any signal
 	uint32_t sig32_num; 
 	if(cansid2signum(ctx, cf->can_id,&sig32_num)) {
-		// received frame is 32bit signal frame
-		receive_sig(ctx,cf,(int)sig32_num);    
+		receive_sig32(ctx, cf, sig32_num);
 		return 1;
 	}
 
@@ -981,7 +1004,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 			// length should be 7 bytes, but VW node is not sending CMAC!!
 			receive_auth_req(ctx, cf);
 		else
-			receive_sig(ctx, cf, -1);
+			receive_sig16(ctx, cf);
 		break;
 	}
 

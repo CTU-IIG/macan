@@ -169,7 +169,7 @@ struct macan_ctx {
 
 bool canid2ecuid(struct macan_ctx *ctx, uint32_t canid, macan_ecuid *ecuid);
 int init(void);
-void receive_sig(struct macan_ctx *ctx, const struct can_frame *cf, int sig32_num);
+void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf);
 int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint32_t signal);
 int is_channel_ready(struct macan_ctx *ctx, uint8_t dst);
 int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id);
