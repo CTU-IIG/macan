@@ -4,13 +4,13 @@ MaCAN
 Message Authenticated CAN library & tools written in C.  
 
 This library implements MaCAN protocol [1], which improves CAN bus
-security. Supported platforms currently include **GNU/Linux** and
-**Infineon Tricore TC1798** (for nodes only).
+security. MaCAN network consits from a keyserver, a timeserver and one
+or more nodes (a.k.a. ECUs). Supported platforms currently include
+**GNU/Linux** and **Infineon Tricore TC1798** (for nodes only).
 
 The project is divided into several, relatively independent parts:
 
-MaCAN library
--------------
+### MaCAN library
 
 The MaCAN library is used in any node (incl. keyserver and timeserver)
 participating in MaCAN communication. Library's API is defined in
@@ -18,8 +18,7 @@ participating in MaCAN communication. Library's API is defined in
 is documented in Doxygen docs located in `docs/` directory. For actual
 code examples on how to use this library, see Demos section below.
 
-Keyserver
----------
+### Keyserver
 
 Provides session keys to other nodes (runs on GNU/Linux only). The
 following command line parameters are supported:
@@ -32,10 +31,10 @@ following command line parameters are supported:
 
   Path to the shared object with long term keys of every node.
 
-Timeserver
-----------
+### Timeserver
 
-Provides plain and authenticated time to nodes (GNU/Linux only).
+Provides plain and authenticated time signals to nodes (runs on
+GNU/Linux only). The following command line parameters are supported:
 
 * -c *configuration.so*  
 
@@ -45,41 +44,44 @@ Provides plain and authenticated time to nodes (GNU/Linux only).
 
   Path to the shared object with timeserver's long term key.
 
-MaCAN Monitor
--------------
+### MaCAN Monitor
 
 
 Dumps traffic on CAN bus and interprets MaCAN frames, useful for
-debbuging (GNU/Linux only).
+debbuging (GNU/Linux only). The following command line parameters are
+supported:
 
 * -c *configuration.so*  
 
   Path to the shared object with configuration.
 
 Configuration
-=============
+-------------
 
-MaCAN configuration is done statically by filling following (defined in `macan.h`):
+MaCAN configuration is done statically by filling the following
+information (as defined in `macan.h`):
 
-* `struct macan_sig_spec` --p signal configuration
+* `struct macan_config` - main MaCAN configuration (number of nodes,
+  timing, etc.)
+* `struct macan_sig_spec` -- signal configuration
 * `ecu2canid_map[]` -- ECU-ID to CAN-ID mapping
-* `struct macan_config` - main MaCAN configuration 
 
-This configuration is then compiled into shared object file and used
-by all participating nodes.
+This configuration is then compiled into shared object file (on Linux)
+or to a static library (on embedded platforms) and used by all
+participating nodes.
 
 For security reasons, Long Term Keys (LTK) are compiled separately
 into:
 
 1. shared object files (one per key) and linked to nodes at runtine.
 2. single shared object file (containing all keys), which is used by
-   keyserver only.
+   the keyserver only.
 
 Demos
-=====
+-----
 
-Several example projects are located in `demos/` directory. Each demo
-contains helper scripts written in BASH, which wrap commands and their
+Several example projects are located in the `demos/` directory. Each demo
+contains helper shell scripts, which wrap commands and their
 options, so you don't need to type them by hand. Scripts are located
 in `demos/demoXX/test` directory. Each demo typically includes
 following scripts:
@@ -93,9 +95,9 @@ following scripts:
 
 
 Compiling on GNU/Linux
-======================
+----------------------
 
-MaCAN library requires Low level crypto library
+MaCAN library requires a low level cryptographic library
 [Nettle](http://www.lysator.liu.se/~nisse/nettle/). To compile entire
 project (incl. library, keyserver, timeserver and demos), invoke:
 
@@ -103,15 +105,17 @@ project (incl. library, keyserver, timeserver and demos), invoke:
 
 Compiled binaries are located in `_compiled` directory.
 
-Compiling for Infienon Tricore TC1798
-=====================================
+Compiling for Infienon TriCore TC1798
+-------------------------------------
 
-There is a project file for Altium TASKING IDE configured to compile
-node from demo projects, which runs on TC1798 CPU. Only one demo can
-be compiled at a time, others need to be excluded from build.
+To compile MaCAN for TriCore, Infineon's proprietary AUTOSAR MCAL
+drivers are needed. There is a project file for Altium TASKING IDE
+configured to compile node from demo projects, which runs on TC1798
+CPU. Only one demo can be compiled at a time, others need to be
+excluded from build.
 
 References
-==========
+----------
 
 [1] Oliver Hartkopp, Cornel Reuber and Roland Schilling, *MaCAN -
-    Message Authenticated CAN*, ESCAR 2012.
+    Message Authenticated CAN*, [ESCAR 2012](https://www.escar.info/index.php?id=208).
