@@ -85,6 +85,9 @@ void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
  *
  * This function fills the macan_ctx structure. This function should be
  * called before using the MaCAN library.
+ *
+ * @param *ctx pointer to MaCAN context
+ * @param *config pointer to configuration
  */
 int macan_init(struct macan_ctx *ctx, const struct macan_config *config)
 {
@@ -146,6 +149,9 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config)
  * ACK messages are broadcasted in order to create authenticated
  * communication channel. This function sends ACK messages, if channel
  * is not ready (given we already have received key from KS)
+ *
+ * @param *ctx pointer to MaCAN context
+ * @param s socket file descriptor
  */
 int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 {
@@ -906,6 +912,9 @@ bool is_time_ready(struct macan_ctx *ctx)
  * Request keys to all comunication partners.
  *
  * Requests keys and repeats until success.
+ *
+ * @param *ctx pointer to MaCAN context
+ * @param s socket file descriptor
  */
 void macan_request_keys(struct macan_ctx *ctx, int s)
 {
@@ -942,6 +951,10 @@ uint64_t macan_get_time(struct macan_ctx *ctx)
  *
  * This function should be called for incoming can frames. It extracts MaCAN messages
  * and operates the MaCAN library.
+ *
+ * @param *ctx pointer to MaCAN context
+ * @param s socket file descriptor 
+ * @param *cf pointer to can frame with received contents
  */
 int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
