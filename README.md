@@ -4,7 +4,7 @@ MaCAN
 Message Authenticated CAN library & tools written in C.  
 
 This library implements MaCAN protocol [1], which improves CAN bus
-security. MaCAN network consits from a keyserver, a timeserver and one
+security. MaCAN network consists from a keyserver, a timeserver and one
 or more nodes (a.k.a. ECUs). Supported platforms currently include
 **GNU/Linux** and **Infineon Tricore TC1798** (for nodes only).
 
@@ -48,7 +48,7 @@ GNU/Linux only). The following command line parameters are supported:
 
 
 Dumps traffic on CAN bus and interprets MaCAN frames, useful for
-debbuging (GNU/Linux only). The following command line parameters are
+debugging (GNU/Linux only). The following command line parameters are
 supported:
 
 * -c *configuration.so*  
@@ -73,7 +73,7 @@ participating nodes.
 For security reasons, Long Term Keys (LTK) are compiled separately
 into:
 
-1. shared object files (one per key) and linked to nodes at runtine.
+1. shared object files (one per key) and linked to nodes at runtime.
 2. single shared object file (containing all keys), which is used by
    the keyserver only.
 
@@ -105,7 +105,7 @@ project (incl. library, keyserver, timeserver and demos), invoke:
 
 Compiled binaries are located in `_compiled` directory.
 
-Compiling for Infienon TriCore TC1798
+Compiling for Infineon TriCore TC1798
 -------------------------------------
 
 To compile MaCAN for TriCore, Infineon's proprietary AUTOSAR MCAL
