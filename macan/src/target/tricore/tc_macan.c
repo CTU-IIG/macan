@@ -121,5 +121,5 @@ void bench_tack(char *s)
 {
 	uint64_t stop = read_time_bench();
 
-	printf("%s: %.2f us\n",(stop - bench_time) / 100.0);
+	printf("%s: %.2f us\n",s,(stop - bench_time) / 100.0);
 }
