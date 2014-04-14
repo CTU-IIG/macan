@@ -46,8 +46,6 @@
 #define FL_SIGNAL_OR_AUTH_REQ 3U
 
 /* helpers for first byte in crypt frames */
-#define GET_FLAGS(byte) (((byte) & 0xC0) >> 6)
-#define GET_DST_ID(byte) ((byte) & 0x3F)
 #define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
 #define GET_LEN(byte) ((byte) & 0x0F)
 
@@ -199,5 +197,17 @@ bool is_time_ready(struct macan_ctx *ctx);
 struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id);
 bool gen_rand_data(void *dest, size_t len);
 void macan_send_signal_requests(struct macan_ctx *ctx, int s);
+
+static inline macan_ecuid macan_crypt_dst(const struct can_frame *cf)
+{
+	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
+	return cryf->flags_and_dst_id & 0x3f;
+}
+
+static inline unsigned macan_crypt_flags(const struct can_frame *cf)
+{
+	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
+	return (cryf->flags_and_dst_id & 0xc0) >> 6;
+}
 
 #endif /* MACAN_PRIVATE_H */

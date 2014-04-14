@@ -967,7 +967,6 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		return 1;
 	}
 
-	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 	int fwd;
 
 	/* ToDo: make sure all branches end ASAP */
@@ -992,10 +991,10 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 	if (macan_canid2ecuid(ctx, cf->can_id, NULL) == ERROR)
 		return 0;
 
-	if (GET_DST_ID(cryf->flags_and_dst_id) != ctx->config->node_id)
+	if (macan_crypt_dst(cf) != ctx->config->node_id)
 		return 1;
 
-	switch (GET_FLAGS(cryf->flags_and_dst_id)) {
+	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
 		receive_challenge(ctx, s, cf);
 		break;

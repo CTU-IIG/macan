@@ -113,7 +113,6 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
-	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
 	struct macan_ctx *ctx = &macan_ctx;
 
 	/* ToDo: make sure all branches end ASAP */
@@ -121,10 +120,10 @@ void can_recv_cb(int s, struct can_frame *cf)
 	/* ToDo: crypto frame or else */
 	if (cf->can_id == CANID(ctx, ctx->config->time_server_id))
 		return;
-	if (GET_DST_ID(cryf->flags_and_dst_id) != ctx->config->time_server_id)
+	if (macan_crypt_dst(cf) != ctx->config->time_server_id)
 		return;
 
-	switch (GET_FLAGS(cryf->flags_and_dst_id)) {
+	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			receive_challenge(ctx, s, cf);
