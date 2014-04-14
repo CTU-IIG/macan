@@ -144,8 +144,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	macan_ecuid dst_id, fwd_id;
 	uint8_t *chg;
 	const struct macan_key *ltk;
-	char node_id_str[100];
-	int cnt;
+	char node_id_str[30];
 	char *error;
 
 	chal = (struct macan_challenge *)cf->data;
@@ -160,9 +159,8 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	if (fwd_id >= ctx->config->node_count)
 		return;
 
-	cnt = sprintf(node_id_str,"%s","macan_ltk_node");
-	sprintf(node_id_str+cnt,"%u",dst_id);
-	ltk = dlsym(ltk_handle,node_id_str);
+	sprintf(node_id_str, "macan_ltk_node%u", dst_id);
+	ltk = dlsym(ltk_handle, node_id_str);
 	error = dlerror();
 	if(error != NULL) {
 		print_msg(MSG_FAIL,"Unable to load ltk key for node #%u from shared library\nReason: %s\n",dst_id,error);
