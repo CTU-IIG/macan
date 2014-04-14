@@ -629,7 +629,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
  *
  * Signs signal using CMAC and transmits it.
  */
-int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint32_t signal)
+int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint32_t sig_val)
 {
 	struct can_frame cf = {0};
 	uint8_t plain[10],sig[8];
@@ -650,9 +650,9 @@ int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_nu
 		memcpy(plain+4, &htole32(t), 4);
 		struct macan_signal *sig32 = (struct macan_signal *) sig;
 		// changed to be compatible with macangw
-		memcpy(plain, &htole32(signal), 4);
+		memcpy(plain, &htole32(sig_val), 4);
 		memcpy(plain+8, &ctx->config->sigspec[sig_num].can_sid,2); 
-		memcpy(sig32->sig, &htole32(signal), 4);
+		memcpy(sig32->sig, &htole32(sig_val), 4);
 		cf.can_id = ctx->config->sigspec[sig_num].can_sid;
 		plain_length = 10;
 		cmac = sig32->cmac;
@@ -661,12 +661,12 @@ int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_nu
 
 		sig16->flags_and_dst_id = FL_SIGNAL << 6 | (dst_id & 0x3f);
 		sig16->sig_num = sig_num;
-		memcpy(&sig16->signal, &signal, 2);
+		memcpy(&sig16->sig_val, &sig_val, 2);
 
 		memcpy(plain, &htole32(t), 4);
 		memcpy(plain + 4, &(ctx->config->node_id), 1);
 		memcpy(plain + 5, &dst_id, 1);
-		memcpy(plain + 6, &htole32(signal), 2);
+		memcpy(plain + 6, &htole32(sig_val), 2);
 		plain_length = 8;
 
 		cf.can_id = CANID(ctx, ctx->config->node_id);
@@ -696,10 +696,10 @@ int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_nu
  *
  * @param s        socket handle
  * @param sig_num  signal id
- * @param signal   signal value
+ * @param sig_val   signal value
  */
 /* ToDo: return result */
-void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t signal)
+void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sig_val)
 {
 	macan_ecuid dst_id;
 	struct sig_handle **sighand;
@@ -718,14 +718,14 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sign
 	case SIG_DONTSIGN:
 		break;
 	case SIG_SIGNONCE:
-		macan_write(ctx, s, dst_id, sig_num, signal);
+		macan_write(ctx, s, dst_id, sig_num, sig_val);
 		sighand[sig_num]->presc = SIG_DONTSIGN;
 		break;
 	default:
 		if (sighand[sig_num]->presc_cnt > 0) {
 			sighand[sig_num]->presc_cnt--;
 		} else {
-			macan_write(ctx, s, dst_id, sig_num, signal);
+			macan_write(ctx, s, dst_id, sig_num, sig_val);
 			sighand[sig_num]->presc_cnt = (uint8_t)(sighand[sig_num]->presc - 1);
 		}
 		break;
@@ -788,7 +788,7 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 	sigspec = &ctx->config->sigspec[sig_num];
 
 	cmac = sig16->cmac;
-	memcpy(&sig_val, sig16->signal, 2);
+	memcpy(&sig_val, sig16->sig_val, 2);
 	sig_val = le32toh(sig_val);
 
 	/* Prepare plain text for CMAC */
@@ -796,7 +796,7 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 	fill_time = plain;
 	memcpy(plain + 4, &(sigspec->src_id), 1);
 	memcpy(plain + 5, &(ctx->config->node_id), 1);
-	memcpy(plain + 6, sig16->signal, 2);
+	memcpy(plain + 6, sig16->sig_val, 2);
 
 	__receive_sig(ctx, sig_num, sig_val, cmac, plain, fill_time, plain_length);
 }
