@@ -53,10 +53,6 @@
 #define RECEIVE_SKEY_ERR -1
 #define RECEIVE_SKEY_IN_PROGRESS -2
 
-struct macan_crypt_frame {
-	uint8_t flags_and_dst_id;
-};
-
 struct macan_req_challenge {
 	uint8_t flags_and_dst_id;
 	macan_ecuid fwd_id;
@@ -200,14 +196,12 @@ void macan_send_signal_requests(struct macan_ctx *ctx, int s);
 
 static inline macan_ecuid macan_crypt_dst(const struct can_frame *cf)
 {
-	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
-	return cryf->flags_and_dst_id & 0x3f;
+	return cf->data[0] & 0x3f;
 }
 
 static inline unsigned macan_crypt_flags(const struct can_frame *cf)
 {
-	struct macan_crypt_frame *cryf = (struct macan_crypt_frame *)cf->data;
-	return (cryf->flags_and_dst_id & 0xc0) >> 6;
+	return (cf->data[0] & 0xc0) >> 6;
 }
 
 #endif /* MACAN_PRIVATE_H */
