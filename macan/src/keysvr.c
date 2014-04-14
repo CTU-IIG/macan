@@ -61,7 +61,7 @@ void generate_skey(struct sess_key *skey)
 	}
 }
 
-uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct sess_key **key_ret)
+uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct macan_key **key_ret)
 {
 	static struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {{{0}}};
 
@@ -78,7 +78,7 @@ uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct sess_key **ke
 	}
 
 	key = &skey_map[src_id][dst_id];
-	*key_ret = key;
+	*key_ret = &key->key;
 
 	if (!key->valid) {
 		generate_skey(key);
@@ -91,7 +91,7 @@ void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
-	struct sess_key *skey;
+	struct macan_key *skey;
 	struct can_frame cf = {0};
 	struct macan_sess_key macan_skey;
 	int i;
@@ -101,7 +101,7 @@ void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_
 		macan_send_challenge(ctx, s, fwd_id, dst_id, NULL);
 	}
 
-	memcpy(plain, skey->key.data, sizeof(skey->key.data));
+	memcpy(plain, skey->data, sizeof(skey->data));
 	plain[16] = dst_id;
 	plain[17] = fwd_id;
 	memcpy(plain + 18, chal, 6);
