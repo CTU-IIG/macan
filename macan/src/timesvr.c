@@ -114,32 +114,12 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 void can_recv_cb(int s, struct can_frame *cf)
 {
 	struct macan_ctx *ctx = &macan_ctx;
+	enum macan_process_status status;
 
-	/* ToDo: make sure all branches end ASAP */
-	/* ToDo: macan or plain can */
-	/* ToDo: crypto frame or else */
-	if (cf->can_id == CANID(ctx, ctx->config->time_server_id))
-		return;
-	if (macan_crypt_dst(cf) != ctx->config->time_server_id)
-		return;
+	status = macan_process_frame(ctx, s, cf);
 
-	switch (macan_crypt_flags(cf)) {
-	case FL_CHALLENGE:
+	if (status == MACAN_FRAME_CHALLENGE)
 		ts_receive_challenge(ctx, s, cf);
-		break;
-	case FL_SESS_KEY:
-		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
-			receive_skey(ctx, cf);
-			break;
-		}
-		break;
-	case FL_SIGNAL_OR_AUTH_REQ:
-		if (cf->can_dlc == 7)
-			receive_auth_req(ctx, cf);
-		else
-			receive_sig16(ctx, cf);
-		break;
-	}
 }
 
 /**

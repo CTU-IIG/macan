@@ -932,41 +932,41 @@ uint64_t macan_get_time(struct macan_ctx *ctx)
  *
  * @returns One when the frame was a MaCAN frame, zero otherwise.
  */
-int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
+enum macan_process_status macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
 	uint32_t sig32_num;
 
 	if(cf->can_id == CANID(ctx, ctx->config->node_id))
-		return 1;	/* Frame sent by us */
+		return MACAN_FRAME_PROCESSED; /* Frame sent by us */
 
 	if (cf->can_id == CANID(ctx,ctx->config->time_server_id)) {
 		switch(cf->can_dlc) {
 		case 4:
 			receive_time(ctx, s, cf);
-			return 1;
+			return MACAN_FRAME_PROCESSED;
 		case 8:
 			receive_signed_time(ctx, cf);
-			return 1;
+			return MACAN_FRAME_PROCESSED;
 		default:
-			return 1;
+			return MACAN_FRAME_PROCESSED;
 		}
 	}
 
 	if(cansid2signum(ctx, cf->can_id,&sig32_num)) {
 		receive_sig32(ctx, cf, sig32_num);
-		return 1;
+		return MACAN_FRAME_PROCESSED;
 	}
 
 	if (macan_canid2ecuid(ctx, cf->can_id, NULL) == ERROR)
-		return 0;
+		return MACAN_FRAME_UNKNOWN;
 
 	if (macan_crypt_dst(cf) != ctx->config->node_id)
-		return 1;
+		return MACAN_FRAME_PROCESSED;
 
 	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
 		/* Only key-server and time-server need to handle this */
-		break;
+		return MACAN_FRAME_CHALLENGE;
 	case FL_SESS_KEY_OR_ACK:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			int fwd;
@@ -974,7 +974,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 			if (fwd >= 0) {
 				send_ack(ctx, s, (uint8_t)fwd);
 			}
-			break;
+			return MACAN_FRAME_PROCESSED;
 		}
 
 		/* ToDo: what if ack CMAC fails, there should be no response */
@@ -985,7 +985,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 			}
 
 		}
-		break;
+		return MACAN_FRAME_PROCESSED;
 	case FL_SIGNAL_OR_AUTH_REQ:
 		// can_dlc is 3 => req_auth without CMAC (sent by VW)
 		// can_dlc is 7 => req_auth with CMAC (sent by CTU)
@@ -994,10 +994,10 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 			receive_auth_req(ctx, cf);
 		else
 			receive_sig16(ctx, cf);
-		break;
+		return MACAN_FRAME_PROCESSED;
 	}
 
-	return 1;
+	return MACAN_FRAME_UNKNOWN;
 }
 
 /* 
