@@ -934,18 +934,8 @@ uint64_t macan_get_time(struct macan_ctx *ctx)
  */
 int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
-	// test if can_id is can_sid of any signal
-	uint32_t sig32_num; 
-	if(cansid2signum(ctx, cf->can_id,&sig32_num)) {
-		receive_sig32(ctx, cf, sig32_num);
-		return 1;
-	}
+	uint32_t sig32_num;
 
-	int fwd;
-
-	/* ToDo: make sure all branches end ASAP */
-	/* ToDo: macan or plain can */
-	/* ToDo: crypto frame or else */
 	if(cf->can_id == CANID(ctx, ctx->config->node_id))
 		return 1;	/* Frame sent by us */
 
@@ -962,6 +952,11 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		}
 	}
 
+	if(cansid2signum(ctx, cf->can_id,&sig32_num)) {
+		receive_sig32(ctx, cf, sig32_num);
+		return 1;
+	}
+
 	if (macan_canid2ecuid(ctx, cf->can_id, NULL) == ERROR)
 		return 0;
 
@@ -974,6 +969,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		break;
 	case FL_SESS_KEY_OR_ACK:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
+			int fwd;
 			fwd = receive_skey(ctx, cf);
 			if (fwd >= 0) {
 				send_ack(ctx, s, (uint8_t)fwd);
