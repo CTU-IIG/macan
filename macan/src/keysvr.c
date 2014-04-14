@@ -176,16 +176,13 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 
 void can_recv_cb(int s, struct can_frame *cf)
 {
-	/* reject frames that can't be challenge */
-	if (cf->can_dlc < 8)
-		return;
-	if (macan_crypt_dst(cf) != macan_ctx.config->key_server_id)
-		return;
-	/* check flags, must be challege */
-	if (macan_crypt_flags(cf) != FL_CHALLENGE)
+	/* Simple sanity checks first */
+	if (cf->can_dlc < 8 ||
+	    macan_crypt_dst(cf) != macan_ctx.config->key_server_id ||
+	    macan_crypt_flags(cf) != FL_CHALLENGE)
 		return;
 
-	/* ToDo: do some check on challenge message, the only message recepted by KS */
+	/* All other checks are done in ks_receive_challenge() */
 	ks_receive_challenge(&macan_ctx, s, cf);
 }
 
