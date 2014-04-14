@@ -125,7 +125,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 		return;
 
 	switch (GET_FLAGS(cryf->flags_and_dst_id)) {
-	case 1:
+	case FL_CHALLENGE:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			receive_challenge(ctx, s, cf);
 		} else
@@ -133,13 +133,13 @@ void can_recv_cb(int s, struct can_frame *cf)
 			ts_receive_challenge(ctx, s, cf);
 		}
 		break;
-	case 2:
+	case FL_SESS_KEY:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			receive_skey(ctx, cf);
 			break;
 		}
 		break;
-	case 3:
+	case FL_SIGNAL_OR_AUTH_REQ:
 		if (cf->can_dlc == 7)
 			receive_auth_req(ctx, cf);
 		else
