@@ -167,7 +167,7 @@ struct macan_ctx {
 
 #define CANID(ctx, ecuid) ((ctx)->config->ecu2canid[ecuid])
 
-bool canid2ecuid(struct macan_ctx *ctx, uint32_t canid, macan_ecuid *ecuid);
+bool macan_canid2ecuid(struct macan_ctx *ctx, uint32_t canid, macan_ecuid *ecuid);
 int init(void);
 void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf);
 int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint32_t signal);

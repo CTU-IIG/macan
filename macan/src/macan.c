@@ -989,7 +989,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		}
 	}
 
-	if (canid2ecuid(ctx, cf->can_id, NULL) == ERROR)
+	if (macan_canid2ecuid(ctx, cf->can_id, NULL) == ERROR)
 		return 0;
 
 	if (GET_DST_ID(cryf->flags_and_dst_id) != ctx->config->node_id)
@@ -1011,7 +1011,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		/* ToDo: what if ack CMAC fails, there should be no response */
 		if (receive_ack(ctx, cf) == 1) {
 			macan_ecuid ecu_id;
-			if (canid2ecuid(ctx, cf->can_id, &ecu_id)) {
+			if (macan_canid2ecuid(ctx, cf->can_id, &ecu_id)) {
 				send_ack(ctx, s, (uint8_t)ecu_id);
 			}
 
@@ -1075,7 +1075,7 @@ bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
  *
  * @return True if node with passed CAN-ID was found, false otherwise.
  */
-bool canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, macan_ecuid *ecu_id)
+bool macan_canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, macan_ecuid *ecu_id)
 {
 	macan_ecuid i;
 
@@ -1103,7 +1103,7 @@ struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id)
 {
 	macan_ecuid ecu_id;
 
-	if(!canid2ecuid(ctx, can_id, &ecu_id)) {
+	if(!macan_canid2ecuid(ctx, can_id, &ecu_id)) {
 		/* there is no node with given CAN-ID */
 		return NULL;
 	}

@@ -151,7 +151,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 
 	chal = (struct macan_challenge *)cf->data;
 
-	if(!canid2ecuid(ctx, cf->can_id, &ecu_id)) {
+	if(!macan_canid2ecuid(ctx, cf->can_id, &ecu_id)) {
 		return;
 	}
 

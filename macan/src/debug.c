@@ -60,7 +60,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				sprintf(comment, "authenticated time %u", time);
 			}
 		}
-		else if (canid2ecuid(ctx, cf->can_id, &src)) {
+		else if (macan_canid2ecuid(ctx, cf->can_id, &src)) {
 			/* Crypt frame */
 			if (cf->can_dlc < 2) {
 				sprintf(comment, "broken crypt frame");
