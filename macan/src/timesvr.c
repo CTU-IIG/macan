@@ -125,12 +125,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 
 	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
-		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
-			receive_challenge(ctx, s, cf);
-		} else
-		{
-			ts_receive_challenge(ctx, s, cf);
-		}
+		ts_receive_challenge(ctx, s, cf);
 		break;
 	case FL_SESS_KEY:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {

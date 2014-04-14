@@ -446,32 +446,6 @@ void macan_send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, maca
 }
 
 /**
- * receive_challenge() - responds to REQ_CHALLENGE from KS
- */
-void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
-{
-	macan_ecuid fwd_id;
-	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
-	struct com_part **cpart;
-
-	cpart = ctx->cpart;
-	fwd_id = ch->fwd_id;
-	if (fwd_id >= ctx->config->node_count)
-		return;
-
-	if (cpart[fwd_id] == NULL) {
-		/* TODO: When can this happen? In key server only? */
-		cpart[fwd_id] = malloc(sizeof(struct com_part));
-		memset(cpart[fwd_id], 0, sizeof(struct com_part));
-
-		cpart[fwd_id]->wait_for = htole32(1U << fwd_id | 1U << ctx->config->node_id);
-	}
-
-	cpart[fwd_id]->valid_until = read_time() + ctx->config->skey_chg_timeout;
-	macan_send_challenge(ctx, s, ctx->config->key_server_id, ch->fwd_id, cpart[ch->fwd_id]->chg);
-}
-
-/**
  * Receive unsigned time.
  *
  * Receives time and checks whether local clock is in sync. If local clock
@@ -996,7 +970,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 
 	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
-		receive_challenge(ctx, s, cf);
+		/* Only key-server and time-server need to handle this */
 		break;
 	case FL_SESS_KEY_OR_ACK:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
