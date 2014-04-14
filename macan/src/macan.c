@@ -955,6 +955,8 @@ uint64_t macan_get_time(struct macan_ctx *ctx)
  * @param *ctx pointer to MaCAN context
  * @param s socket file descriptor 
  * @param *cf pointer to can frame with received contents
+ *
+ * @returns One when the frame was a MaCAN frame, zero otherwise.
  */
 int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 {
@@ -972,7 +974,8 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 	/* ToDo: macan or plain can */
 	/* ToDo: crypto frame or else */
 	if(cf->can_id == CANID(ctx, ctx->config->node_id))
-		return 1;
+		return 1;	/* Frame sent by us */
+
 	if (cf->can_id == CANID(ctx,ctx->config->time_server_id)) {
 		switch(cf->can_dlc) {
 		case 4:
@@ -981,12 +984,16 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		case 8:
 			receive_signed_time(ctx, cf);
 			return 1;
+		default:
+			return 1;
 		}
 	}
 
+	if (canid2ecuid(ctx, cf->can_id, NULL) == ERROR)
+		return 0;
+
 	if (GET_DST_ID(cryf->flags_and_dst_id) != ctx->config->node_id)
 		return 1;
-
 
 	switch (GET_FLAGS(cryf->flags_and_dst_id)) {
 	case FL_CHALLENGE:
@@ -1021,7 +1028,7 @@ int macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf
 		break;
 	}
 
-	return 0;
+	return 1;
 }
 
 /* 
