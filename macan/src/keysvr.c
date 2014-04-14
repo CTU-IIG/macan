@@ -191,13 +191,23 @@ int main(int argc, char *argv[])
 {
 	int s;
 	struct macan_config *config = NULL;
+	char *error;
 
 	int opt;
 	while ((opt = getopt(argc, argv, "c:k:")) != -1) {
 		switch (opt) {
 		case 'c': {
 			void *handle = dlopen(optarg, RTLD_LAZY);
+			if(!handle) {
+				fprintf(stderr, "%s\n", dlerror());
+				exit(1);
+			}
+			dlerror(); /* Clear previous error (if any) */
 			config = dlsym(handle, "config");
+			if ((error = dlerror()) != NULL) {
+				fprintf(stderr, "%s\n", error);
+				exit(1);
+			}
 			break;
 		}
 		case 'k':
