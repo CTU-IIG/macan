@@ -232,7 +232,7 @@ void macan_send_signal_requests(struct macan_ctx *ctx, int s)
  * @param sig_num  signal id number
  * @param fnc      pointer to the signal callback function
  */
-int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, sig_cback fnc, sig_cback invalid_cmac)
+int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback fnc, macan_sig_cback invalid_cmac)
 {
 	ctx->sighand[sig_num]->cback = fnc;
 	ctx->sighand[sig_num]->invalid_cback = invalid_cmac;
