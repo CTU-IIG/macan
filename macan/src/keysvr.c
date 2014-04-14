@@ -143,7 +143,6 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	struct macan_challenge *chal;
 	macan_ecuid dst_id, fwd_id;
 	uint8_t *chg;
-	macan_ecuid ecu_id;
 	const struct macan_key *ltk;
 	char node_id_str[100];
 	int cnt;
@@ -151,11 +150,10 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 
 	chal = (struct macan_challenge *)cf->data;
 
-	if(!macan_canid2ecuid(ctx, cf->can_id, &ecu_id)) {
+	if(!macan_canid2ecuid(ctx, cf->can_id, &dst_id)) {
 		return;
 	}
 
-	dst_id = ecu_id;
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
