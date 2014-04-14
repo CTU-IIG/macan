@@ -40,6 +40,8 @@ void debug_printf(const char* format, ...)
     }
 }
 
+#define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
+#define GET_LEN(byte) ((byte) & 0x0F)
 
 void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 {

@@ -45,10 +45,6 @@
 #define FL_AUTH_REQ	      3U
 #define FL_SIGNAL_OR_AUTH_REQ 3U
 
-/* helpers for first byte in crypt frames */
-#define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
-#define GET_LEN(byte) ((byte) & 0x0F)
-
 /* return values for receive_skey */
 #define RECEIVE_SKEY_ERR -1
 #define RECEIVE_SKEY_IN_PROGRESS -2
