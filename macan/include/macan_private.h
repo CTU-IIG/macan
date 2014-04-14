@@ -176,7 +176,6 @@ int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id);
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf);
 void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id,uint8_t sig_num,uint8_t prescaler);
 void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf);
-void send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg);
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf);
 void gen_challenge(uint8_t *chal);
 extern uint8_t *key_ptr;

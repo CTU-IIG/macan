@@ -403,7 +403,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 }
 
 /**
- * send_challenge() - requests key from KS or signed time from TS
+ * macan_send_challenge() - requests key from KS or signed time from TS
  * @s:      socket fd
  * @dst_id: destination node id (e.g. KS)
  * @fwd_id: id of a node I wish to share a key with
@@ -414,7 +414,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
  * This function sends the CHALLENGE message to the socket s. It is
  * used to request a key from KS or to request a signed time from TS.
  */
-void send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
+void macan_send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
 {
 	struct can_frame cf = {0};
 	struct macan_challenge chal = { .flags_and_dst_id = (uint8_t)((FL_CHALLENGE << 6) | (dst_id & 0x3F)), .fwd_id = fwd_id };
@@ -468,7 +468,7 @@ void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 	}
 
 	cpart[fwd_id]->valid_until = read_time() + ctx->config->skey_chg_timeout;
-	send_challenge(ctx, s, ctx->config->key_server_id, ch->fwd_id, cpart[ch->fwd_id]->chg);
+	macan_send_challenge(ctx, s, ctx->config->key_server_id, ch->fwd_id, cpart[ch->fwd_id]->chg);
 }
 
 /**
@@ -506,7 +506,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 		print_msg(MSG_REQUEST,"Requesting signed time\n");
 
 		ctx->time.chal_ts = recent;
-		send_challenge(ctx, s, ctx->config->time_server_id, 0, ctx->time.chg);
+		macan_send_challenge(ctx, s, ctx->config->time_server_id, 0, ctx->time.chg);
 	}
 }
 
@@ -931,7 +931,7 @@ void macan_request_keys(struct macan_ctx *ctx, int s)
 			continue;
 
 		print_msg(MSG_REQUEST,"Requesting skey for node #%d\n",i);
-		send_challenge(ctx, s, ctx->config->key_server_id, i, cpart[i]->chg);
+		macan_send_challenge(ctx, s, ctx->config->key_server_id, i, cpart[i]->chg);
 		cpart[i]->valid_until = read_time() + ctx->config->skey_chg_timeout;
 	}
 

@@ -102,7 +102,7 @@ void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_
 
 	/* ToDo: solve name inconsistency - key */
 	if (lookup_skey(dst_id, fwd_id, &skey)) {
-		send_challenge(ctx, s, fwd_id, dst_id, NULL);
+		macan_send_challenge(ctx, s, fwd_id, dst_id, NULL);
 	}
 
 	memcpy(plain, skey->key, 16);
