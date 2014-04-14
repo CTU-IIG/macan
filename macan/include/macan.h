@@ -77,7 +77,7 @@ struct macan_config {
 };
 
 /**
- * Structure for keeping LTK
+ * Structure for keeping session and long-term keys
  */
 struct macan_key {
 	uint8_t data[16];

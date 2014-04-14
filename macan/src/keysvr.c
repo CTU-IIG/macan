@@ -46,7 +46,7 @@
 
 struct sess_key {
 	bool valid;
-	uint8_t key[16];
+	struct macan_key key;
 };
 
 struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {
@@ -61,7 +61,7 @@ static void *ltk_handle;
 void generate_skey(struct sess_key *skey)
 {
 	skey->valid = true;
-	if(!gen_rand_data(skey->key, 16)) {
+	if(!gen_rand_data(skey->key.data, sizeof(skey->key.data))) {
 		print_msg(MSG_FAIL,"Failed to read enough random bytes.\n");
 		exit(1);
 	}
@@ -105,7 +105,7 @@ void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_
 		macan_send_challenge(ctx, s, fwd_id, dst_id, NULL);
 	}
 
-	memcpy(plain, skey->key, 16);
+	memcpy(plain, skey->key.data, sizeof(skey->key.data));
 	plain[16] = dst_id;
 	plain[17] = fwd_id;
 	memcpy(plain + 18, chal, 6);
