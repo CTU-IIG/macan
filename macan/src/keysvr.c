@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
 			exit(1);
 		}
 	}
-	if (!config) {
+	if (!config || !ltk_handle) {
 		print_help(argv[0]);
 		exit(1);
 	}
