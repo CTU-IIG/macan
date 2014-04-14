@@ -137,4 +137,18 @@ WVSTART()
 	echo >&2
 	_wvfind_caller
 	echo "Testing \"$*\" in $WVCALLER_FILE:" >&2
+
+	cd "$WV_BASE_DIR"
+	local dir=tmp/test.$(echo $* | tr -s '[[:blank:]]' _ | tr "A-Z" "a-z")
+	rm -rf "$dir"
+	mkdir -p "$dir"
+	WVPASS cd "$WV_BASE_DIR/$dir"
+	export PATH=$WV_BASE_DIR/../_compiled/bin:$WV_BASE_DIR/../_compiled/bin-tests:$PATH
+	if [ -z "$LD_LIBRARY_PATH" ]; then
+	    export LD_LIBRARY_PATH=$WV_BASE_DIR/../_compiled/lib
+	else
+	    export LD_LIBRARY_PATH=$WV_BASE_DIR/../_compiled/lib:$LD_LIBRARY_PATH
+	fi
 }
+
+WV_BASE_DIR="$(readlink -f $(dirname ${BASH_SOURCE[0]}))" # Directory where this file is stored
