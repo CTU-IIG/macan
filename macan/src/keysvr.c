@@ -49,12 +49,6 @@ struct sess_key {
 	struct macan_key key;
 };
 
-struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {
-	{{0},{0},{0},{0}},
-	{{0},{0},{0},{0}},
-	{{0},{0},{0},{0}},
-};
-
 static struct macan_ctx macan_ctx;
 static void *ltk_handle;
 
@@ -69,6 +63,8 @@ void generate_skey(struct sess_key *skey)
 
 uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct sess_key **key_ret)
 {
+	static struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {{{0}}};
+
 	macan_ecuid tmp;
 	struct sess_key *key;
 
