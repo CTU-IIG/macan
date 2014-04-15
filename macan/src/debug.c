@@ -103,7 +103,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				case FL_SIGNAL_OR_AUTH_REQ:
 					if (cf->can_dlc == 8) {
 						struct macan_signal_ex *sig = (struct macan_signal_ex*)cf->data;
-						sprintf(type, "signal %d", sig->sig_num);
+						sprintf(type, "signal #%d", sig->sig_num);
 					} else {
 						struct macan_sig_auth_req *ar = (struct macan_sig_auth_req*)cf->data;
 						color = ANSI_COLOR_MAGENTA;
@@ -113,7 +113,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 						case 7: auth_req_type = "+ MAC"; break;
 						default: auth_req_type = "BROKEN!!!"; break;
 						}
-						sprintf(type, "auth req %s signal=%d presc=%d", auth_req_type,
+						sprintf(type, "auth req %s signal=#%d presc=%d", auth_req_type,
 							ar->sig_num, ar->prescaler);
 					}
 					break;
@@ -140,9 +140,9 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 			for (i = 0; i < ctx->config->sig_count; i++) {
 				const struct macan_sig_spec *ss = &ctx->config->sigspec[i];
 				if (cf->can_id == ss->can_nsid)
-					sprintf(comment, "non-secure signal %d", i);
+					sprintf(comment, "non-secure signal #%d", i);
 				else if (cf->can_id == ss->can_sid)
-					sprintf(comment, "secure signal %d", i);
+					sprintf(comment, "secure signal #%d", i);
 			}
 		}
 	}
