@@ -245,8 +245,8 @@ int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback f
  */
 void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 {
-	if(ctx->config->ack_disable) {
-		/* ACK is disabled, don't do anything */
+	if(ctx->config->vw_compatible) {
+		/* VW compatible -> ACK is disabled, don't do anything */
 		return;
 	}
 
@@ -593,12 +593,11 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
 
-	/* Check CMAC only if can_dlc is 7 */
-	if(cf->can_dlc == 7) {
-		/* TODO: Why this? We should never react on non-auth request. VW_COMPAT?   */
+	/* Do not check CMAC when compatible with VW (it does not use CMAC in it's sig requests */
+	if(ctx->config->vw_compatible == false) {
 		if (!macan_check_cmac(ctx, &skey, areq->cmac, plain, plain, sizeof(plain))) {
 			printf("error: sig_auth cmac is incorrect\n");
-			/* TODO: return missing? */
+			return;
 		}
 	}
 
@@ -865,8 +864,8 @@ int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
  */
 int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 {
-	if(ctx->config->ack_disable) {
-		/* ACK is disabled, channel is ready */	
+	if(ctx->config->vw_compatible) {
+		/* VW compatible -> ACK is disabled, channel is ready */	
 		return 1;
 	}
 

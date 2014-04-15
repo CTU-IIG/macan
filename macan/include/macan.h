@@ -25,6 +25,7 @@
 #define MACAN_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 struct macan_ctx;
 struct can_frame;
@@ -73,7 +74,7 @@ struct macan_config {
 	uint32_t time_timeout;                /**< Timeout for authenticated time (microseconds) */
 	uint32_t time_bcast_period;           /**< Timeserver broadcast period for plain time (microseconds) */
 	uint32_t time_delta;                  /**< Maximum time difference between our clock and TS (microseconds) */
-	int ack_disable;                      /**< Disable ACK messages (to be compatible with VW implementation) */
+	bool vw_compatible;                   /**< Enable compatibility with VW implementation (less secure) */
 };
 
 /**

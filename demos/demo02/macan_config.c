@@ -52,5 +52,5 @@ struct macan_config config = {
 	.time_timeout      = 1000000,
 	.time_bcast_period = 1000000,
 	.time_delta        = 1000000,
-	.ack_disable       = 0
+	.vw_compatible     = false
 };
