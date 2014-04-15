@@ -49,7 +49,7 @@ typedef uint8_t macan_ecuid;
 struct macan_sig_spec {
 	uint16_t can_nsid;  /**< can non-secured id */
 	uint16_t can_sid;   /**< can secured id */
-	uint8_t src_id;     /**< ECU-ID of node dispathing this signal */
+	uint8_t src_id;     /**< ECU-ID of node dispatching this signal */
 	uint8_t dst_id;     /**< ECU-ID of node receiving this signal */
 	uint8_t presc;      /**< prescaler */
 };
@@ -60,7 +60,7 @@ struct macan_sig_spec {
 struct macan_config {
 	macan_ecuid node_id;                  /**< Our ECU-ID (0-63) */
 	const struct macan_key *ltk;          /**< Long-term key map (for communication with KS) */
-	uint32_t sig_count;                   /**< Number of sinals in sig_spec */
+	uint32_t sig_count;                   /**< Number of signals in sig_spec */
 	const struct macan_sig_spec *sigspec; /**< Signal specification */
 	uint8_t node_count;                   /**< Number of nodes (ECUs) in our network */
 	const uint32_t *ecu2canid;            /**< Mapping from ECU-ID to crypt-frame CAN-ID */
@@ -72,7 +72,7 @@ struct macan_config {
 	uint32_t skey_chg_timeout;            /**< Timeout for waiting for session key (microseconds) */
 	uint32_t time_timeout;                /**< Timeout for authenticated time (microseconds) */
 	uint32_t time_bcast_period;           /**< Timeserver broadcast period for plain time (microseconds) */
-	uint32_t time_delta;                  /**< Maximum time divergency between our clock and TS (microseconds) */
+	uint32_t time_delta;                  /**< Maximum time difference between our clock and TS (microseconds) */
 	int ack_disable;                      /**< Disable ACK messages (to be compatible with VW implementation) */
 };
 
