@@ -819,7 +819,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 	sighand = ctx->sighand[sig_num];
 
 	if (!is_skey_ready(ctx, sigspec->src_id)) {
-		fail_printf("No key to check signal from %d\n", sigspec->src_id);
+		fail_printf("No key to check signal #%d from %d\n", sig_num, sigspec->src_id);
 		return;
 	}
 
@@ -832,7 +832,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 		if (sighand && sighand->invalid_cback)
 			sighand->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
 		else
-			fail_printf("CMAC error for signal %d\n", sig_num);
+			fail_printf("CMAC error for signal #%d\n", sig_num);
 		return;
 	}
 
