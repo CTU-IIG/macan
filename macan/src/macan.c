@@ -755,6 +755,10 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 	if (sig_num >= ctx->config->sig_count)
 		return;
 
+	if (ctx->config->sigspec->dst_id != ctx->config->node_id)
+		return; /* Ignore signals for other nodes. We don't
+			 * have a session key to check its CMAC. */
+
 	cmac = sig32->cmac;
 	memcpy(&sig_val, sig32->sig, 4);
 	sig_val = le32toh(sig_val);
@@ -786,6 +790,10 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 		return;
 
 	sigspec = &ctx->config->sigspec[sig_num];
+
+	if (sigspec->dst_id != ctx->config->node_id)
+		return; /* Ignore signals for other nodes. We don't
+			 * have a session key to check its CMAC. */
 
 	cmac = sig16->cmac;
 	memcpy(&sig_val, sig16->sig_val, 2);
