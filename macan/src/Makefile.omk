@@ -1,8 +1,10 @@
-lib_LIBRARIES = macan
+lib_LIBRARIES = macan macanvw
 
 macan_SOURCES = common.c debug.c helper.c macan.c cryptlib.c
-
 macan_SOURCES += target/linux/linux_macan.c target/linux/lib.c target/linux/linux_cryptlib.c
+
+macanvw_SOURCES = ${macan_SOURCES}
+macanvw_CPPFLAGS = -DVW_COMPATIBLE
 
 bin_PROGRAMS = keysvr timesvr macanmon
 keysvr_SOURCES = keysvr.c

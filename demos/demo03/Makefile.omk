@@ -1,5 +1,5 @@
 test_PROGRAMS = d3node btnvis
-lib_LOADLIBES = macan nettle rt
+lib_LOADLIBES = macanvw nettle rt
 d3node_SOURCES = d3node.c macan_config.c ltk4.c
 
 btnvis_SOURCES = btnvis.c

@@ -245,10 +245,10 @@ int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback f
  */
 void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 {
-	if(ctx->config->vw_compatible) {
-		/* VW compatible -> ACK is disabled, don't do anything */
-		return;
-	}
+#ifdef VW_COMPATIBLE
+	/* VW compatible -> ACK is disabled, don't do anything */
+	return;
+#endif
 
 	struct macan_ack ack = { .flags_and_dst_id = (uint8_t)(FL_ACK << 6 | (dst_id & 0x3f)), .group = {0}, .cmac = {0}};
 	uint8_t plain[8] = {0};
@@ -569,8 +569,6 @@ void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig
 
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	struct macan_key skey;
-	uint8_t plain[8];
 	uint8_t sig_num;
 	int can_sid,can_nsid;
 	struct macan_sig_auth_req *areq;
@@ -583,23 +581,26 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	sighand = ctx->sighand;
 
 	areq = (struct macan_sig_auth_req *)cf->data;
-	skey = cp->skey;
 
 	if (areq->sig_num >= ctx->config->sig_count)
 		return;
 
+	/* Do not check CMAC when compatible with VW (it does not use CMAC in it's sig requests */
+#ifndef VW_COMPATIBLE
+	uint8_t plain[8];
+	struct macan_key skey;
+
+	skey = cp->skey;
 	plain[4] = (macan_ecuid)cp->ecu_id;
 	plain[5] = ctx->config->node_id;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
 
-	/* Do not check CMAC when compatible with VW (it does not use CMAC in it's sig requests */
-	if(ctx->config->vw_compatible == false) {
-		if (!macan_check_cmac(ctx, &skey, areq->cmac, plain, plain, sizeof(plain))) {
-			printf("error: sig_auth cmac is incorrect\n");
-			return;
-		}
+	if (!macan_check_cmac(ctx, &skey, areq->cmac, plain, plain, sizeof(plain))) {
+		printf("error: sig_auth cmac is incorrect\n");
+		return;
 	}
+#endif
 
 	print_msg(MSG_INFO,"Received auth request for signal #%d\n",areq->sig_num);
 #ifdef DEBUG
@@ -864,10 +865,10 @@ int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
  */
 int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 {
-	if(ctx->config->vw_compatible) {
-		/* VW compatible -> ACK is disabled, channel is ready */	
-		return 1;
-	}
+#ifdef VW_COMPATIBLE
+	/* VW compatible -> ACK is disabled, channel is ready */	
+	return 1;
+#endif
 
 	if (get_cpart(ctx, dst) == NULL)
 		return 0;

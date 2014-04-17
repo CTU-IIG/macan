@@ -66,5 +66,4 @@ struct macan_config config = {
 	.skey_chg_timeout = SKEY_CHG_TIMEOUT,
 	.time_timeout = ACK_TIMEOUT,
 	.time_delta = TIME_DELTA,
-	.vw_compatible = true
 };

@@ -74,7 +74,6 @@ struct macan_config {
 	uint32_t time_timeout;                /**< Timeout for authenticated time (microseconds) */
 	uint32_t time_bcast_period;           /**< Timeserver broadcast period for plain time (microseconds) */
 	uint32_t time_delta;                  /**< Maximum time difference between our clock and TS (microseconds) */
-	bool vw_compatible;                   /**< Enable compatibility with VW implementation (less secure) */
 };
 
 /**
