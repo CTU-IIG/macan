@@ -475,7 +475,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 
 	delta = llabs((int64_t)recent - (int64_t)time_ts_us);
 
-	if (delta > ctx->config->time_delta) {
+	if (delta > ctx->config->time_delta || !is_time_ready(ctx)) {
 		print_msg(MSG_WARN,"time out of sync (%lld us = %"PRIu64" - %"PRIu64")\n", delta, recent, time_ts_us);
 		print_msg(MSG_REQUEST,"Requesting signed time\n");
 

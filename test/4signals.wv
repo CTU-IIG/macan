@@ -1,0 +1,15 @@
+#!/bin/bash
+
+. $(dirname $0)/wvtest.sh
+
+WVSTART Demo 4signals
+
+trap 'kill $KSPID $TSPID $N2PID' EXIT
+
+keysvr -c libdemo_4signals_cfg.so -k libdemo_4signals_keys.so &
+KSPID=$!
+timesvr -c libdemo_4signals_cfg.so -k libdemo_4signals_keys.so &
+TSPID=$!
+demo_4signals_node2 &
+N2PID=$!
+WVPASS demo_4signals_node3
