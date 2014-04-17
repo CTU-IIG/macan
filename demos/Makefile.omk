@@ -1,1 +1,1 @@
-SUBDIRS = demo02 demo03 demo04
+SUBDIRS = 4signals volkswagen demo04

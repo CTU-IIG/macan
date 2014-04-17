@@ -3,4 +3,4 @@
 source ./path.sh
 clear
 echo "BASH: Starting MACANMON"
-$PATH_TO_CTU_BIN/d3node
+$PATH_TO_CTU_BIN/demo_volkswagen_node

@@ -1,0 +1,34 @@
+4 signals demo
+==============
+
+This demo shows communication between 2 nodes. There are 4 signals
+(16bit and 32bit) with different parameters and prescalers (see
+macan_config.c). All signals are transmitted by node #2 and received by
+node #3.
+
+There is a directory called "test" which contains scripts which help
+launching the demo:
+
+* init-vcan.sh
+This script creates virtual CAN interfaces needed by this demo. This is
+the first script you should run.
+
+* ks.sh
+Launches keyserver (ECU-ID #0)
+
+* ts.sh
+Launches timeserver (ECU-ID #1)
+
+* node2.sh
+Launches node (ECU-ID #2)
+
+* node3.sh
+Launches our node (ECU-ID #3)
+
+* macanmon.sh
+Launches macan monitor (optional)
+
+There is also file "path.sh" which contains paths to binaries and
+configs, you should edit it to fit your needs. Scripts above do not need
+any command line parameters, everything is in the script in case you
+want to change something.

@@ -1,0 +1,29 @@
+Volkswagen demo
+===============
+
+This demo is for testing with Volkswagen implementation of timeserver,
+keyserver and their macan gateway with our node. There is directory called
+"test" which contains scripts which help launching the demo:
+
+* init-vcan.sh
+This script creates virtual CAN interfaces needed by this demo. This is the
+first script you should run.
+
+* ks.sh
+Launches VW keyserver
+
+* ts.sh
+Launches VW timeserver
+
+* node-vw.sh
+Launches VW macan gateway
+
+* node-ctu.sh
+Launches our node
+
+* macanmon.sh
+Launches macan monitor (optional)
+
+There is also file "path.sh" which contains paths to binaries and configs, you
+should edit it to fit your needs. Scripts above do not need any command line
+parameters, everything is in the script in case you want to change something.

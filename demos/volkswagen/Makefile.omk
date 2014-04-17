@@ -1,0 +1,9 @@
+test_PROGRAMS = demo_volkswagen_node btnvis
+lib_LOADLIBES = macanvw nettle rt
+demo_volkswagen_node_SOURCES = d3node.c macan_config.c ltk4.c
+
+btnvis_SOURCES = btnvis.c
+btnvis_LIBS = curses
+
+shared_LIBRARIES = demo_volkswagen_cfg
+demo_volkswagen_cfg_SOURCES = macan_config.c
