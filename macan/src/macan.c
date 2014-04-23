@@ -422,10 +422,12 @@ void macan_send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, maca
 	if (chg) {
 		gen_challenge(chg);
 		memcpy(chal.chg, chg, 6);
+		cf.can_dlc = 8;
+	} else {
+		cf.can_dlc = 2;
 	}
 
 	cf.can_id = CANID(ctx, ctx->config->node_id);
-	cf.can_dlc = 8;
 	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
 
 #ifdef DEBUG
@@ -973,7 +975,18 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, int s, cons
 
 	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
-		/* Only key-server and time-server need to handle this */
+		if(cf->can_dlc == 2 && macan_crypt_dst(cf) == ctx->config->node_id) {
+			/* REQ_CHALLENGE from KS */
+			struct com_part **cpart;
+			macan_ecuid fwd_id = cf->data[1];
+			cpart = ctx->cpart;
+
+			if (fwd_id < ctx->config->node_count && cpart[fwd_id] != NULL) {
+				/* fwd_id is valid ecu_id, reset it's valid_until, so we can immediatelly request key */
+				cpart[fwd_id]->valid_until = 0;
+				macan_request_keys(ctx, s);
+			}
+		}
 		return MACAN_FRAME_CHALLENGE;
 	case FL_SESS_KEY_OR_ACK:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
