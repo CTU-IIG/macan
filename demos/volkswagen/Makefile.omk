@@ -1,5 +1,5 @@
 test_PROGRAMS = demo_volkswagen_node btnvis
-lib_LOADLIBES = macanvw nettle rt
+lib_LOADLIBES = macanvw nettle rt ev
 demo_volkswagen_node_SOURCES = d3node.c macan_config.c ltk4.c
 
 btnvis_SOURCES = btnvis.c

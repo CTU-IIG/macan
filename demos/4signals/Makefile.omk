@@ -16,3 +16,5 @@ demo_4signals_keys_SOURCES = ltk2.c ltk3.c ltk1.c
 
 shared_LIBRARIES += demo_4signals_tskey
 demo_4signals_tskey_SOURCES = ltk1.c
+
+lib_LOADLIBES = ev

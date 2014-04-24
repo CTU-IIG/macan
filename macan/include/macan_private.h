@@ -154,6 +154,20 @@ struct macan_ctx {
 	struct macan_time time;                /* used to manage time of the protocol */
 	uint64_t ack_timeout_abs;	       /* timeout for sending ACK messages ??? */
 	int sockfd;			       /* Socket (or CAN interface id) used for CAN communication */
+	macan_ev_loop *loop;
+	macan_ev_can can_watcher;
+	macan_ev_timer housekeeping;
+	union {
+		struct { /* time server */
+			macan_ev_timer time_bcast;
+			uint64_t bcast_time;
+		} ts;
+		struct { /* key server */
+			struct macan_key **ltk;
+			macan_ev_timer time_bcast;
+			uint64_t bcast_time;
+		} ks;
+	};
 };
 
 #define CANID(ctx, ecuid) ((ctx)->config->ecu2canid[ecuid])
@@ -190,6 +204,7 @@ bool is_time_ready(struct macan_ctx *ctx);
 struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id);
 bool gen_rand_data(void *dest, size_t len);
 void macan_send_signal_requests(struct macan_ctx *ctx);
+void macan_read(struct macan_ctx *ctx, struct can_frame *cf);
 
 static inline macan_ecuid macan_crypt_dst(const struct can_frame *cf)
 {
@@ -200,5 +215,9 @@ static inline unsigned macan_crypt_flags(const struct can_frame *cf)
 {
 	return (cf->data[0] & 0xc0) >> 6;
 }
+
+int __macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd);
+void macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents);
+
 
 #endif /* MACAN_PRIVATE_H */

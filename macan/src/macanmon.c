@@ -40,17 +40,22 @@
 #include <stdbool.h>
 #include <time.h>
 #include <dlfcn.h>
-#include <poll.h>
 
 #define NODE_COUNT 64
 
 static struct macan_ctx macan_ctx;
 
-
-void can_recv_cb(struct can_frame *cf)
+static void
+print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
 {
-	print_frame(&macan_ctx, cf);
+	(void)loop; (void)revents; (void)w; /* suppress warnings */
+	struct can_frame cf;
+
+	macan_read(&macan_ctx, &cf);
+	print_frame(&macan_ctx, &cf);
 }
+
+
 
 void print_help(char *argv0)
 {
@@ -82,15 +87,19 @@ int main(int argc, char *argv[])
 
         config->node_id = 0xff;	/* We do not send anything */
 	srand((unsigned)time(NULL));
-	s = helper_init();
-	macan_init(&macan_ctx, config, s);
 
-	while (1) {
-		struct pollfd pfd = { .fd = s, .events = POLLIN };
-		if (poll(&pfd, 1, -1) == -1)
-			perror("poll");
-		helper_read_can(&macan_ctx, can_recv_cb);
-	}
+	macan_ev_can can_watcher;
+	macan_ev_loop *loop = EV_DEFAULT;
+
+	s = helper_init();
+
+	macan_ctx.sockfd = s;
+	macan_ctx.config = config;
+
+	macan_ev_can_init (&can_watcher, print_frame_cb, s, EV_READ);
+	macan_ev_can_start (loop, &can_watcher);
+
+	macan_ev_run(loop);
 
 	return 0;
 }

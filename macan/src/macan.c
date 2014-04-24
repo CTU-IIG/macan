@@ -80,6 +80,27 @@ void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
 	cpart[i]->ecu_id = i;
 }
 
+void
+macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
+{
+	(void)loop; (void)revents; /* suppress warnings */
+	struct macan_ctx *ctx = w->data;
+	macan_request_keys(ctx);
+	macan_wait_for_key_acks(ctx);
+	macan_send_signal_requests(ctx);
+}
+
+static void
+can_rx_cb(macan_ev_loop *loop, macan_ev_can *w, int revents)
+{
+	(void)loop; (void)revents; /* suppress warnings */
+	struct macan_ctx *ctx = w->data;
+	struct can_frame cf;
+
+	macan_read(ctx, &cf);
+	macan_process_frame(ctx, &cf);
+}
+
 /**
  * Initialize MaCAN context.
  *
@@ -89,7 +110,7 @@ void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
  * @param *ctx pointer to MaCAN context
  * @param *config pointer to configuration
  */
-int macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd)
+int __macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd)
 {
 	unsigned i;
 	uint8_t cp;
@@ -143,6 +164,24 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config, int soc
 	ctx->sockfd = sockfd;
 
 	return 0;
+}
+
+int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd)
+{
+	assert(config->node_id != config->key_server_id);
+	assert(config->node_id != config->time_server_id);
+
+	int ret = __macan_init(ctx, config, sockfd);
+
+	macan_ev_can_init (&ctx->can_watcher, can_rx_cb, sockfd, EV_READ);
+	ctx->can_watcher.data = ctx;
+	macan_ev_can_start (loop, &ctx->can_watcher);
+
+	macan_ev_timer_init (&ctx->housekeeping, macan_housekeeping_cb, 0, 1000);
+	ctx->housekeeping.data = ctx;
+	macan_ev_timer_start(loop, &ctx->housekeeping);
+
+	return ret;
 }
 
 /**

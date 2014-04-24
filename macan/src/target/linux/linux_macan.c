@@ -88,24 +88,22 @@ bool gen_rand_data(void *dest, size_t len)
 	return return_val;
 }
 
-void helper_read_can(struct macan_ctx *ctx, void (*cback)(struct can_frame *cf))
+void macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 {
-	struct can_frame cf;
 	ssize_t rbyte;
 
-	rbyte = read(ctx->sockfd, &cf, sizeof(struct can_frame));
+	rbyte = read(ctx->sockfd, cf, sizeof(struct can_frame));
 	if (rbyte == -1 && errno == EAGAIN) {
 		return;
 	}
 
 	if (rbyte != 16) {
-		printf("ERROR recv not 16 bytes");
+		print_msg(ctx, MSG_FAIL, "ERROR recv not 16 bytes but %ld\n", rbyte);
 		exit(0);
 	}
 
 	if (getenv("MACAN_DUMP"))
-		print_frame(ctx, &cf);
-	cback(&cf);
+		print_frame(ctx, cf);
 }
 
 int helper_init()

@@ -153,38 +153,29 @@ void handle_io(void)
 }
 #endif
 
-void can_recv_cb(struct can_frame *cf)
+
+macan_ev_timer timeout;
+
+static void
+btn_chk_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 {
-	macan_process_frame(&macan_ctx, cf);
+	(void)loop; (void)revents;
+	struct macan_ctx *ctx = w->data;
+	static int last_pressed = 0;
+	handle_io();
+	if (last_pressed != button_pressed) {
+		last_pressed = button_pressed;
+		macan_send_sig(ctx, SIGNAL_CTU, (uint32_t)button_pressed);
+		macan_ev_timer_again(loop, &timeout); /* Reset timeout */
+	}
 }
 
-void operate_ecu(struct macan_ctx *ctx)
+static void
+timeout_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 {
-	uint64_t signal_time = 0;
-
-	while(1) {
-#ifdef __CPU_TC1798__
-		poll_can_fifo(can_recv_cb);
-#else
-		helper_read_can(ctx, can_recv_cb);
-#endif /* __CPU_TC1798__ */
-		handle_io();
-
-		macan_request_keys(ctx);
-		macan_wait_for_key_acks(ctx);
-		macan_send_signal_requests(ctx);
-
-		static int last_pressed = 0;
-		if (signal_time < read_time() || last_pressed != button_pressed) {
-			signal_time = read_time() + TIME_EMIT_SIG;
-			last_pressed = button_pressed;
-			macan_send_sig(ctx, SIGNAL_CTU, (uint32_t)button_pressed);
-		}
-
-#ifndef __CPU_TC1798__
-		usleep(250);
-#endif /* __CPU_TC1798__ */
-	}
+	(void)loop; (void)revents;
+	struct macan_ctx *ctx = w->data;
+	macan_send_sig(ctx, SIGNAL_CTU, (uint32_t)button_pressed);
 }
 
 void sig_callback(uint8_t sig_num, uint32_t sig_val)
@@ -208,14 +199,25 @@ void sig_invalid(uint8_t sig_num, uint32_t sig_val)
 int main()
 {
 	int s;
+	macan_ev_loop *loop = EV_DEFAULT;
+	macan_ev_timer btn_chk;
 
 	config.ltk = &macan_ltk_node4;
 
 	s = helper_init();
 	io_init();
-	macan_init(&macan_ctx, &config, s);
+	macan_init(&macan_ctx, &config, loop, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);
-	operate_ecu(&macan_ctx);
+
+	macan_ev_timer_init (&btn_chk, btn_chk_cb, 0, 10);
+	btn_chk.data = &macan_ctx;
+	macan_ev_timer_start(loop, &btn_chk);
+
+	macan_ev_timer_init (&timeout, timeout_cb, 0, 1000);
+	btn_chk.data = &macan_ctx;
+	macan_ev_timer_start(loop, &timeout);
+
+	macan_ev_run(loop);
 
 	return 0;
 }

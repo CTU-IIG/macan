@@ -22,144 +22,20 @@
  */
 
 #include <stdio.h>
-#include <time.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <errno.h>
 #include "common.h"
-#ifdef TC1798
-#include "can_frame.h"
-#include "Std_Types.h"
-#include "Mcu.h"
-#include "Port.h"
-#include "Can.h"
-#include "EcuM.h"
-#include "Test_Print.h"
-#include "Os.h"
-#include "she.h"
-#else
 #include <unistd.h>
-#include <net/if.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <linux/can.h>
-#include <linux/can/raw.h>
-#include <nettle/aes.h>
-#endif /* TC1798 */
-#include "helper.h"
 #include <macan.h>
-#include <macan_private.h>
+#include <helper.h>
 #include <dlfcn.h>
-#include <cryptlib.h>
 
 /* ToDo
  *   implement groups
  *   some error processing
  */
 
-#define TS_TEST_ERR 500000
-
-uint64_t macan_time;
 static struct macan_ctx macan_ctx;
-
-/**
- * ts_receive_challenge() - serves the request for signed time
- * @s:  socket handle
- * @cf: received can frame with TS challenge
- *
- * This function responds to a challenge message from a general node (i.e. the
- * request for a signed time). It prepares a message containing the recent time
- * and signs it. Subsequently, the message is sent.
- */
-int ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
-{
-	struct can_frame canf;
-	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
-	struct macan_key skey;
-	uint8_t plain[12];
-	macan_ecuid dst_id;
-	struct com_part *cp;
-
-	if(!(cp = canid2cpart(ctx, cf->can_id)))
-		return -1;
-
-	dst_id = (uint8_t) (cp->ecu_id);
-
-	if (!is_skey_ready(ctx, dst_id)) {
-		print_msg(ctx, MSG_FAIL,"cannot send time, because don't have key\n");
-		return -1;
-	}
-
-	skey = cp->skey;
-
-	memcpy(plain, &macan_time, 4);
-	memcpy(plain + 4, ch->chg, 6);
-	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id), 2);
-
-	canf.can_id = CANID(ctx,ctx->config->time_server_id);
-	canf.can_dlc = 8;
-	memcpy(canf.data, &macan_time, 4);
-	macan_sign(&skey, canf.data + 4, plain, 12);
-
-	write(ctx->sockfd, &canf, sizeof(canf));
-
-	print_msg(ctx, MSG_INFO,"signed time sent\n");
-	return 0;
-}
-
-void can_recv_cb(struct can_frame *cf)
-{
-	struct macan_ctx *ctx = &macan_ctx;
-	enum macan_process_status status;
-
-	status = macan_process_frame(ctx, cf);
-
-	if (status == MACAN_FRAME_CHALLENGE)
-		ts_receive_challenge(ctx, cf);
-}
-
-/**
- * broadcast_time() - broadcasts unsigned time
- * @s:    socket handle
- * @freq: broadcast frequency
- *
- */
-void broadcast_time(struct macan_ctx *ctx, int s, uint64_t *bcast_time)
-{
-	struct can_frame cf = {0};
-	uint64_t usec;
-
-	if (*bcast_time + ctx->config->time_bcast_period > read_time())
-		return;
-
-	*bcast_time = read_time();
-
-	usec = read_time();
-	macan_time = usec / ctx->config->time_div;
-
-	cf.can_id = CANID(ctx,ctx->config->time_server_id);
-	cf.can_dlc = 4;
-	memcpy(cf.data, &macan_time, 4);
-
-	write(s, &cf, sizeof(cf));
-}
-
-void operate_ts(struct macan_ctx *ctx, int s)
-{
-	uint64_t bcast_time = read_time();
-
-	while(1) {
-		helper_read_can(ctx, can_recv_cb);
-		macan_request_keys(ctx);
-		broadcast_time(ctx, s, &bcast_time);
-
-		usleep(250);
-	}
-}
 
 void print_help(char *argv0)
 {
@@ -208,8 +84,9 @@ int main(int argc, char *argv[])
         config->node_id = config->time_server_id;
 
 	s = helper_init();
-	macan_init(&macan_ctx, config, s);
-	operate_ts(&macan_ctx, s);
+	macan_ev_loop *loop = EV_DEFAULT;
+	macan_init_ts(&macan_ctx, config, loop, s);
+	macan_ev_run(loop);
 
 	return 0;
 }

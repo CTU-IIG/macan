@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "macan_ev.h"
 
 struct macan_ctx;
 struct can_frame;
@@ -97,7 +98,10 @@ enum macan_process_status {
 /* MaCAN API functions */
 
 
-int  macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd);
+int  macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
+int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd, struct macan_key **ltk);
+int  macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
+
 void macan_request_keys(struct macan_ctx *ctx);
 int  macan_wait_for_key_acks(struct macan_ctx *ctx);
 int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback fnc, macan_sig_cback invalid_cmac);

@@ -27,5 +27,5 @@
 #include <macan.h>
 
 int helper_init(void);
-void helper_read_can(struct macan_ctx *ctx, void (*cback)(struct can_frame *cf));
+
 #endif
