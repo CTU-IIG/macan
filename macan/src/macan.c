@@ -220,7 +220,7 @@ void macan_send_signal_requests(struct macan_ctx *ctx)
 
 		if (!(sighand[i]->flags & AUTHREQ_SENT)) {
 			sighand[i]->flags |= AUTHREQ_SENT;
-			print_msg(MSG_REQUEST,"Sending req auth for signal #%d\n",i);
+			print_msg(ctx, MSG_REQUEST,"Sending req auth for signal #%d\n",i);
 			send_auth_req(ctx, cp, i, presc);
 		}
 	}
@@ -332,10 +332,10 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	return 1;
 }
 
-void gen_challenge(uint8_t *chal)
+void gen_challenge(struct macan_ctx *ctx, uint8_t *chal)
 {
 	if(!gen_rand_data(chal, 6)) {
-		print_msg(MSG_FAIL,"Failed to read enough random bytes.\n");
+		print_msg(ctx, MSG_FAIL,"Failed to read enough random bytes.\n");
 		exit(1);
 	}
 }
@@ -395,7 +395,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 		get_cpart(ctx, fwd_id)->group_field |= htole32(1U << ctx->config->node_id);
 
 		// print key
-		print_msg(MSG_OK,"KEY (%d -> %d) is ", ctx->config->node_id, fwd_id);
+		print_msg(ctx, MSG_OK,"KEY (%d -> %d) is ", ctx->config->node_id, fwd_id);
 		print_hexn(get_cpart(ctx, fwd_id)->skey.data, 16);
 
 		return fwd_id;	/* FIXME: fwd_id can be 0 as well. What our callers do with the returned value? */
@@ -422,7 +422,7 @@ void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid
 	struct macan_challenge chal = { .flags_and_dst_id = (uint8_t)((FL_CHALLENGE << 6) | (dst_id & 0x3F)), .fwd_id = fwd_id };
 
 	if (chg) {
-		gen_challenge(chg);
+		gen_challenge(ctx, chg);
 		memcpy(chal.chg, chg, 6);
 		cf.can_dlc = 8;
 	} else {
@@ -480,8 +480,8 @@ void receive_time(struct macan_ctx *ctx, const struct can_frame *cf)
 	delta = llabs((int64_t)recent - (int64_t)time_ts_us);
 
 	if (delta > ctx->config->time_delta || !is_time_ready(ctx)) {
-		print_msg(MSG_WARN,"time out of sync (%lld us = %"PRIu64" - %"PRIu64")\n", delta, recent, time_ts_us);
-		print_msg(MSG_REQUEST,"Requesting signed time\n");
+		print_msg(ctx, MSG_WARN,"time out of sync (%lld us = %"PRIu64" - %"PRIu64")\n", delta, recent, time_ts_us);
+		print_msg(ctx, MSG_REQUEST,"Requesting signed time\n");
 
 		ctx->time.chal_ts = recent;
 		macan_send_challenge(ctx, ctx->config->time_server_id, 0, ctx->time.chg);
@@ -530,7 +530,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
 	ctx->time.chal_ts = 0;
 	ctx->time.is_time_ready = 1;
 
-	print_msg(MSG_OK,"signed time = %d, offs %"PRIu64"\n",time_ts, ctx->time.offs);
+	print_msg(ctx, MSG_OK,"signed time = %d, offs %"PRIu64"\n",time_ts, ctx->time.offs);
 }
 
 /**
@@ -606,7 +606,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	}
 #endif
 
-	print_msg(MSG_INFO,"Received auth request for signal #%d\n",areq->sig_num);
+	print_msg(ctx, MSG_INFO,"Received auth request for signal #%d\n",areq->sig_num);
 #ifdef DEBUG
 	printf(ANSI_COLOR_CYAN "RECV Auth Req\n" ANSI_COLOR_RESET);
 	printf("sig_num: 0x%X\n",areq->sig_num);
@@ -840,7 +840,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 		return;
 	}
 
-	print_msg(MSG_SIGNAL,"Received signal #%d, value: %d\n", sig_num, sig_val);
+	print_msg(ctx, MSG_SIGNAL,"Received signal #%d, value: %d\n", sig_num, sig_val);
 
 	if (sighand && sighand->cback)
 		sighand->cback((uint8_t)sig_num, sig_val);
@@ -915,7 +915,7 @@ void macan_request_keys(struct macan_ctx *ctx)
 		if (cpart[i]->valid_until > read_time())
 			continue;
 
-		print_msg(MSG_REQUEST,"Requesting skey for node #%d\n",i);
+		print_msg(ctx, MSG_REQUEST,"Requesting skey for node #%d\n",i);
 		macan_send_challenge(ctx, ctx->config->key_server_id, i, cpart[i]->chg);
 		cpart[i]->valid_until = read_time() + ctx->config->skey_chg_timeout;
 	}

@@ -56,7 +56,7 @@ void generate_skey(struct sess_key *skey)
 {
 	skey->valid = true;
 	if(!gen_rand_data(skey->key.data, sizeof(skey->key.data))) {
-		print_msg(MSG_FAIL,"Failed to read enough random bytes.\n");
+		print_msg(&macan_ctx, MSG_FAIL,"Failed to read enough random bytes.\n");
 		exit(1);
 	}
 }
@@ -107,7 +107,7 @@ void send_skey(struct macan_ctx *ctx, const struct macan_key *key, macan_ecuid d
 	memcpy(plain + 18, chal, 6);
 	macan_aes_wrap(key, 24, wrap, plain);
 
-	print_msg(MSG_INFO,"send KEY (wrap, plain):\n");
+	print_msg(ctx, MSG_INFO,"send KEY (wrap, plain):\n");
 	print_hexn(wrap, 32);
 	print_hexn(plain, 24);
 
@@ -159,7 +159,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	ltk = dlsym(ltk_handle, node_id_str);
 	error = dlerror();
 	if(error != NULL) {
-		print_msg(MSG_FAIL,"Unable to load ltk key for node #%u from shared library\nReason: %s\n",dst_id,error);
+		print_msg(ctx, MSG_FAIL,"Unable to load ltk key for node #%u from shared library\nReason: %s\n",dst_id,error);
 		return;
 	}
 	print_hexn(ltk, 16);

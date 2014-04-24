@@ -168,7 +168,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf);
 void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id,uint8_t sig_num,uint8_t prescaler);
 void receive_challenge(struct macan_ctx *ctx, const struct can_frame *cf);
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf);
-void gen_challenge(uint8_t *chal);
+void gen_challenge(struct macan_ctx *ctx, uint8_t *chal);
 extern uint8_t *key_ptr;
 extern uint8_t keywrap[32];
 extern uint8_t g_chg[6];

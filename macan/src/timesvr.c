@@ -90,7 +90,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	dst_id = (uint8_t) (cp->ecu_id);
 
 	if (!is_skey_ready(ctx, dst_id)) {
-		print_msg(MSG_FAIL,"cannot send time, because don't have key\n");
+		print_msg(ctx, MSG_FAIL,"cannot send time, because don't have key\n");
 		return -1;
 	}
 
@@ -107,7 +107,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 
 	write(ctx->sockfd, &canf, sizeof(canf));
 
-	print_msg(MSG_INFO,"signed time sent\n");
+	print_msg(ctx, MSG_INFO,"signed time sent\n");
 	return 0;
 }
 
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 			config->ltk = dlsym(handle,"macan_ltk_node1");
 			char *error = dlerror();
 			if(error != NULL) {
-				print_msg(MSG_FAIL,"Unable to load ltk key from shared library\nReason: %s\n",error);
+				print_msg(NULL, MSG_FAIL,"Unable to load ltk key from shared library\nReason: %s\n",error);
 				exit(1);
 			}
 			break;
