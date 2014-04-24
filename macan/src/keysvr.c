@@ -107,9 +107,9 @@ void send_skey(struct macan_ctx *ctx, const struct macan_key *key, macan_ecuid d
 	memcpy(plain + 18, chal, 6);
 	macan_aes_wrap(key, 24, wrap, plain);
 
-	print_msg(ctx, MSG_INFO,"send KEY (wrap, plain):\n");
-	print_hexn(wrap, 32);
-	print_hexn(plain, 24);
+/* 	print_msg(ctx, MSG_INFO,"send KEY (wrap, plain):\n"); */
+/* 	print_hexn(wrap, 32); */
+/* 	print_hexn(plain, 24); */
 
 	macan_skey.flags_and_dst_id = (macan_ecuid)(FL_SESS_KEY << 6 | (dst_id & 0x3F));
 
@@ -162,7 +162,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 		print_msg(ctx, MSG_FAIL,"Unable to load ltk key for node #%u from shared library\nReason: %s\n",dst_id,error);
 		return;
 	}
-	print_hexn(ltk, 16);
+/* 	print_hexn(ltk, 16); */
 	send_skey(ctx, ltk, dst_id, fwd_id, chg);
 }
 

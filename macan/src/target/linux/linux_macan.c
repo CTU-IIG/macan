@@ -138,8 +138,6 @@ int helper_init()
 	addr.can_family  = AF_CAN;
 	addr.can_ifindex = ifr.ifr_ifindex;
 
-	printf("%s at index %d\n", ifname, ifr.ifr_ifindex);
-
 	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		perror("Error in socket bind");
 		return -2;
