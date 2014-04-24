@@ -28,8 +28,8 @@
 
 void debug_printf(const char *format, ...);
 
-#define fail_printf(fmt, ...) \
-	printf(ANSI_COLOR_RED "FAIL" ANSI_COLOR_RESET  " %s:%d %s(): " fmt, \
+#define fail_printf(ctx, fmt, ...)					\
+	print_msg(ctx, MSG_FAIL, " %s:%d %s(): " fmt,			\
 	       __FILE__, __LINE__, __func__, __VA_ARGS__) /* Tasking does not support "##" before __VA_ARGS__ :-( */
 
 #endif

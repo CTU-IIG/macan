@@ -284,7 +284,7 @@ void send_ack(struct macan_ctx *ctx, uint8_t dst_id)
 
 	res = (int) write(ctx->sockfd, &cf, sizeof(struct can_frame));
 	if (res != 16) {
-		fail_printf("%s\n","failed to send some bytes of ack");
+		fail_printf(ctx, "%s\n","failed to send some bytes of ack");
 	}
 
 	return;
@@ -315,7 +315,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	/* ToDo: make difference between wrong CMAC and not having the key */
 	if (!macan_check_cmac(ctx, &skey, ack->cmac, plain, plain, sizeof(plain))) {
-		fail_printf("%s\n","error: ACK CMAC failed");
+		fail_printf(ctx, "%s\n","error: ACK CMAC failed");
 		return -1;
 	}
 
@@ -379,12 +379,12 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 		fwd_id = unwrapped[17];
 
 		if (fwd_id >= ctx->config->node_count || get_cpart(ctx, fwd_id) == NULL) {
-			fail_printf("unexpected fwd_id %#x\n", fwd_id);
+			fail_printf(ctx, "unexpected fwd_id %#x\n", fwd_id);
 			return RECEIVE_SKEY_ERR;
 		}
 
 		if(!memchk(unwrapped+18, get_cpart(ctx, fwd_id)->chg, 6)) {
-			fail_printf("check cmac from %d\n", fwd_id);
+			fail_printf(ctx, "check cmac from %d\n", fwd_id);
 			return RECEIVE_SKEY_ERR;
 		}
 
@@ -823,7 +823,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 	sighand = ctx->sighand[sig_num];
 
 	if (!is_skey_ready(ctx, sigspec->src_id)) {
-		fail_printf("No key to check signal #%d from %d\n", sig_num, sigspec->src_id);
+		fail_printf(ctx, "No key to check signal #%d from %d\n", sig_num, sigspec->src_id);
 		return;
 	}
 
@@ -836,7 +836,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 		if (sighand && sighand->invalid_cback)
 			sighand->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
 		else
-			fail_printf("CMAC error for signal #%d\n", sig_num);
+			fail_printf(ctx, "CMAC error for signal #%d\n", sig_num);
 		return;
 	}
 
