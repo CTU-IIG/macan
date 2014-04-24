@@ -39,6 +39,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #include "macan_private.h"
+#include "helper.h"
 
 /**
  * read_time() - returns time in microseconds
@@ -85,4 +86,64 @@ bool gen_rand_data(void *dest, size_t len)
 	}
 	fclose(fp);
 	return return_val;
+}
+
+void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(int s, struct can_frame *cf))
+{
+	struct can_frame cf;
+	ssize_t rbyte;
+
+	rbyte = read(s, &cf, sizeof(struct can_frame));
+	if (rbyte == -1 && errno == EAGAIN) {
+		return;
+	}
+
+	if (rbyte != 16) {
+		printf("ERROR recv not 16 bytes");
+		exit(0);
+	}
+
+	if (getenv("MACAN_DUMP"))
+		print_frame(ctx, &cf);
+	cback(s, &cf);
+}
+
+int helper_init()
+{
+	int s;
+	int r;
+	struct ifreq ifr;
+	char *ifname = "can0";
+	struct sockaddr_can addr;
+
+	if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
+		perror("Error while opening socket");
+		return -1;
+	}
+
+	r = fcntl(s, F_SETFL, O_NONBLOCK);
+	if (r != 0) {
+		perror("ioctl fail");
+		return -1;
+	}
+
+#if 0
+	int loopback = 0; /* 0 = disabled, 1 = enabled (default) */
+	setsockopt(s, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &loopback, sizeof(loopback));
+#endif
+	strcpy(ifr.ifr_name, ifname);
+	ioctl(s, SIOCGIFINDEX, &ifr);
+
+	memset(&addr, 0, sizeof(addr));
+	addr.can_family  = AF_CAN;
+	addr.can_ifindex = ifr.ifr_ifindex;
+
+	printf("%s at index %d\n", ifname, ifr.ifr_ifindex);
+
+	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+		perror("Error in socket bind");
+		return -2;
+	}
+
+	return s;
 }

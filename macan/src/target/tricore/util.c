@@ -22,6 +22,7 @@
  */
 
 #include <stdint.h>
+#include "helper.h"
 
 void clear_endinit(void)
 {
@@ -64,4 +65,17 @@ void set_endinit(void)
   u32WdtCon0 &= 0xFFFFFFF0;
   u32WdtCon0 |= 3;
   WDT_CON0.U = u32WdtCon0;
+}
+
+int helper_init()
+{
+	Can_SetControllerMode(CAN_CONTROLLER0, CAN_T_START);
+
+	/* activate SHE */
+	/* ToDo: revisit */
+	SHE_CLC &= ~(0x1);
+	while (SHE_CLC & 0x2) {};
+	wait_until_done();
+
+	return 0;
 }
