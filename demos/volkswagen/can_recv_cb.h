@@ -26,6 +26,6 @@
 
 #include <can_frame.h>
 
-void can_recv_cb(int s, struct can_frame *cf);
+void can_recv_cb(struct can_frame *cf);
 
 #endif

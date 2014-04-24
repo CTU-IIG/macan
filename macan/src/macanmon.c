@@ -47,9 +47,8 @@
 static struct macan_ctx macan_ctx;
 
 
-void can_recv_cb(int s, struct can_frame *cf)
+void can_recv_cb(struct can_frame *cf)
 {
-	(void)s;
 	print_frame(&macan_ctx, cf);
 }
 
@@ -84,13 +83,13 @@ int main(int argc, char *argv[])
         config->node_id = 0xff;	/* We do not send anything */
 	srand((unsigned)time(NULL));
 	s = helper_init();
-	macan_init(&macan_ctx, config);
+	macan_init(&macan_ctx, config, s);
 
 	while (1) {
 		struct pollfd pfd = { .fd = s, .events = POLLIN };
 		if (poll(&pfd, 1, -1) == -1)
 			perror("poll");
-		helper_read_can(&macan_ctx, s, can_recv_cb);
+		helper_read_can(&macan_ctx, can_recv_cb);
 	}
 
 	return 0;

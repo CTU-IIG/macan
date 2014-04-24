@@ -153,12 +153,12 @@ void handle_io(void)
 }
 #endif
 
-void can_recv_cb(int s, struct can_frame *cf)
+void can_recv_cb(struct can_frame *cf)
 {
-	macan_process_frame(&macan_ctx, s, cf);
+	macan_process_frame(&macan_ctx, cf);
 }
 
-void operate_ecu(struct macan_ctx *ctx, int s)
+void operate_ecu(struct macan_ctx *ctx)
 {
 	uint64_t signal_time = 0;
 
@@ -166,19 +166,19 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 #ifdef __CPU_TC1798__
 		poll_can_fifo(can_recv_cb);
 #else
-		helper_read_can(ctx, s, can_recv_cb);
+		helper_read_can(ctx, can_recv_cb);
 #endif /* __CPU_TC1798__ */
 		handle_io();
 
-		macan_request_keys(ctx, s);
-		macan_wait_for_key_acks(ctx, s);
-		macan_send_signal_requests(ctx, s);
+		macan_request_keys(ctx);
+		macan_wait_for_key_acks(ctx);
+		macan_send_signal_requests(ctx);
 
 		static int last_pressed = 0;
 		if (signal_time < read_time() || last_pressed != button_pressed) {
 			signal_time = read_time() + TIME_EMIT_SIG;
 			last_pressed = button_pressed;
-			macan_send_sig(ctx, s, SIGNAL_CTU, (uint32_t)button_pressed);
+			macan_send_sig(ctx, SIGNAL_CTU, (uint32_t)button_pressed);
 		}
 
 #ifndef __CPU_TC1798__
@@ -213,9 +213,9 @@ int main()
 
 	s = helper_init();
 	io_init();
-	macan_init(&macan_ctx, &config);
+	macan_init(&macan_ctx, &config, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);
-	operate_ecu(&macan_ctx, s);
+	operate_ecu(&macan_ctx);
 
 	return 0;
 }

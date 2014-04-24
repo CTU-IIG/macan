@@ -153,6 +153,7 @@ struct macan_ctx {
 	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
 	struct macan_time time;                /* used to manage time of the protocol */
 	uint64_t ack_timeout_abs;	       /* timeout for sending ACK messages ??? */
+	int sockfd;			       /* Socket (or CAN interface id) used for CAN communication */
 };
 
 #define CANID(ctx, ecuid) ((ctx)->config->ecu2canid[ecuid])
@@ -160,19 +161,19 @@ struct macan_ctx {
 bool macan_canid2ecuid(struct macan_ctx *ctx, uint32_t canid, macan_ecuid *ecuid);
 int init(void);
 void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf);
-int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint32_t signal);
+int macan_write(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint32_t signal);
 int is_channel_ready(struct macan_ctx *ctx, uint8_t dst);
 int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id);
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf);
-void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id,uint8_t sig_num,uint8_t prescaler);
-void receive_challenge(struct macan_ctx *ctx, int s, const struct can_frame *cf);
+void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id,uint8_t sig_num,uint8_t prescaler);
+void receive_challenge(struct macan_ctx *ctx, const struct can_frame *cf);
 int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf);
 void gen_challenge(uint8_t *chal);
 extern uint8_t *key_ptr;
 extern uint8_t keywrap[32];
 extern uint8_t g_chg[6];
 extern uint8_t seq;
-void send_ack(struct macan_ctx *ctx, int s,macan_ecuid dst_id);
+void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id);
 int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf);
 extern uint8_t skey[24];
 #ifdef __CPU_TC1798__
@@ -180,7 +181,7 @@ int write(int s, struct can_frame *cf, int len);
 #endif
 uint64_t read_time(void);
 uint64_t macan_get_time(struct macan_ctx *ctx);
-void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf);
+void receive_time(struct macan_ctx *ctx, const struct can_frame *cf);
 void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf);
 bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
 bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num);
@@ -188,7 +189,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf);
 bool is_time_ready(struct macan_ctx *ctx);
 struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id);
 bool gen_rand_data(void *dest, size_t len);
-void macan_send_signal_requests(struct macan_ctx *ctx, int s);
+void macan_send_signal_requests(struct macan_ctx *ctx);
 
 static inline macan_ecuid macan_crypt_dst(const struct can_frame *cf)
 {

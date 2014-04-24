@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 #include "helper.h"
+#include <Can.h>
+#include "she.h"
 
 void clear_endinit(void)
 {

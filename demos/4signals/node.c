@@ -60,12 +60,12 @@
 static struct macan_ctx macan_ctx;
 extern const struct macan_key MACAN_CONFIG_LTK(NODE_ID);
 
-void can_recv_cb(int s, struct can_frame *cf)
+void can_recv_cb(struct can_frame *cf)
 {
-	macan_process_frame(&macan_ctx, s, cf);
+	macan_process_frame(&macan_ctx, cf);
 }
 
-void operate_ecu(struct macan_ctx *ctx, int s)
+void operate_ecu(struct macan_ctx *ctx)
 {
 	uint64_t signal_time = 0;
 
@@ -73,18 +73,18 @@ void operate_ecu(struct macan_ctx *ctx, int s)
 #ifdef __CPU_TC1798__
 		poll_can_fifo(ctx, can_recv_cb);
 #else
-		helper_read_can(ctx, s, can_recv_cb);
+		helper_read_can(ctx, can_recv_cb);
 #endif /* __CPU_TC1798__ */
 
-		macan_request_keys(ctx, s);
-		macan_wait_for_key_acks(ctx, s);
-		macan_send_signal_requests(ctx, s);
+		macan_request_keys(ctx);
+		macan_wait_for_key_acks(ctx);
+		macan_send_signal_requests(ctx);
 		if (signal_time < read_time()) {
 			signal_time = read_time() + TIME_EMIT_SIG;
-			macan_send_sig(ctx, s, SIGNAL_A, 10);
-			macan_send_sig(ctx, s, SIGNAL_B, 200000);
-			macan_send_sig(ctx, s, SIGNAL_C, 30);
-			macan_send_sig(ctx, s, SIGNAL_D, 400000);
+			macan_send_sig(ctx, SIGNAL_A, 10);
+			macan_send_sig(ctx, SIGNAL_B, 200000);
+			macan_send_sig(ctx, SIGNAL_C, 30);
+			macan_send_sig(ctx, SIGNAL_D, 400000);
 		}
 
 #ifndef __CPU_TC1798__
@@ -109,12 +109,12 @@ int main()
 
 	config.ltk = &MACAN_CONFIG_LTK(NODE_ID);
 
-	macan_init(&macan_ctx, &config);
+	macan_init(&macan_ctx, &config, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback, NULL);
 	macan_reg_callback(&macan_ctx, SIGNAL_B, sig_callback, NULL);
 	macan_reg_callback(&macan_ctx, SIGNAL_C, sig_callback, NULL);
 	macan_reg_callback(&macan_ctx, SIGNAL_D, sig_callback, NULL);
-	operate_ecu(&macan_ctx, s);
+	operate_ecu(&macan_ctx);
 
 	return 0;
 }

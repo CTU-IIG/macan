@@ -75,7 +75,7 @@ static struct macan_ctx macan_ctx;
  * request for a signed time). It prepares a message containing the recent time
  * and signs it. Subsequently, the message is sent.
  */
-int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
+int ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 {
 	struct can_frame canf;
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
@@ -105,21 +105,21 @@ int ts_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 	memcpy(canf.data, &macan_time, 4);
 	macan_sign(&skey, canf.data + 4, plain, 12);
 
-	write(s, &canf, sizeof(canf));
+	write(ctx->sockfd, &canf, sizeof(canf));
 
 	print_msg(MSG_INFO,"signed time sent\n");
 	return 0;
 }
 
-void can_recv_cb(int s, struct can_frame *cf)
+void can_recv_cb(struct can_frame *cf)
 {
 	struct macan_ctx *ctx = &macan_ctx;
 	enum macan_process_status status;
 
-	status = macan_process_frame(ctx, s, cf);
+	status = macan_process_frame(ctx, cf);
 
 	if (status == MACAN_FRAME_CHALLENGE)
-		ts_receive_challenge(ctx, s, cf);
+		ts_receive_challenge(ctx, cf);
 }
 
 /**
@@ -153,8 +153,8 @@ void operate_ts(struct macan_ctx *ctx, int s)
 	uint64_t bcast_time = read_time();
 
 	while(1) {
-		helper_read_can(ctx, s, can_recv_cb);
-		macan_request_keys(ctx, s);
+		helper_read_can(ctx, can_recv_cb);
+		macan_request_keys(ctx);
 		broadcast_time(ctx, s, &bcast_time);
 
 		usleep(250);
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
         config->node_id = config->time_server_id;
 
 	s = helper_init();
-	macan_init(&macan_ctx, config);
+	macan_init(&macan_ctx, config, s);
 	operate_ts(&macan_ctx, s);
 
 	return 0;

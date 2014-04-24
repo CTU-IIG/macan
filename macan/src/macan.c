@@ -89,7 +89,7 @@ void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
  * @param *ctx pointer to MaCAN context
  * @param *config pointer to configuration
  */
-int macan_init(struct macan_ctx *ctx, const struct macan_config *config)
+int macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd)
 {
 	unsigned i;
 	uint8_t cp;
@@ -140,6 +140,8 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config)
 		init_cpart(ctx,config->time_server_id);
 	}
 
+	ctx->sockfd = sockfd;
+
 	return 0;
 }
 
@@ -153,7 +155,7 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config)
  * @param *ctx pointer to MaCAN context
  * @param s socket file descriptor
  */
-int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
+int macan_wait_for_key_acks(struct macan_ctx *ctx)
 {
 	uint8_t i;
 	int r = 0;
@@ -177,7 +179,7 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
 
 		if (!is_channel_ready(ctx, i)) {
 			r++;
-			send_ack(ctx, s, i);
+			send_ack(ctx, i);
 			continue;
 		}
 	}
@@ -189,7 +191,7 @@ int macan_wait_for_key_acks(struct macan_ctx *ctx, int s)
  *
  * Signal request are send if channel and time is ready
  */
-void macan_send_signal_requests(struct macan_ctx *ctx, int s)
+void macan_send_signal_requests(struct macan_ctx *ctx)
 {
 
 	uint8_t cp, presc, i;
@@ -219,7 +221,7 @@ void macan_send_signal_requests(struct macan_ctx *ctx, int s)
 		if (!(sighand[i]->flags & AUTHREQ_SENT)) {
 			sighand[i]->flags |= AUTHREQ_SENT;
 			print_msg(MSG_REQUEST,"Sending req auth for signal #%d\n",i);
-			send_auth_req(ctx, s, cp, i, presc);
+			send_auth_req(ctx, cp, i, presc);
 		}
 	}
 }
@@ -243,7 +245,7 @@ int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback f
 /**
  * Sends an ACK message.
  */
-void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
+void send_ack(struct macan_ctx *ctx, uint8_t dst_id)
 {
 #ifdef VW_COMPATIBLE
 	/* VW compatible -> ACK is disabled, don't do anything */
@@ -280,7 +282,7 @@ void send_ack(struct macan_ctx *ctx, int s, uint8_t dst_id)
 	cf.can_dlc = 8;
 	memcpy(cf.data, &ack, 8);
 
-	res = (int) write(s, &cf, sizeof(struct can_frame));
+	res = (int) write(ctx->sockfd, &cf, sizeof(struct can_frame));
 	if (res != 16) {
 		fail_printf("%s\n","failed to send some bytes of ack");
 	}
@@ -414,7 +416,7 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
  * This function sends the CHALLENGE message to the socket s. It is
  * used to request a key from KS or to request a signed time from TS.
  */
-void macan_send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
+void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
 {
 	struct can_frame cf = {0};
 	struct macan_challenge chal = { .flags_and_dst_id = (uint8_t)((FL_CHALLENGE << 6) | (dst_id & 0x3F)), .fwd_id = fwd_id };
@@ -444,7 +446,7 @@ void macan_send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, maca
     // Print info end
 #endif
 
-	write(s, &cf, sizeof(struct can_frame));
+	write(ctx->sockfd, &cf, sizeof(struct can_frame));
 }
 
 /**
@@ -453,7 +455,7 @@ void macan_send_challenge(struct macan_ctx *ctx, int s, macan_ecuid dst_id, maca
  * Receives time and checks whether local clock is in sync. If local clock
  * is out of sync, it sends a request for signed time.
  */
-void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
+void receive_time(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t time_ts;
 	int64_t recent;
@@ -482,7 +484,7 @@ void receive_time(struct macan_ctx *ctx, int s, const struct can_frame *cf)
 		print_msg(MSG_REQUEST,"Requesting signed time\n");
 
 		ctx->time.chal_ts = recent;
-		macan_send_challenge(ctx, s, ctx->config->time_server_id, 0, ctx->time.chg);
+		macan_send_challenge(ctx, ctx->config->time_server_id, 0, ctx->time.chg);
 	}
 }
 
@@ -540,7 +542,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
  * @param sig_num  signal id
  * @param prescaler
  */
-void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint8_t prescaler)
+void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint8_t prescaler)
 {
 	uint64_t t;
 	uint8_t plain[8];
@@ -566,7 +568,7 @@ void send_auth_req(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig
 	cf.can_dlc = 7;
 	memcpy(&cf.data, &areq, 7);
 
-	write(s, &cf, sizeof(cf));
+	write(ctx->sockfd, &cf, sizeof(cf));
 }
 
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
@@ -631,7 +633,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
  *
  * Signs signal using CMAC and transmits it.
  */
-int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_num, uint32_t sig_val)
+int macan_write(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint32_t sig_val)
 {
 	struct can_frame cf = {0};
 	uint8_t plain[10],sig[8];
@@ -686,7 +688,7 @@ int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_nu
 	memcpy(&cf.data, &sig, 8);
 
 	/* ToDo: assure success */
-	write(s, &cf, sizeof(cf));
+	write(ctx->sockfd, &cf, sizeof(cf));
 
 	return 0;
 }
@@ -696,12 +698,11 @@ int macan_write(struct macan_ctx *ctx, int s, macan_ecuid dst_id, uint8_t sig_nu
  *
  * The prescaler settings are considered and the signal is send.
  *
- * @param s        socket handle
  * @param sig_num  signal id
  * @param sig_val   signal value
  */
 /* ToDo: return result */
-void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sig_val)
+void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
 {
 	macan_ecuid dst_id;
 	struct sig_handle **sighand;
@@ -720,14 +721,14 @@ void macan_send_sig(struct macan_ctx *ctx, int s, uint8_t sig_num, uint32_t sig_
 	case SIG_DONTSIGN:
 		break;
 	case SIG_SIGNONCE:
-		macan_write(ctx, s, dst_id, sig_num, sig_val);
+		macan_write(ctx, dst_id, sig_num, sig_val);
 		sighand[sig_num]->presc = SIG_DONTSIGN;
 		break;
 	default:
 		if (sighand[sig_num]->presc_cnt > 0) {
 			sighand[sig_num]->presc_cnt--;
 		} else {
-			macan_write(ctx, s, dst_id, sig_num, sig_val);
+			macan_write(ctx, dst_id, sig_num, sig_val);
 			sighand[sig_num]->presc_cnt = (uint8_t)(sighand[sig_num]->presc - 1);
 		}
 		break;
@@ -900,7 +901,7 @@ bool is_time_ready(struct macan_ctx *ctx)
  * @param *ctx pointer to MaCAN context
  * @param s socket file descriptor
  */
-void macan_request_keys(struct macan_ctx *ctx, int s)
+void macan_request_keys(struct macan_ctx *ctx)
 {
 	uint8_t i;
 	struct com_part **cpart;
@@ -915,7 +916,7 @@ void macan_request_keys(struct macan_ctx *ctx, int s)
 			continue;
 
 		print_msg(MSG_REQUEST,"Requesting skey for node #%d\n",i);
-		macan_send_challenge(ctx, s, ctx->config->key_server_id, i, cpart[i]->chg);
+		macan_send_challenge(ctx, ctx->config->key_server_id, i, cpart[i]->chg);
 		cpart[i]->valid_until = read_time() + ctx->config->skey_chg_timeout;
 	}
 
@@ -942,7 +943,7 @@ uint64_t macan_get_time(struct macan_ctx *ctx)
  *
  * @returns One when the frame was a MaCAN frame, zero otherwise.
  */
-enum macan_process_status macan_process_frame(struct macan_ctx *ctx, int s, const struct can_frame *cf)
+enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t sig32_num;
 
@@ -952,7 +953,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, int s, cons
 	if (cf->can_id == CANID(ctx,ctx->config->time_server_id)) {
 		switch(cf->can_dlc) {
 		case 4:
-			receive_time(ctx, s, cf);
+			receive_time(ctx, cf);
 			return MACAN_FRAME_PROCESSED;
 		case 8:
 			receive_signed_time(ctx, cf);
@@ -984,7 +985,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, int s, cons
 			if (fwd_id < ctx->config->node_count && cpart[fwd_id] != NULL) {
 				/* fwd_id is valid ecu_id, reset it's valid_until, so we can immediatelly request key */
 				cpart[fwd_id]->valid_until = 0;
-				macan_request_keys(ctx, s);
+				macan_request_keys(ctx);
 			}
 		}
 		return MACAN_FRAME_CHALLENGE;
@@ -993,7 +994,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, int s, cons
 			int fwd;
 			fwd = receive_skey(ctx, cf);
 			if (fwd >= 0) {
-				send_ack(ctx, s, (uint8_t)fwd);
+				send_ack(ctx, (uint8_t)fwd);
 			}
 			return MACAN_FRAME_PROCESSED;
 		}
@@ -1002,7 +1003,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, int s, cons
 		if (receive_ack(ctx, cf) == 1) {
 			macan_ecuid ecu_id;
 			if (macan_canid2ecuid(ctx, cf->can_id, &ecu_id)) {
-				send_ack(ctx, s, (uint8_t)ecu_id);
+				send_ack(ctx, (uint8_t)ecu_id);
 			}
 
 		}

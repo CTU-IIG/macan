@@ -88,12 +88,12 @@ bool gen_rand_data(void *dest, size_t len)
 	return return_val;
 }
 
-void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(int s, struct can_frame *cf))
+void helper_read_can(struct macan_ctx *ctx, void (*cback)(struct can_frame *cf))
 {
 	struct can_frame cf;
 	ssize_t rbyte;
 
-	rbyte = read(s, &cf, sizeof(struct can_frame));
+	rbyte = read(ctx->sockfd, &cf, sizeof(struct can_frame));
 	if (rbyte == -1 && errno == EAGAIN) {
 		return;
 	}
@@ -105,7 +105,7 @@ void helper_read_can(struct macan_ctx *ctx, int s, void (*cback)(int s, struct c
 
 	if (getenv("MACAN_DUMP"))
 		print_frame(ctx, &cf);
-	cback(s, &cf);
+	cback(&cf);
 }
 
 int helper_init()

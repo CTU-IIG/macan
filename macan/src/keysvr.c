@@ -87,7 +87,7 @@ uint8_t lookup_skey(macan_ecuid src_id, macan_ecuid dst_id, struct macan_key **k
 	return 0;
 }
 
-void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chal)
+void send_skey(struct macan_ctx *ctx, const struct macan_key *key, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chal)
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
@@ -98,7 +98,7 @@ void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_
 
 	/* ToDo: solve name inconsistency - key */
 	if (lookup_skey(dst_id, fwd_id, &skey)) {
-		macan_send_challenge(ctx, s, fwd_id, dst_id, NULL);
+		macan_send_challenge(ctx, fwd_id, dst_id, NULL);
 	}
 
 	memcpy(plain, skey->data, sizeof(skey->data));
@@ -122,7 +122,7 @@ void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_
 		memcpy(cf.data, &macan_skey, 8);
 
 		/* ToDo: check all writes for success */
-		write(s, &cf, sizeof(struct can_frame));
+		write(ctx->sockfd, &cf, sizeof(struct can_frame));
 	}
 }
 
@@ -134,7 +134,7 @@ void send_skey(struct macan_ctx *ctx, int s, const struct macan_key *key, macan_
  * This function responds with session key to the challenge sender
  * and also sends REQ_CHALLENGE to communication partner of the sender.
  */
-void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
+void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 {
 	struct macan_challenge *chal;
 	macan_ecuid dst_id, fwd_id;
@@ -163,10 +163,10 @@ void ks_receive_challenge(struct macan_ctx *ctx, int s, struct can_frame *cf)
 		return;
 	}
 	print_hexn(ltk, 16);
-	send_skey(ctx, s, ltk, dst_id, fwd_id, chg);
+	send_skey(ctx, ltk, dst_id, fwd_id, chg);
 }
 
-void can_recv_cb(int s, struct can_frame *cf)
+void can_recv_cb(struct can_frame *cf)
 {
 	/* Simple sanity checks first */
 	if (cf->can_dlc < 8 ||
@@ -175,7 +175,7 @@ void can_recv_cb(int s, struct can_frame *cf)
 		return;
 
 	/* All other checks are done in ks_receive_challenge() */
-	ks_receive_challenge(&macan_ctx, s, cf);
+	ks_receive_challenge(&macan_ctx, cf);
 }
 
 void print_help(char *argv0)
@@ -225,10 +225,10 @@ int main(int argc, char *argv[])
 
 	config->node_id = config->key_server_id;
 	s = helper_init();
-	macan_init(&macan_ctx, config);
+	macan_init(&macan_ctx, config, s);
 
 	while (1) {
-		helper_read_can(&macan_ctx, s, can_recv_cb);
+		helper_read_can(&macan_ctx, can_recv_cb);
 
 		usleep(250);
 	}
