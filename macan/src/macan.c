@@ -869,7 +869,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 }
 
 /**
- * Check if has the session key.
+ * Check if we have a the session key for communication with dst_id
  *
  * @param dst_id  id of a node to whom check if has the key
  * @return        1 if has the key, otherwise 0
@@ -885,7 +885,7 @@ int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
 }
 
 /**
- * Check if has the authorized channel.
+ * Check we have authenticated channel with dst.
  *
  * Checks if has the session key and if the communication partner
  * has acknowledged the communication with an ACK message.
@@ -897,12 +897,12 @@ int is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
 	return 1;
 #endif
 
-	if (get_cpart(ctx, dst) == NULL)
+	struct com_part *cp = get_cpart(ctx, dst);
+	if (cp == NULL)
 		return 0;
 
-	uint32_t grp = (*((uint32_t *)&get_cpart(ctx, dst)->group_field)) & 0x00ffffff;
-
-	return grp == htole32(1U << dst | 1U << ctx->config->node_id);
+	uint32_t both = 1U << dst | 1U << ctx->config->node_id;
+	return (cp->group_field & both) == both;
 }
 
 /*
