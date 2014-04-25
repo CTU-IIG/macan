@@ -983,6 +983,7 @@ uint64_t macan_get_time(struct macan_ctx *ctx)
 enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t sig32_num;
+	macan_ecuid src;
 
 	if(cf->can_id == CANID(ctx, ctx->config->node_id))
 		return MACAN_FRAME_PROCESSED; /* Frame sent by us */
@@ -1008,7 +1009,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 		return MACAN_FRAME_PROCESSED;
 	}
 
-	if (macan_canid2ecuid(ctx, cf->can_id, NULL) == ERROR)
+	if (macan_canid2ecuid(ctx, cf->can_id, &src) == ERROR)
 		return MACAN_FRAME_UNKNOWN;
 
 	if (macan_crypt_dst(cf) != ctx->config->node_id)
@@ -1016,7 +1017,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 
 	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
-		if(cf->can_dlc == 2) {
+		if (cf->can_dlc == 2 && src == ctx->config->key_server_id) {
 			/* REQ_CHALLENGE from KS */
 			struct com_part **cpart;
 			macan_ecuid fwd_id = cf->data[1];
