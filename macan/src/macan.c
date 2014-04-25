@@ -1017,6 +1017,9 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 
 	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
+		/* Only key and time servers need to handle this. */
+		return MACAN_FRAME_CHALLENGE;
+	case FL_REQ_CHALLENGE:
 		if (cf->can_dlc == 2 && src == ctx->config->key_server_id) {
 			/* REQ_CHALLENGE from KS */
 			struct com_part **cpart;
@@ -1028,8 +1031,8 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 				cpart[fwd_id]->valid_until = 0;
 				macan_request_keys(ctx);
 			}
+			return MACAN_FRAME_PROCESSED;
 		}
-		return MACAN_FRAME_CHALLENGE;
 	case FL_SESS_KEY_OR_ACK:
 		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
 			int fwd;
