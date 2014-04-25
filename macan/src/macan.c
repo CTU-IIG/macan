@@ -330,33 +330,22 @@ static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
 	return;
 }
 
-/**
- * Receives an ACK message.
- *
- * Returns 1 if the incoming ack does not contain this node in its
- * group field. Therefore, the updated ack should be broadcasted.
- * TODO: add groups communication
- * TODO: what if ack contains me
- */
-int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
+static void receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	struct com_part *cp;
 	struct macan_ack *ack = (struct macan_ack *)cf->data;
 	uint8_t plain[8];
-	struct macan_key skey;
 
 	if(!(cp = canid2cpart(ctx, cf->can_id)))
-		return -1;
-
-	skey = cp->skey;
+		return;
 
 	plain[4] = ack->flags_and_dst_id & 0x3f;
 	memcpy(plain + 5, ack->group, 3);
 
 	/* ToDo: make difference between wrong CMAC and not having the key */
-	if (!macan_check_cmac(ctx, &skey, ack->cmac, plain, plain, sizeof(plain))) {
+	if (!macan_check_cmac(ctx, &cp->skey, ack->cmac, plain, plain, sizeof(plain))) {
 		fail_printf(ctx, "%s\n","error: ACK CMAC failed");
-		return -1;
+		return;
 	}
 
 	uint32_t ack_group = 0;
@@ -365,10 +354,8 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	cp->group_field |= ack_group;
 
-	if (ack_group & 1U << ctx->config->node_id)
-		return 0;
-
-	return 1;
+	if ((ack_group & (1U << ctx->config->node_id)) == 0)
+		send_ack(ctx, cp->ecu_id);
 }
 
 void gen_challenge(struct macan_ctx *ctx, uint8_t *chal)
@@ -1033,15 +1020,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 				return MACAN_FRAME_UNKNOWN;
 		}
 
-		/* ACK */
-		/* ToDo: what if ack CMAC fails, there should be no response */
-		if (receive_ack(ctx, cf) == 1) {
-			macan_ecuid ecu_id;
-			if (macan_canid2ecuid(ctx, cf->can_id, &ecu_id)) {
-				send_ack(ctx, (uint8_t)ecu_id);
-			}
-
-		}
+		receive_ack(ctx, cf);
 		return MACAN_FRAME_PROCESSED;
 	case FL_SIGNAL_OR_AUTH_REQ:
 		// can_dlc is 3 => req_auth without CMAC (sent by VW)

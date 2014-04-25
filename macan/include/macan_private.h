@@ -186,7 +186,6 @@ extern uint8_t *key_ptr;
 extern uint8_t keywrap[32];
 extern uint8_t g_chg[6];
 extern uint8_t seq;
-int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf);
 extern uint8_t skey[24];
 uint64_t read_time(void);
 uint64_t macan_get_time(struct macan_ctx *ctx);
