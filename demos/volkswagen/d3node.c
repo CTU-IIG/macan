@@ -198,8 +198,7 @@ void sig_invalid(uint8_t sig_num, uint32_t sig_val)
 
 int main()
 {
-	int s;
-	macan_ev_loop *loop = EV_DEFAULT;
+	int s; macan_ev_loop *loop = MACAN_EV_DEFAULT;
 	macan_ev_timer btn_chk;
 
 	config.ltk = &macan_ltk_node4;

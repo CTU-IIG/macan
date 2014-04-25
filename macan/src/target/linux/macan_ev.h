@@ -24,6 +24,8 @@
 
 #include <ev.h>
 
+#define MACAN_EV_DEFAULT EV_DEFAULT;
+
 typedef struct ev_loop  macan_ev_loop;
 typedef struct ev_io    macan_ev_can;
 typedef struct ev_timer macan_ev_timer;

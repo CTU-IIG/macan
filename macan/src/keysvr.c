@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 	config->node_id = config->key_server_id;
 	s = helper_init();
 
-	macan_ev_loop *loop = EV_DEFAULT;
+	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 
 	macan_init_ks(&macan_ctx, config, loop, s, ltks);
 

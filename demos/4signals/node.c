@@ -84,7 +84,7 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 int main()
 {
 	int s;
-	struct ev_loop *loop = EV_DEFAULT;
+	struct ev_loop *loop = MACAN_EV_DEFAULT;
 	ev_timer sig_send;
 
 	s = helper_init();

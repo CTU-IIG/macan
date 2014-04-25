@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 	srand((unsigned)time(NULL));
 
 	macan_ev_can can_watcher;
-	macan_ev_loop *loop = EV_DEFAULT;
+	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 
 	s = helper_init();
 
