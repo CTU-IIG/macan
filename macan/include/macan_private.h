@@ -153,6 +153,7 @@ struct macan_ctx {
 	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
 	struct macan_time time;                /* used to manage time of the protocol */
 	uint64_t ack_timeout_abs;	       /* timeout for sending ACK messages ??? */
+	uint8_t keywrap[32];		       /* Temporary storage for wrapped session key */
 	int sockfd;			       /* Socket (or CAN interface id) used for CAN communication */
 	macan_ev_loop *loop;
 	macan_ev_can can_watcher;
@@ -181,7 +182,6 @@ int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id);
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf);
 void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id,uint8_t sig_num,uint8_t prescaler);
 void receive_challenge(struct macan_ctx *ctx, const struct can_frame *cf);
-int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf);
 void gen_challenge(struct macan_ctx *ctx, uint8_t *chal);
 extern uint8_t *key_ptr;
 extern uint8_t keywrap[32];

@@ -389,11 +389,9 @@ void gen_challenge(struct macan_ctx *ctx, uint8_t *chal)
  *         ID of the node the key is shared with OR
  *         RECEIVE_SKEY_IN_PROGRESS (-2) if the reception process is in progress.
  */
-int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
+static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	struct macan_sess_key *sk;
-	macan_ecuid fwd_id;
-	static uint8_t keywrap[32];
 	uint8_t unwrapped[24];
 	uint8_t seq, len;
 
@@ -418,34 +416,36 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	    (cf->can_dlc < 2 + len))
 		return RECEIVE_SKEY_ERR;
 
-	memcpy(keywrap + 6 * seq, sk->data, len);
+	memcpy(ctx->keywrap + 6 * seq, sk->data, len);
 
 	if (seq == 5) {
+		macan_unwrap_key(ctx->config->ltk, sizeof(ctx->keywrap), unwrapped, ctx->keywrap);
+		macan_ecuid fwd_id = unwrapped[17];
+		struct com_part *cpart = get_cpart(ctx, fwd_id);
 
-		macan_unwrap_key(ctx->config->ltk, 32, unwrapped, keywrap);
-		fwd_id = unwrapped[17];
-
-		if (fwd_id >= ctx->config->node_count || get_cpart(ctx, fwd_id) == NULL) {
+		if (cpart == NULL) {
 			fail_printf(ctx, "unexpected fwd_id %#x\n", fwd_id);
 			return RECEIVE_SKEY_ERR;
 		}
 
-		if(!memchk(unwrapped+18, get_cpart(ctx, fwd_id)->chg, 6)) {
-			fail_printf(ctx, "check cmac from %d\n", fwd_id);
+		if (!memchk(unwrapped + 18, cpart->chg, 6)) {
+			fail_printf(ctx, "wrong challenge for %d\n", fwd_id);
 			return RECEIVE_SKEY_ERR;
 		}
 
-		get_cpart(ctx, fwd_id)->valid_until = read_time() + ctx->config->skey_validity;
-		memcpy(get_cpart(ctx, fwd_id)->skey.data, unwrapped, 16);
-		
-		// initialize group field - this will work only for ecu_id <= 23
-		get_cpart(ctx, fwd_id)->group_field |= htole32(1U << ctx->config->node_id);
+		cpart->valid_until = read_time() + ctx->config->skey_validity;
 
-		// print key
-		print_msg(ctx, MSG_OK,"KEY (%d -> %d) is ", ctx->config->node_id, fwd_id);
-		print_hexn(get_cpart(ctx, fwd_id)->skey.data, 16);
+		if (memcmp(cpart->skey.data, unwrapped, 16) != 0) {
+			/* Session key has changed */
+			memcpy(cpart->skey.data, unwrapped, 16);
 
-		return fwd_id;	/* FIXME: fwd_id can be 0 as well. What our callers do with the returned value? */
+			// initialize group field - this will work only for ecu_id <= 23
+			cpart->group_field = htole32(1U << ctx->config->node_id);
+
+			send_ack(ctx, fwd_id);
+		}
+
+		return fwd_id;
 	}
 
 	return RECEIVE_SKEY_IN_PROGRESS;
@@ -1024,16 +1024,10 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 		}
 	case FL_SESS_KEY_OR_ACK:
 		if (src == ctx->config->key_server_id) {
-			int fwd = receive_skey(ctx, cf);
-			switch  (fwd) {
-			case RECEIVE_SKEY_ERR:
+			if (receive_skey(ctx, cf) == SUCCESS)
+				return MACAN_FRAME_PROCESSED;
+			else
 				return MACAN_FRAME_UNKNOWN;
-			case RECEIVE_SKEY_IN_PROGRESS:
-				return MACAN_FRAME_PROCESSED;
-			default:
-				send_ack(ctx, (uint8_t)fwd);
-				return MACAN_FRAME_PROCESSED;
-			}
 		}
 
 		/* ACK */
