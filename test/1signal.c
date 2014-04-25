@@ -44,6 +44,8 @@ struct macan_config config = {
 	.time_timeout      = 1000000,
 	.time_bcast_period = 1000000,
 	.time_delta        = 1000000,
+
+	.node_id	   = 0xff, /* Invalid ID - to be replaced before macan initialization */
 };
 
 const struct macan_key *ltk[NODE_COUNT] = {
@@ -57,9 +59,12 @@ const struct macan_key *ltk[NODE_COUNT] = {
 /* Test */
 /********/
 
+#include <stdlib.h>
+
 static void sig_callback(uint8_t sig_num, uint32_t sig_val)
 {
 	(void)sig_num, (void)sig_val;
+	exit(0);
 }
 
 static void send_cb(struct ev_loop *loop, ev_timer *w, int revents)
@@ -71,7 +76,15 @@ static void send_cb(struct ev_loop *loop, ev_timer *w, int revents)
 	macan_send_sig(ctx, SIGNAL_0, i++);
 }
 
+static void print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
+{
+	(void)loop; (void)revents; (void)w; /* suppress warnings */
+	struct can_frame cf;
+	struct macan_ctx ctx = { .sockfd = w->fd, .config = &config };
 
+	macan_read(&ctx, &cf);
+	print_frame(&ctx, &cf);
+}
 
 struct node {
 	struct macan_ctx ctx;
@@ -109,6 +122,10 @@ int main(int argc, char *argv[])
 	macan_ev_timer_init(&sig_send, send_cb, 100, 100);
 	sig_send.data = &node[SENDER].ctx;
 	macan_ev_timer_start(loop, &sig_send);
+
+	macan_ev_can can_print;
+	macan_ev_can_init (&can_print, print_frame_cb, helper_init(), EV_READ);
+	macan_ev_can_start (loop, &can_print);
 
 	macan_ev_run(loop);
 
