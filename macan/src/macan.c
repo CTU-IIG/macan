@@ -1000,6 +1000,9 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 		}
 	}
 
+	if (cf->can_dlc < 1)	/* MaCAN frames have at least 1 byte */
+		return MACAN_FRAME_UNKNOWN;
+
 	if(cansid2signum(ctx, cf->can_id,&sig32_num)) {
 		receive_sig32(ctx, cf, sig32_num);
 		return MACAN_FRAME_PROCESSED;
