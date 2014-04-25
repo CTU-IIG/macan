@@ -43,7 +43,7 @@ struct Can_HardwareObject
 #define CAN_HWOBJ ((struct Can_HardwareObject volatile *)(void*) &CAN_MOFCR0)
 #define CAN_MOAR_ID_STD_SHIFT  (18U)
 
-void poll_can_fifo(void (*cback)(int s, struct can_frame *cf))
+void poll_can_fifo(void (*cback)(struct can_frame *cf, void *data), void *data)
 {
 	uint32_t i;
 	Can_IdType can_id;
@@ -62,7 +62,7 @@ void poll_can_fifo(void (*cback)(int s, struct can_frame *cf))
 		cf.can_dlc = CAN_HWOBJ[i].MOFCR.B.DLC;
 		memcpy(cf.data, (uint8 *) CAN_HWOBJ[i].MODAT, 8);
 
-		cback(0, &cf);
+		cback(&cf, data);
 
 		i++;
 		if (i > 32) {

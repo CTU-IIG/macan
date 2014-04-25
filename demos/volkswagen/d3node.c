@@ -61,7 +61,7 @@
 
 #define TIME_EMIT_SIG 1000000
 
-static struct macan_ctx macan_ctx;
+struct macan_ctx macan_ctx;
 extern const struct macan_key macan_ltk_node4;
 
 int button_pressed;

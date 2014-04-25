@@ -33,6 +33,6 @@
 
 #include <macan.h>
 
-void poll_can_fifo(void (*cback)(int s, struct can_frame *cf));
+void poll_can_fifo(void (*cback)(struct can_frame *cf, void *data), void *data);
 
 #endif /* CAN_FIFO_H_ */
