@@ -296,7 +296,6 @@ void send_ack(struct macan_ctx *ctx, uint8_t dst_id)
 	uint32_t time;
 	struct macan_key skey;
 	struct can_frame cf = {0};
-	volatile int res;
 
 	if (!is_skey_ready(ctx, dst_id))
 		return;
@@ -321,8 +320,7 @@ void send_ack(struct macan_ctx *ctx, uint8_t dst_id)
 	cf.can_dlc = 8;
 	memcpy(cf.data, &ack, 8);
 
-	res = (int) write(ctx->sockfd, &cf, sizeof(struct can_frame));
-	if (res != 16) {
+	if (!macan_send(ctx, &cf)) {
 		fail_printf(ctx, "%s\n","failed to send some bytes of ack");
 	}
 
@@ -485,7 +483,7 @@ void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid
     // Print info end
 #endif
 
-	write(ctx->sockfd, &cf, sizeof(struct can_frame));
+	macan_send(ctx, &cf);
 }
 
 /**
@@ -607,7 +605,7 @@ void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, u
 	cf.can_dlc = 7;
 	memcpy(&cf.data, &areq, 7);
 
-	write(ctx->sockfd, &cf, sizeof(cf));
+	macan_send(ctx, &cf);
 }
 
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
@@ -727,7 +725,7 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 	memcpy(&cf.data, &sig, 8);
 
 	/* ToDo: assure success */
-	write(ctx->sockfd, &cf, sizeof(cf));
+	macan_send(ctx, &cf);
 
 	return 0;
 }

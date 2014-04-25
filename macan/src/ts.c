@@ -68,7 +68,7 @@ int ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	memcpy(canf.data, &ctx->ts.bcast_time, 4);
 	macan_sign(&skey, canf.data + 4, plain, 12);
 
-	write(ctx->sockfd, &canf, sizeof(canf));
+	macan_send(ctx, &canf);
 
 	print_msg(ctx, MSG_INFO,"signed time sent\n");
 	return 0;
@@ -105,7 +105,7 @@ time_broadcast_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
 	cf.can_dlc = 4;
 	memcpy(cf.data, &ctx->ts.bcast_time, 4);
 
-	write(ctx->sockfd, &cf, sizeof(cf));
+	macan_send(ctx, &cf);
 }
 
 

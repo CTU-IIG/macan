@@ -105,7 +105,7 @@ void send_skey(struct macan_ctx *ctx, const struct macan_key *key, macan_ecuid d
 		memcpy(cf.data, &macan_skey, 8);
 
 		/* ToDo: check all writes for success */
-		write(ctx->sockfd, &cf, sizeof(struct can_frame));
+		macan_send(ctx, &cf);
 	}
 }
 

@@ -58,7 +58,7 @@
  *
  * write implemented on top of AUTOSAR functions.
  */
-int write(int s, struct can_frame *cf, int len)
+bool macan_send(struct macan_ctx *ctx,  const struct can_frame *cf)
 {
 	/* ToDo: consider some use of PduIdType */
 	Can_PduType pdu_info = {17, cf->can_dlc, cf->can_id, cf->data};

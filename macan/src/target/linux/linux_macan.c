@@ -143,3 +143,9 @@ int helper_init()
 
 	return s;
 }
+
+bool macan_send(struct macan_ctx *ctx,  const struct can_frame *cf)
+{
+	ssize_t ret = write(ctx->sockfd, cf, sizeof(*cf));
+	return (ret == sizeof(*cf));
+}

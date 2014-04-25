@@ -190,9 +190,6 @@ extern uint8_t seq;
 void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id);
 int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf);
 extern uint8_t skey[24];
-#ifdef __CPU_TC1798__
-int write(int s, struct can_frame *cf, int len);
-#endif
 uint64_t read_time(void);
 uint64_t macan_get_time(struct macan_ctx *ctx);
 void receive_time(struct macan_ctx *ctx, const struct can_frame *cf);
@@ -205,6 +202,7 @@ struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id);
 bool gen_rand_data(void *dest, size_t len);
 void macan_send_signal_requests(struct macan_ctx *ctx);
 void macan_read(struct macan_ctx *ctx, struct can_frame *cf);
+bool macan_send(struct macan_ctx *ctx,  const struct can_frame *cf);
 
 static inline macan_ecuid macan_crypt_dst(const struct can_frame *cf)
 {
