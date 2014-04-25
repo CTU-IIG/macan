@@ -160,7 +160,7 @@ can_cb_ks (macan_ev_loop *loop, macan_ev_can *w, int revents)
 }
 
 int macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd,
-	struct macan_key **ltks)
+	const struct macan_key * const *ltks)
 {
 	assert(config->node_id == config->key_server_id);
 

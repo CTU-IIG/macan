@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	struct macan_key *ltks[NODE_COUNT];
+	const struct macan_key *ltks[NODE_COUNT];
 
 	for (i = 0; i < config->node_count; i++) {
 		if (i == config->key_server_id)

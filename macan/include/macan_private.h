@@ -163,7 +163,7 @@ struct macan_ctx {
 			uint64_t bcast_time;
 		} ts;
 		struct { /* key server */
-			struct macan_key **ltk;
+			const struct macan_key * const *ltk;
 			macan_ev_timer time_bcast;
 			uint64_t bcast_time;
 		} ks;

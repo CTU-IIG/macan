@@ -99,7 +99,7 @@ enum macan_process_status {
 
 
 int  macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
-int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd, struct macan_key **ltk);
+int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd, const struct macan_key * const *ltk);
 int  macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
 
 void macan_request_keys(struct macan_ctx *ctx);
