@@ -166,7 +166,7 @@ int macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, maca
 
 	int ret = __macan_init(ctx, config, sockfd);
 
-	macan_ev_can_init (&ctx->can_watcher, can_cb_ks, sockfd, EV_READ);
+	macan_ev_can_init (&ctx->can_watcher, can_cb_ks, sockfd, MACAN_EV_READ);
 	ctx->can_watcher.data = ctx;
 	macan_ev_can_start (loop, &ctx->can_watcher);
 
