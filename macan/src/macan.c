@@ -930,6 +930,21 @@ bool is_time_ready(struct macan_ctx *ctx)
 	return ctx->time.is_time_ready;	
 }
 
+void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
+{
+	struct com_part *cpart = ctx->cpart[fwd_id];
+
+	if (cpart) {
+		print_msg(ctx, MSG_REQUEST,"Requesting skey for node #%d\n",fwd_id);
+		/* FIXME: generate the challenge here */
+		macan_send_challenge(ctx, ctx->config->key_server_id, fwd_id, cpart->chg);
+		cpart->valid_until = read_time() + ctx->config->skey_chg_timeout; /* FIXME: Set this when we receive the key */
+	}
+
+	return;
+}
+
+
 /**
  * Request keys to all comunication partners.
  *
@@ -1022,15 +1037,12 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 	case FL_REQ_CHALLENGE:
 		if (cf->can_dlc == 2 && src == ctx->config->key_server_id) {
 			/* REQ_CHALLENGE from KS */
-			struct com_part **cpart;
 			macan_ecuid fwd_id = cf->data[1];
-			cpart = ctx->cpart;
 
-			if (fwd_id < ctx->config->node_count && cpart[fwd_id] != NULL) {
-				/* fwd_id is valid ecu_id, reset it's valid_until, so we can immediatelly request key */
-				cpart[fwd_id]->valid_until = 0;
-				macan_request_keys(ctx);
-			}
+			if (fwd_id >= ctx->config->node_count)
+				return MACAN_FRAME_UNKNOWN;
+
+			macan_request_key(ctx, fwd_id);
 			return MACAN_FRAME_PROCESSED;
 		}
 	case FL_SESS_KEY_OR_ACK:
