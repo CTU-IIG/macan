@@ -397,6 +397,9 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	uint8_t unwrapped[24];
 	uint8_t seq, len;
 
+	if (cf->can_dlc < 2)
+		return RECEIVE_SKEY_ERR;
+
 	sk = (struct macan_sess_key *)cf->data;
 
 	/* it reads wrong values, dirty hack to read directly from CAN frame 
@@ -404,10 +407,15 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	seq = (cf->data[1] & 0xF0) >> 4;
 	len = (cf->data[1] & 0x0F);
 
+	if (cf->can_dlc < 2 + len || seq > 5)
+		return RECEIVE_SKEY_ERR;
+
 	/* this is because of VW macan sends len 6 in last key packet */
 	if(seq == 5) len = 2;
 
-	if (!((seq <= 5) && ((seq != 5 && len == 6) || (seq == 5 && len == 2))))
+	if ((seq <  5 && len != 6) ||
+	    (seq == 5 && len != 2) ||
+	    (cf->can_dlc < 2 + len))
 		return RECEIVE_SKEY_ERR;
 
 	memcpy(keywrap + 6 * seq, sk->data, len);
@@ -1015,15 +1023,20 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 			return MACAN_FRAME_PROCESSED;
 		}
 	case FL_SESS_KEY_OR_ACK:
-		if (cf->can_id == CANID(ctx, ctx->config->key_server_id)) {
-			int fwd;
-			fwd = receive_skey(ctx, cf);
-			if (fwd >= 0) {
+		if (src == ctx->config->key_server_id) {
+			int fwd = receive_skey(ctx, cf);
+			switch  (fwd) {
+			case RECEIVE_SKEY_ERR:
+				return MACAN_FRAME_UNKNOWN;
+			case RECEIVE_SKEY_IN_PROGRESS:
+				return MACAN_FRAME_PROCESSED;
+			default:
 				send_ack(ctx, (uint8_t)fwd);
+				return MACAN_FRAME_PROCESSED;
 			}
-			return MACAN_FRAME_PROCESSED;
 		}
 
+		/* ACK */
 		/* ToDo: what if ack CMAC fails, there should be no response */
 		if (receive_ack(ctx, cf) == 1) {
 			macan_ecuid ecu_id;
