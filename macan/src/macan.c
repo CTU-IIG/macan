@@ -80,12 +80,14 @@ void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
 	cpart[i]->ecu_id = i;
 }
 
+void macan_request_expired_keys(struct macan_ctx *ctx);
+
 void
 macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
 {
 	(void)loop; (void)revents; /* suppress warnings */
 	struct macan_ctx *ctx = w->data;
-	macan_request_keys(ctx);
+	macan_request_expired_keys(ctx);
 	macan_wait_for_key_acks(ctx);
 	macan_send_signal_requests(ctx);
 }
@@ -441,25 +443,12 @@ int receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	return RECEIVE_SKEY_IN_PROGRESS;
 }
 
-/**
- * macan_send_challenge() - requests key from KS or signed time from TS
- * @s:      socket fd
- * @dst_id: destination node id (e.g. KS)
- * @fwd_id: id of a node I wish to share a key with
- *          (i.e. communication partner)
- * @chg:    challenge (a 6-byte nonce) will be generated and written
- *          here
- *
- * This function sends the CHALLENGE message to the socket s. It is
- * used to request a key from KS or to request a signed time from TS.
- */
 void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
 {
 	struct can_frame cf = {0};
 	struct macan_challenge chal = { .flags_and_dst_id = (uint8_t)((FL_CHALLENGE << 6) | (dst_id & 0x3F)), .fwd_id = fwd_id };
 
 	if (chg) {
-		gen_challenge(ctx, chg);
 		memcpy(chal.chg, chg, 6);
 		cf.can_dlc = 8;
 	} else {
@@ -521,6 +510,7 @@ void receive_time(struct macan_ctx *ctx, const struct can_frame *cf)
 		print_msg(ctx, MSG_REQUEST,"Requesting signed time\n");
 
 		ctx->time.chal_ts = recent;
+		gen_challenge(ctx, ctx->time.chg);
 		macan_send_challenge(ctx, ctx->config->time_server_id, 0, ctx->time.chg);
 	}
 }
@@ -936,7 +926,7 @@ void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 
 	if (cpart) {
 		print_msg(ctx, MSG_REQUEST,"Requesting skey for node #%d\n",fwd_id);
-		/* FIXME: generate the challenge here */
+		gen_challenge(ctx, cpart->chg);
 		macan_send_challenge(ctx, ctx->config->key_server_id, fwd_id, cpart->chg);
 		cpart->valid_until = read_time() + ctx->config->skey_chg_timeout; /* FIXME: Set this when we receive the key */
 	}
@@ -944,35 +934,14 @@ void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 	return;
 }
 
-
-/**
- * Request keys to all comunication partners.
- *
- * Requests keys and repeats until success.
- *
- * @param *ctx pointer to MaCAN context
- * @param s socket file descriptor
- */
-void macan_request_keys(struct macan_ctx *ctx)
+void macan_request_expired_keys(struct macan_ctx *ctx)
 {
 	uint8_t i;
-	struct com_part **cpart;
+	struct com_part **cpart = ctx->cpart;
 
-	cpart = ctx->cpart;
-
-	for (i = 0; i < ctx->config->node_count; i++) {
-		if (cpart[i] == NULL)
-			continue;
-
-		if (cpart[i]->valid_until > read_time())
-			continue;
-
-		print_msg(ctx, MSG_REQUEST,"Requesting skey for node #%d\n",i);
-		macan_send_challenge(ctx, ctx->config->key_server_id, i, cpart[i]->chg);
-		cpart[i]->valid_until = read_time() + ctx->config->skey_chg_timeout;
-	}
-
-	return;
+	for (i = 0; i < ctx->config->node_count; i++)
+		if (cpart[i] && cpart[i]->valid_until < read_time())
+			macan_request_key(ctx, i);
 }
 
 /**
