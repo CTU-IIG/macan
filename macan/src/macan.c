@@ -1016,7 +1016,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 
 	switch (macan_crypt_flags(cf)) {
 	case FL_CHALLENGE:
-		if(cf->can_dlc == 2 && macan_crypt_dst(cf) == ctx->config->node_id) {
+		if(cf->can_dlc == 2) {
 			/* REQ_CHALLENGE from KS */
 			struct com_part **cpart;
 			macan_ecuid fwd_id = cf->data[1];
