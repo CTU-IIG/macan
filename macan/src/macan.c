@@ -185,6 +185,8 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_e
 	return ret;
 }
 
+static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id);
+
 /**
  * Establishes authenticated channel.
  *
@@ -285,7 +287,7 @@ int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback f
 /**
  * Sends an ACK message.
  */
-void send_ack(struct macan_ctx *ctx, uint8_t dst_id)
+static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
 {
 #ifdef VW_COMPATIBLE
 	/* VW compatible -> ACK is disabled, don't do anything */
@@ -294,28 +296,28 @@ void send_ack(struct macan_ctx *ctx, uint8_t dst_id)
 
 	struct macan_ack ack = { .flags_and_dst_id = (uint8_t)(FL_ACK << 6 | (dst_id & 0x3f)), .group = {0}, .cmac = {0}};
 	uint8_t plain[8] = {0};
-	uint32_t time;
-	struct macan_key skey;
 	struct can_frame cf = {0};
+	struct com_part *cpart;
 
-	if (!is_skey_ready(ctx, dst_id))
+	if (!is_skey_ready(ctx, dst_id) ||
+	    !is_time_ready(ctx))
 		return;
 
-	if(!is_time_ready(ctx)) 
+	cpart = get_cpart(ctx, dst_id);
+	if (cpart == NULL)
 		return;
+	uint32_t group_field = htole32(cpart->group_field);
+	memcpy(&ack.group, &group_field, 3);
+	uint32_t time = htole32((uint32_t)macan_get_time(ctx));
 
-	skey = get_cpart(ctx, dst_id)->skey;
-	memcpy(&ack.group, &(get_cpart(ctx, dst_id)->group_field), 3);
-	time = (uint32_t)macan_get_time(ctx);
-
-	memcpy(plain, &htole32(time), 4);
+	memcpy(plain, &time, 4);
 	plain[4] = dst_id;
-	memcpy(plain + 5, ack.group, 3);
+	memcpy(plain + 5, &group_field, 3);
 
 #ifdef DEBUG_TS
-	memcpy(ack.cmac, &htole32(time), 4);
+	memcpy(ack.cmac, &time, 4);
 #else
-	macan_sign(&skey, ack.cmac, plain, sizeof(plain));
+	macan_sign(&cpart->skey, ack.cmac, plain, sizeof(plain));
 #endif
 	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 8;
@@ -345,7 +347,7 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	if(!(cp = canid2cpart(ctx, cf->can_id)))
 		return -1;
-	
+
 	skey = cp->skey;
 
 	plain[4] = ack->flags_and_dst_id & 0x3f;
@@ -357,14 +359,13 @@ int receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 		return -1;
 	}
 
-	uint32_t is_present = htole32(1U << ctx->config->node_id);
 	uint32_t ack_group = 0;
 	memcpy(&ack_group, ack->group, 3);
+	ack_group = le32toh(ack_group);
 
-	is_present &= ack_group;
 	cp->group_field |= ack_group;
 
-	if (is_present)
+	if (ack_group & 1U << ctx->config->node_id)
 		return 0;
 
 	return 1;
@@ -439,7 +440,7 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 			memcpy(cpart->skey.data, unwrapped, 16);
 
 			// initialize group field - this will work only for ecu_id <= 23
-			cpart->group_field = htole32(1U << ctx->config->node_id);
+			cpart->group_field = 1U << ctx->config->node_id;
 
 			send_ack(ctx, fwd_id);
 		}
@@ -888,10 +889,12 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
  */
 int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
 {
-	if (get_cpart(ctx, dst_id) == NULL)
+	struct com_part *cpart = get_cpart(ctx, dst_id);
+
+	if (cpart == NULL)
 		return 0;
 
-	return (get_cpart(ctx, dst_id)->group_field & htole32(1U << ctx->config->node_id)) ? 1 : 0;
+	return (cpart->group_field & (1U << ctx->config->node_id)) ? 1 : 0;
 }
 
 /**
@@ -900,7 +903,7 @@ int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
  * Checks if has the session key and if the communication partner
  * has acknowledged the communication with an ACK message.
  */
-int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
+int is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
 {
 #ifdef VW_COMPATIBLE
 	/* VW compatible -> ACK is disabled, channel is ready */	
@@ -910,7 +913,7 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 	if (get_cpart(ctx, dst) == NULL)
 		return 0;
 
-	uint32_t grp = (*((uint32_t *)&get_cpart(ctx, dst)->group_field)) & htole32(0x00ffffff);
+	uint32_t grp = (*((uint32_t *)&get_cpart(ctx, dst)->group_field)) & 0x00ffffff;
 
 	return grp == htole32(1U << dst | 1U << ctx->config->node_id);
 }
@@ -934,7 +937,9 @@ void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 		print_msg(ctx, MSG_REQUEST,"Requesting skey for node #%d\n",fwd_id);
 		gen_challenge(ctx, cpart->chg);
 		macan_send_challenge(ctx, ctx->config->key_server_id, fwd_id, cpart->chg);
-		cpart->valid_until = read_time() + ctx->config->skey_chg_timeout; /* FIXME: Set this when we receive the key */
+
+		/* Timeout for receiving a new session key */
+		cpart->valid_until = read_time() + ctx->config->skey_chg_timeout;
 	}
 
 	return;
