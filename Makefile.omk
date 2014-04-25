@@ -1,1 +1,1 @@
-SUBDIRS=macan demos
+SUBDIRS=macan demos test
