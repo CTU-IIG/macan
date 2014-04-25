@@ -181,7 +181,7 @@ void macan_sign(struct macan_key *skey, uint8_t *cmac4, uint8_t *plain, uint8_t 
 /**
  * unwrap_key() - deciphers AES-WRAPed key
  */
-void macan_unwrap_key(const struct macan_key *key, size_t len, uint8_t *dst, uint8_t *src)
+void macan_unwrap_key(const struct macan_key *key, size_t srclen, uint8_t *dst, uint8_t *src)
 {
-	macan_aes_unwrap(key, len, dst, src, src);
+	macan_aes_unwrap(key, srclen, dst, src, src);
 }
