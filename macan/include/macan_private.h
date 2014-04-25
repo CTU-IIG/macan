@@ -118,7 +118,6 @@ struct com_part {
 	uint8_t chg[6];		/* Challenge for communication with key server */
 	uint8_t flags;
 	uint32_t group_field;	/* Bitmask of known key sharing */
-	uint32_t wait_for;	/* The value of group_field we are waiting for  */
 	macan_ecuid ecu_id; /* ECU-ID of communication partner */
 };
 

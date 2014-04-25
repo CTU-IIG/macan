@@ -76,7 +76,6 @@ void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
 	struct com_part **cpart = ctx->cpart;
 	cpart[i] = malloc(sizeof(struct com_part));
 	memset(cpart[i], 0, sizeof(struct com_part));
-	cpart[i]->wait_for = htole32(1U << i | 1U << ctx->config->node_id);
 	cpart[i]->ecu_id = i;
 }
 
@@ -912,9 +911,8 @@ int is_channel_ready(struct macan_ctx *ctx, uint8_t dst)
 		return 0;
 
 	uint32_t grp = (*((uint32_t *)&get_cpart(ctx, dst)->group_field)) & htole32(0x00ffffff);
-	uint32_t wf = (*((uint32_t *)&get_cpart(ctx, dst)->wait_for)) & htole32(0x00ffffff);
 
-	return ((grp & wf) == wf);
+	return grp == htole32(1U << dst | 1U << ctx->config->node_id);
 }
 
 /*
