@@ -672,7 +672,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
  *
  * Signs signal using CMAC and transmits it.
  */
-int macan_write(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint32_t sig_val)
+int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint32_t sig_val)
 {
 	struct can_frame cf = {0};
 	uint8_t plain[10],sig[8];
@@ -760,14 +760,14 @@ void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
 	case SIG_DONTSIGN:
 		break;
 	case SIG_SIGNONCE:
-		macan_write(ctx, dst_id, sig_num, sig_val);
+		__macan_send_sig(ctx, dst_id, sig_num, sig_val);
 		sighand[sig_num]->presc = SIG_DONTSIGN;
 		break;
 	default:
 		if (sighand[sig_num]->presc_cnt > 0) {
 			sighand[sig_num]->presc_cnt--;
 		} else {
-			macan_write(ctx, dst_id, sig_num, sig_val);
+			__macan_send_sig(ctx, dst_id, sig_num, sig_val);
 			sighand[sig_num]->presc_cnt = (uint8_t)(sighand[sig_num]->presc - 1);
 		}
 		break;
