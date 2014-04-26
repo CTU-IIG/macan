@@ -872,16 +872,16 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
  * Check if we have a the session key for communication with dst_id
  *
  * @param dst_id  id of a node to whom check if has the key
- * @return        1 if has the key, otherwise 0
+ * @return        True if has the key, false otherwise
  */
-int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
+bool is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
 {
 	struct com_part *cpart = get_cpart(ctx, dst_id);
 
 	if (cpart == NULL)
-		return 0;
+		return false;
 
-	return (cpart->group_field & (1U << ctx->config->node_id)) ? 1 : 0;
+	return !!(cpart->group_field & (1U << ctx->config->node_id));
 }
 
 /**
@@ -890,16 +890,16 @@ int is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
  * Checks if has the session key and if the communication partner
  * has acknowledged the communication with an ACK message.
  */
-int is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
+bool is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
 {
 #ifdef VW_COMPATIBLE
 	/* VW compatible -> ACK is disabled, channel is ready */	
-	return 1;
+	return true;
 #endif
 
 	struct com_part *cp = get_cpart(ctx, dst);
 	if (cp == NULL)
-		return 0;
+		return false;
 
 	uint32_t both = 1U << dst | 1U << ctx->config->node_id;
 	return (cp->group_field & both) == both;
