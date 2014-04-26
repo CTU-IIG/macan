@@ -54,12 +54,15 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix
 		if (cf->can_id == ctx->config->time_canid) {
 			uint32_t time;
 			memcpy(&time, cf->data, 4); /* FIXME: Handle endian */
-			if (cf->can_dlc == 4) {
-				color = ANSI_COLOR_LGRAY;
+			switch (cf->can_dlc) {
+			case 4: color = ANSI_COLOR_LGRAY;
 				sprintf(comment, "time %u", time);
-			} else {
-				color = ANSI_COLOR_DGRAY;
+				break;
+			case 8: color = ANSI_COLOR_DGRAY;
 				sprintf(comment, "authenticated time %u", time);
+				break;
+			default:
+				sprintf(comment, "broken time!!!");
 			}
 		}
 		else if (macan_canid2ecuid(ctx, cf->can_id, &src)) {
