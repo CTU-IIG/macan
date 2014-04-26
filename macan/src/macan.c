@@ -233,6 +233,7 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 			return RECEIVE_SKEY_ERR;
 		}
 
+		cpart->awaiting_skey = false;
 		cpart->valid_until = read_time() + ctx->config->skey_validity;
 
 		if (memcmp(cpart->skey.data, unwrapped, 16) != 0) {
@@ -782,10 +783,11 @@ void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 {
 	struct com_part *cpart = ctx->cpart[fwd_id];
 
-	if (cpart) {
+	if (cpart && !cpart->awaiting_skey) {
 		print_msg(ctx, MSG_REQUEST,"Requesting skey for node #%d\n",fwd_id);
 		gen_challenge(ctx, cpart->chg);
 		macan_send_challenge(ctx, ctx->config->key_server_id, fwd_id, cpart->chg);
+		cpart->awaiting_skey = true;
 
 		/* Timeout for receiving a new session key */
 		cpart->valid_until = read_time() + ctx->config->skey_chg_timeout;

@@ -115,6 +115,7 @@ struct macan_time {
 struct com_part {
 	struct macan_key skey;	/* Session key (from key server) */
 	uint64_t valid_until;	/* Local time of key expiration */
+	bool awaiting_skey;	/* True iff challenge was sent and we wait for the session key */
 	uint8_t chg[6];		/* Challenge for communication with key server */
 	uint8_t flags;
 	uint32_t group_field;	/* Bitmask of known key sharing */
