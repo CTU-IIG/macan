@@ -856,7 +856,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 	if(cf->can_id == CANID(ctx, ctx->config->node_id))
 		return MACAN_FRAME_PROCESSED; /* Frame sent by us */
 
-	if (cf->can_id == CANID(ctx,ctx->config->time_server_id)) {
+	if (cf->can_id == ctx->config->canid->time) {
 		switch(cf->can_dlc) {
 		case 4:
 			receive_time(ctx, cf);
@@ -948,7 +948,7 @@ bool macan_canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, macan_ecuid *ecu_
 	macan_ecuid i;
 
 	for (i = 0; i < ctx->config->node_count; i++) {
-		if (ctx->config->ecu2canid[i] == can_id) {
+		if (ctx->config->canid->ecu[i] == can_id) {
 			if(ecu_id != NULL) {
 				*ecu_id = i;
 			}

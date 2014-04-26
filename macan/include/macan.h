@@ -56,6 +56,11 @@ struct macan_sig_spec {
 	uint8_t presc;      /**< prescaler */
 };
 
+struct macan_can_ids {
+	uint32_t time;      /**< CAN-ID used to distribute time */
+	uint32_t *ecu;	    /**< Mapping from ECU-ID to crypt-frame CAN-ID */
+};
+
 /**
  * Main configuration
  */
@@ -65,7 +70,8 @@ struct macan_config {
 	uint32_t sig_count;                   /**< Number of signals in sig_spec */
 	const struct macan_sig_spec *sigspec; /**< Signal specification */
 	uint8_t node_count;                   /**< Number of nodes (ECUs) in our network */
-	const uint32_t *ecu2canid;            /**< Mapping from ECU-ID to crypt-frame CAN-ID */
+	const struct macan_can_ids *canid;    /**< CAN-IDs used by MaCAN */
+	uint32_t time_canid;
 	macan_ecuid key_server_id;            /**< ECU-ID of the key server */
 	macan_ecuid time_server_id;           /**< ECU-ID of the time server */
 	uint32_t time_div;                    /**< Number of microseconds in one MaCAN time unit */

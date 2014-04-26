@@ -170,7 +170,7 @@ struct macan_ctx {
 	};
 };
 
-#define CANID(ctx, ecuid) ((ctx)->config->ecu2canid[ecuid])
+#define CANID(ctx, ecuid) ((ctx)->config->canid->ecu[ecuid])
 
 bool macan_canid2ecuid(struct macan_ctx *ctx, uint32_t canid, macan_ecuid *ecuid);
 bool is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id);

@@ -45,11 +45,14 @@ struct macan_sig_spec demo_sig_spec[] = {
 /*     [NODE_CTU]    = {.can_id = 0x104, .ecu_id = 0x4, .name = "node_ctu"}, */
 /* }; */
 
-const uint32_t ecu2canid_map[] = {
-	[KEY_SERVER] = 0x101,
-	[TIME_SERVER] = 0x102,
-	[NODE_VW] = 0x103,
-	[NODE_CTU] = 0x104,
+const struct macan_can_ids demo_can_ids = {
+	.time = 0x000,
+	.ecu = (uint32_t[]){
+		[KEY_SERVER] = 0x101,
+		[TIME_SERVER] = 0x102,
+		[NODE_VW] = 0x103,
+		[NODE_CTU] = 0x104,
+	},
 };
 
 struct macan_config config = {
@@ -57,7 +60,7 @@ struct macan_config config = {
 	.sig_count = SIG_COUNT,
 	.sigspec = demo_sig_spec,
 	.node_count = NODE_COUNT,
-	.ecu2canid = ecu2canid_map,
+	.canid = &demo_can_ids,
 	.key_server_id = KEY_SERVER,
 	.time_server_id = TIME_SERVER,
 	.time_div = TIME_DIV,

@@ -63,7 +63,7 @@ void ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	memcpy(plain + 4, ch->chg, 6);
 	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id), 2);
 
-	canf.can_id = CANID(ctx,ctx->config->time_server_id);
+	canf.can_id = ctx->config->canid->time;
 	canf.can_dlc = 8;
 	memcpy(canf.data, &ctx->ts.bcast_time, 4);
 	macan_sign(&skey, canf.data + 4, plain, 12);
@@ -101,7 +101,7 @@ time_broadcast_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
 	usec = read_time();
 	ctx->ts.bcast_time = usec / ctx->config->time_div;
 
-	cf.can_id = CANID(ctx,ctx->config->time_server_id);
+	cf.can_id = ctx->config->canid->time;
 	cf.can_dlc = 4;
 	memcpy(cf.data, &ctx->ts.bcast_time, 4);
 

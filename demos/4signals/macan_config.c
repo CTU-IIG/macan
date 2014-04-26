@@ -31,18 +31,21 @@ struct macan_sig_spec demo_sig_spec[] = {
 	[SIGNAL_D]    = {.can_nsid = 114, .can_sid = 204, .src_id = NODE1,       .dst_id = NODE2, .presc = 5}, // signal 4 
 };
 
-const uint32_t ecu2canid_map[] = {
-	[KEY_SERVER] = 0x100,
-	[TIME_SERVER] = 0x101,
-	[NODE1] = 0x102,
-	[NODE2] = 0x103,
+const struct macan_can_ids demo_can_ids = {
+	.time = 0x000,
+	.ecu = (uint32_t[]){
+		[KEY_SERVER] = 0x100,
+		[TIME_SERVER] = 0x101,
+		[NODE1] = 0x102,
+		[NODE2] = 0x103,
+	},
 };
 
 struct macan_config config = {
 	.sig_count         = SIG_COUNT,
 	.sigspec           = demo_sig_spec,
 	.node_count        = NODE_COUNT,
-	.ecu2canid         = ecu2canid_map,
+	.canid         	   = &demo_can_ids,
 	.key_server_id     = KEY_SERVER,
 	.time_server_id    = TIME_SERVER,
 	.time_div          = 1000000,
