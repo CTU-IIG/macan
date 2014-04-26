@@ -112,7 +112,7 @@ static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
 	struct com_part *cpart;
 
 	if (!is_skey_ready(ctx, dst_id) ||
-	    !is_time_ready(ctx))
+	    !ctx->time.ready)
 		return;
 
 	cpart = get_cpart(ctx, dst_id);
@@ -462,7 +462,7 @@ void macan_send_signal_requests(struct macan_ctx *ctx)
 		if (!is_channel_ready(ctx, cp))
 			continue;
 
-		if(!is_time_ready(ctx)) // time must be ready before receiving signals
+		if(!ctx->time.ready) // time must be ready before receiving signals
 			continue;
 
 		if(sigspec[i].src_id == ctx->config->time_server_id) // don't send requests for dummy time signals
@@ -769,17 +769,6 @@ bool is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
 		return false;
 
 	return !!(cpart->group_field & (1U << ctx->config->node_id));
-}
-
-/*
- * Check whether we have clock synchronized with TS
- *
- * @param[in] ctx Macan context.
- * @return true if time is ready, false otherwise.
- */
-bool is_time_ready(struct macan_ctx *ctx)
-{
-	return ctx->time.ready;
 }
 
 void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
