@@ -27,50 +27,56 @@
 #include "cryptlib.h"
 #include <assert.h>
 #include <unistd.h> /* FIXME: get rid of this */
+#include <stdlib.h>
 
-/**
- * ts_receive_challenge() - serves the request for signed time
- * @s:  socket handle
- * @cf: received can frame with TS challenge
- *
- * This function responds to a challenge message from a general node (i.e. the
- * request for a signed time). It prepares a message containing the recent time
- * and signs it. Subsequently, the message is sent.
- */
 static
-void ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
+void send_time_auth(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t challenge[6])
 {
-	struct can_frame canf;
-	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
-	struct macan_key skey;
+	struct com_part *cp = ctx->cpart[dst_id];
 	uint8_t plain[12];
-	macan_ecuid dst_id;
-	struct com_part *cp;
-
-	if(!(cp = canid2cpart(ctx, cf->can_id)))
-		return;
-
-	dst_id = (uint8_t) (cp->ecu_id);
-
-	if (!is_skey_ready(ctx, dst_id)) {
-		print_msg(ctx, MSG_FAIL,"cannot send time, because don't have key\n");
-		return;
-	}
-
-	skey = cp->skey;
+	struct can_frame canf;
 
 	memcpy(plain, &ctx->ts.bcast_time, 4);
-	memcpy(plain + 4, ch->chg, 6);
+	memcpy(plain + 4, challenge, 6);
 	memcpy(plain + 10, &CANID(ctx, ctx->config->time_server_id), 2);
 
 	canf.can_id = ctx->config->canid->time;
 	canf.can_dlc = 8;
 	memcpy(canf.data, &ctx->ts.bcast_time, 4);
-	macan_sign(&skey, canf.data + 4, plain, 12);
+	macan_sign(&cp->skey, canf.data + 4, plain, 12);
 
 	print_msg(ctx, MSG_INFO,"sending signed time to #%d\n", dst_id);
 
+	ctx->ts.auth_req[dst_id].pending = false;
+
 	macan_send(ctx, &canf);
+}
+
+static void skey_received(struct macan_ctx *ctx, macan_ecuid dst_id)
+{
+	if (ctx->ts.auth_req[dst_id].pending) {
+		ctx->ts.auth_req[dst_id].pending = false;
+		ctx->cpart[dst_id]->skey_callback = NULL;
+		send_time_auth(ctx, dst_id, ctx->ts.auth_req[dst_id].chg);
+	}
+}
+
+static
+void ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
+{
+	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
+	macan_ecuid dst_id;
+
+	if (!macan_canid2ecuid(ctx, cf->can_id, &dst_id))
+		return;
+
+	if (is_skey_ready(ctx, dst_id))
+		send_time_auth(ctx, dst_id, ch->chg);
+	else {
+		ctx->cpart[dst_id]->skey_callback = skey_received;
+		ctx->ts.auth_req[dst_id].pending = true;
+		memcpy(ctx->ts.auth_req[dst_id].chg, ch->chg, sizeof(ch->chg));
+	}
 }
 
 static
@@ -116,6 +122,8 @@ int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, maca
 	read_time(); /* Ensure that MaCAN time starts before "event loop time" */
 
 	int ret = __macan_init(ctx, config, sockfd);
+
+	ctx->ts.auth_req = calloc(ctx->config->node_count, sizeof(*ctx->ts.auth_req));
 
 	macan_ev_can_init (&ctx->can_watcher, macan_rx_cb_ts, sockfd, MACAN_EV_READ);
 	ctx->can_watcher.data = ctx;

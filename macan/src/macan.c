@@ -246,6 +246,9 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 			send_ack(ctx, fwd_id);
 		}
 
+		if (cpart->skey_callback)
+			cpart->skey_callback(ctx, fwd_id);
+
 		return fwd_id;
 	}
 
@@ -285,18 +288,37 @@ void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid
 	macan_send(ctx, &cf);
 }
 
-static void request_signed_time(struct macan_ctx *ctx)
+static void time_skey_received(struct macan_ctx *ctx, macan_ecuid dst_id);
+
+static void request_time_auth(struct macan_ctx *ctx)
 {
-	print_msg(ctx, MSG_REQUEST,"Requesting signed time\n");
+	macan_ecuid ts_id = ctx->config->time_server_id;
+
+	if (ctx->config->node_id == ts_id)
+		return;
+
+	if (!is_skey_ready(ctx, ts_id)) {
+		ctx->cpart[ts_id]->skey_callback = time_skey_received;
+		return;
+	}
 
 	/* Don't ask TS for authenticated time too often */
 	if (read_time() - ctx->time.chal_ts > ctx->config->time_timeout ||
 	    ctx->time.chal_ts == 0) {
+		print_msg(ctx, MSG_REQUEST,"Requesting time authentication\n");
 		ctx->time.chal_ts = read_time();
 		gen_challenge(ctx, ctx->time.chg);
-		macan_send_challenge(ctx, ctx->config->time_server_id, 0, ctx->time.chg);
+		macan_send_challenge(ctx, ts_id, 0, ctx->time.chg);
 	}
 }
+
+static void time_skey_received(struct macan_ctx *ctx, macan_ecuid dst_id)
+{
+	ctx->cpart[dst_id]->skey_callback = NULL;
+	request_time_auth(ctx);
+}
+
+
 
 /**
  * Receive unsigned time.
@@ -305,27 +327,25 @@ static void request_signed_time(struct macan_ctx *ctx)
  * is out of sync, it sends a request for signed time.
  */
 static
-void receive_time(struct macan_ctx *ctx, const struct can_frame *cf)
+void receive_time_nonauth(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t time_ts;
-	uint64_t recent;
-	uint64_t time_ts_us;
-	int64_t delta;
-
-	if (!is_skey_ready(ctx, ctx->config->time_server_id)) {
-		return;
-	}
+	uint64_t loc_us;	/* Local time in microseconds */
+	uint64_t ts_us;		/* Time server time in microseconds */
+	uint64_t delta;
+	uint64_t now = read_time();
 
 	memcpy(&time_ts, cf->data, 4);
 	time_ts = le32toh(time_ts);
-	time_ts_us = (uint64_t)time_ts * ctx->config->time_div;
-	recent = read_time() + ctx->time.offs; /* Estimated time on TS (us) */
+	ts_us = (uint64_t)time_ts * ctx->config->time_div;
+	loc_us = now + ctx->time.offs; /* Estimated time on TS (us) */
+	delta = (loc_us > ts_us) ? loc_us - ts_us : ts_us - loc_us;
 
-	delta = llabs((int64_t)recent - (int64_t)time_ts_us);
-
-	if (delta > ctx->config->time_delta || !is_time_ready(ctx)) {
-		print_msg(ctx, MSG_WARN,"time out of sync (%lld us = %"PRIu64" - %"PRIu64")\n", delta, recent, time_ts_us);
-		request_signed_time(ctx);
+	if (delta > ctx->config->time_delta || !ctx->time.ready) {
+		if (ctx->time.ready)
+			print_msg(ctx, MSG_WARN, "time out of sync by %llu us  (local:%"PRIu64", TS:%"PRIu64")\n",
+				  delta, loc_us, ts_us);
+		request_time_auth(ctx);
 	}
 }
 
@@ -335,41 +355,34 @@ void receive_time(struct macan_ctx *ctx, const struct can_frame *cf)
  * Receives time and sets local clock according to it.
  */
 static
-void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
+void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t time_ts;
 	uint8_t plain[12];
 	struct macan_key skey;
-	struct com_part **cpart;
 	uint64_t time_ts_us;
 
-	cpart = ctx->cpart;
+	if (!is_skey_ready(ctx, ctx->config->time_server_id))
+		return;
 
 	memcpy(&time_ts, cf->data, 4);
 
-	if (!is_skey_ready(ctx, ctx->config->time_server_id)) {
-		ctx->time.chal_ts = 0;
-		return;
-	}
-
-	skey = cpart[ctx->config->time_server_id]->skey;
+	skey = ctx->cpart[ctx->config->time_server_id]->skey;
 	memcpy(plain, &time_ts, 4); // received time
 	memcpy(plain + 4, ctx->time.chg, 6); // challenge
 	memcpy(plain + 10, &htole32(CANID(ctx, ctx->config->time_server_id)),2);
 
 	if (!macan_check_cmac(ctx, &skey, cf->data + 4, plain, NULL, sizeof(plain))) {
 		/* not a fatal error, we possibly received signed time for different node */
-		//fail_printf("check cmac time %d\n", time_ts);
 		return;
 	}
 
 	/* cmac check ok, convert to our endianess */
 	time_ts = le32toh(time_ts);
-	
+
 	time_ts_us = time_ts * ctx->config->time_div;
 
 	ctx->time.offs += (time_ts_us - ctx->time.chal_ts);
-	ctx->time.chal_ts = 0;
 	ctx->time.ready = true;
 
 	print_msg(ctx, MSG_OK,"signed time = %d, offs %"PRIu64"\n",time_ts, ctx->time.offs);
@@ -853,10 +866,10 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 	if (cf->can_id == ctx->config->canid->time) {
 		switch(cf->can_dlc) {
 		case 4:
-			receive_time(ctx, cf);
+			receive_time_nonauth(ctx, cf);
 			return MACAN_FRAME_PROCESSED;
 		case 8:
-			receive_signed_time(ctx, cf);
+			receive_time_auth(ctx, cf);
 			return MACAN_FRAME_PROCESSED;
 		default:
 			return MACAN_FRAME_PROCESSED;
@@ -1021,6 +1034,7 @@ macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
 {
 	(void)loop; (void)revents; /* suppress warnings */
 	struct macan_ctx *ctx = w->data;
+
 	macan_request_expired_keys(ctx);
 	macan_wait_for_key_acks(ctx);
 	macan_send_signal_requests(ctx);

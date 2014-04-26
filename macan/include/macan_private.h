@@ -94,12 +94,12 @@ struct macan_signal_ex {
 /**
  * Timekeeping structure
  */
-struct macan_time {
+struct macan_timekeeping {
 	uint64_t offs;      /* contains the time difference between local time and TS time
 			       i.e. TS_time = Local_time + offs */
 	uint64_t chal_ts;   /* local timestamp when request for signed time was sent  */
 	uint8_t chg[6];	    /* challenge to the time server */
-	bool ready;   	    /* set to true when signed time was received */
+	bool ready;   	    /* set to true after first signed time message was received */
 };
 
 /**
@@ -119,6 +119,7 @@ struct com_part {
 	uint8_t flags;
 	uint32_t group_field;	/* Bitmask of known key sharing */
 	macan_ecuid ecu_id; /* ECU-ID of communication partner */
+	void (*skey_callback)(struct macan_ctx *ctx, macan_ecuid dst_id);
 };
 
 /**
@@ -150,7 +151,7 @@ struct macan_ctx {
 	const struct macan_config *config;     /* MaCAN configuration passed to macan_init() */
 	struct com_part **cpart;               /* vector of communication partners, e.g. stores keys */
 	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
-	struct macan_time time;                /* used to manage time of the protocol */
+	struct macan_timekeeping time; 	       /* used to manage time of the protocol */
 	uint64_t ack_timeout_abs;	       /* timeout for sending ACK messages ??? */
 	uint8_t keywrap[32];		       /* Temporary storage for wrapped session key */
 	int sockfd;			       /* Socket (or CAN interface id) used for CAN communication */
@@ -161,6 +162,10 @@ struct macan_ctx {
 		struct { /* time server */
 			macan_ev_timer time_bcast;
 			uint64_t bcast_time;
+			struct {
+				bool pending;
+				uint8_t chg[6];
+			} *auth_req;	       /* Pending auth requests indexed by node ID */
 		} ts;
 		struct { /* key server */
 			const struct macan_key * const *ltk;
