@@ -113,6 +113,8 @@ int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, maca
 {
 	assert(config->node_id == config->time_server_id);
 
+	read_time(); /* Ensure that MaCAN time starts before "event loop time" */
+
 	int ret = __macan_init(ctx, config, sockfd);
 
 	macan_ev_can_init (&ctx->can_watcher, macan_rx_cb_ts, sockfd, MACAN_EV_READ);
