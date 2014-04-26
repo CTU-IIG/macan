@@ -79,7 +79,6 @@ struct macan_config {
 	uint64_t skey_validity;               /**< Session key expiration time (microseconds) */
 	uint32_t skey_chg_timeout;            /**< Timeout for waiting for session key (microseconds) */
 	uint32_t time_timeout;                /**< Timeout for authenticated time (microseconds) */
-	uint32_t time_bcast_period;           /**< Timeserver broadcast period for plain time (microseconds) */
 	uint32_t time_delta;                  /**< Maximum time difference between our clock and TS (microseconds) */
 };
 

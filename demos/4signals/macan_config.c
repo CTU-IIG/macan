@@ -53,6 +53,5 @@ struct macan_config config = {
 	.skey_validity     = 60000000,
 	.skey_chg_timeout  = 5000000,
 	.time_timeout      = 1000000,
-	.time_bcast_period = 1000000,
 	.time_delta        = 1000000,
 };

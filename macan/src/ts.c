@@ -133,7 +133,7 @@ int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, maca
 	ctx->housekeeping.data = ctx;
 	macan_ev_timer_start(loop, &ctx->housekeeping);
 
-	macan_ev_timer_init (&ctx->ts.time_bcast, time_broadcast_cb, 0, 1000);
+	macan_ev_timer_init (&ctx->ts.time_bcast, time_broadcast_cb, 0, config->time_div / 1000);
 	ctx->ts.time_bcast.data = ctx;
 	macan_ev_timer_start(loop, &ctx->ts.time_bcast);
 

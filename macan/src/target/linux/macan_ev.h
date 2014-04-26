@@ -48,7 +48,7 @@ macan_ev_can_start(macan_ev_loop *loop, macan_ev_can *w)
 static inline void
 macan_ev_timer_init(macan_ev_timer *ev,
 		    void (*cb) (macan_ev_loop *loop,  macan_ev_timer *w, int revents),
-		    int after_ms, int repeat_ms)
+		    unsigned after_ms, unsigned repeat_ms)
 {
 	ev_timer_init(ev, cb, after_ms/1000.0, repeat_ms/1000.0);
 }
