@@ -241,6 +241,44 @@ void gen_challenge(struct macan_ctx *ctx, uint8_t *chal)
 	}
 }
 
+static
+void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
+{
+	struct can_frame cf = {0};
+	struct macan_challenge chal = { .flags_and_dst_id = (uint8_t)((FL_CHALLENGE << 6) | (dst_id & 0x3F)), .fwd_id = fwd_id };
+
+	if (chg) {
+		memcpy(chal.chg, chg, 6);
+		cf.can_dlc = 8;
+	} else {
+		cf.can_dlc = 2;
+	}
+
+	cf.can_id = CANID(ctx, ctx->config->node_id);
+	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
+
+	macan_send(ctx, &cf);
+}
+
+static void request_time_auth(struct macan_ctx *ctx)
+{
+	macan_ecuid ts_id = ctx->config->time_server_id;
+
+	if (ctx->config->node_id == ts_id ||
+	    !is_skey_ready(ctx, ts_id) ||
+	    ctx->time.nonauth_loc == 0)
+		return;
+
+	/* Don't ask TS for authenticated time too often */
+	if (read_time() - ctx->time.chal_ts > ctx->config->time_timeout ||
+	    ctx->time.chal_ts == 0) {
+		print_msg(ctx, MSG_REQUEST,"Requesting time authentication\n");
+		ctx->time.chal_ts = read_time();
+		gen_challenge(ctx, ctx->time.chg);
+		macan_send_challenge(ctx, ts_id, 0, ctx->time.chg);
+	}
+}
+
 /**
  * Receive a session key.
  *
@@ -308,6 +346,9 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 			send_ack(ctx, fwd_id);
 		}
 
+		if (!ctx->time.ready && fwd_id == ctx->config->time_server_id)
+			request_time_auth(ctx);
+
 		if (cpart->skey_callback)
 			cpart->skey_callback(ctx, fwd_id);
 
@@ -316,71 +357,6 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	return RECEIVE_SKEY_IN_PROGRESS;
 }
-
-static
-void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
-{
-	struct can_frame cf = {0};
-	struct macan_challenge chal = { .flags_and_dst_id = (uint8_t)((FL_CHALLENGE << 6) | (dst_id & 0x3F)), .fwd_id = fwd_id };
-
-	if (chg) {
-		memcpy(chal.chg, chg, 6);
-		cf.can_dlc = 8;
-	} else {
-		cf.can_dlc = 2;
-	}
-
-	cf.can_id = CANID(ctx, ctx->config->node_id);
-	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
-
-#ifdef DEBUG
-    // Print info start
-    printf(ANSI_COLOR_CYAN "SEND Challenge" ANSI_COLOR_RESET "\n"); 
-    printf("dst_id: 0x%X, fwd_id: 0x%X, ",
-            dst_id,
-            fwd_id);
-    if (chg) {
-	    printf("chal: ");
-	    print_hexn(chg,6);
-    } else
-	    printf("\n");
-    // Print info end
-#endif
-
-	macan_send(ctx, &cf);
-}
-
-static void time_skey_received(struct macan_ctx *ctx, macan_ecuid dst_id);
-
-static void request_time_auth(struct macan_ctx *ctx)
-{
-	macan_ecuid ts_id = ctx->config->time_server_id;
-
-	if (ctx->config->node_id == ts_id)
-		return;
-
-	if (!is_skey_ready(ctx, ts_id)) {
-		ctx->cpart[ts_id]->skey_callback = time_skey_received;
-		return;
-	}
-
-	/* Don't ask TS for authenticated time too often */
-	if (read_time() - ctx->time.chal_ts > ctx->config->time_timeout ||
-	    ctx->time.chal_ts == 0) {
-		print_msg(ctx, MSG_REQUEST,"Requesting time authentication\n");
-		ctx->time.chal_ts = read_time();
-		gen_challenge(ctx, ctx->time.chg);
-		macan_send_challenge(ctx, ts_id, 0, ctx->time.chg);
-	}
-}
-
-static void time_skey_received(struct macan_ctx *ctx, macan_ecuid dst_id)
-{
-	ctx->cpart[dst_id]->skey_callback = NULL;
-	request_time_auth(ctx);
-}
-
-
 
 /**
  * Receive unsigned time.
