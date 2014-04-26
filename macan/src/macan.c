@@ -82,6 +82,83 @@ int macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback f
 }
 
 /**
+ * Check we have authenticated channel with dst.
+ *
+ * Checks if has the session key and if the communication partner
+ * has acknowledged the communication with an ACK message.
+ */
+static
+bool is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
+{
+#ifdef VW_COMPATIBLE
+	/* VW compatible -> ACK is disabled, channel is ready */
+	return true;
+#endif
+
+	struct com_part *cp = get_cpart(ctx, dst);
+	if (cp == NULL)
+		return false;
+
+	uint32_t both = 1U << dst | 1U << ctx->config->node_id;
+	return (cp->group_field & both) == both;
+}
+
+static
+void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint8_t prescaler)
+{
+	uint64_t t;
+	uint8_t plain[8];
+	struct macan_key skey;
+	struct can_frame cf = {0};
+	struct macan_sig_auth_req areq;
+
+	t = macan_get_time(ctx);
+	skey = get_cpart(ctx, dst_id)->skey;
+
+	memcpy(plain, &htole32(t), 4);
+	plain[4] = ctx->config->node_id;
+	plain[5] = dst_id;
+	plain[6] = sig_num;
+	plain[7] = prescaler;
+
+	areq.flags_and_dst_id = FL_AUTH_REQ << 6 | dst_id;
+	areq.sig_num = sig_num;
+	areq.prescaler = prescaler;
+	macan_sign(&skey, areq.cmac, plain, sizeof(plain));
+
+	cf.can_id = CANID(ctx, ctx->config->node_id);
+	cf.can_dlc = 7;
+	memcpy(&cf.data, &areq, 7);
+
+	macan_send(ctx, &cf);
+}
+
+static
+void request_signals(struct macan_ctx *ctx)
+{
+	uint8_t i;
+
+	if (!ctx->time.ready)
+		return;
+
+	/* ToDo: repeat auth_req for the case the signal source will restart */
+	for (i = 0; i < ctx->config->sig_count; i++) {
+		const struct macan_sig_spec *sigspec = &ctx->config->sigspec[i];
+		struct sig_handle *sighand = ctx->sighand[i];
+
+		if (sigspec->dst_id != ctx->config->node_id ||
+		    !is_channel_ready(ctx, sigspec->src_id))
+			continue;
+
+		if (!(sighand->flags & AUTHREQ_SENT)) {
+			sighand->flags |= AUTHREQ_SENT;
+			print_msg(ctx, MSG_REQUEST,"Sending req auth for signal #%d\n",i);
+			send_auth_req(ctx, sigspec->src_id, i, sigspec->presc);
+		}
+	}
+}
+
+/**
  * Sends an ACK message.
  */
 static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
@@ -127,19 +204,19 @@ static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
 
 static void receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	struct com_part *cp;
+	struct com_part *cp = canid2cpart(ctx, cf->can_id);
 	struct macan_ack *ack = (struct macan_ack *)cf->data;
 	uint8_t plain[8];
 
-	if(!(cp = canid2cpart(ctx, cf->can_id)))
+	if (!cp)
 		return;
 
 	plain[4] = ack->flags_and_dst_id & 0x3f;
 	memcpy(plain + 5, ack->group, 3);
 
-	/* ToDo: make difference between wrong CMAC and not having the key */
 	if (!macan_check_cmac(ctx, &cp->skey, ack->cmac, plain, plain, sizeof(plain))) {
-		fail_printf(ctx, "%s\n","error: ACK CMAC failed");
+		if (is_skey_ready(ctx, cp->ecu_id))
+			fail_printf(ctx, "%s\n","error: ACK CMAC failed");
 		return;
 	}
 
@@ -151,6 +228,8 @@ static void receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	if ((ack_group & (1U << ctx->config->node_id)) == 0)
 		send_ack(ctx, cp->ecu_id);
+
+	request_signals(ctx);
 }
 
 static
@@ -390,109 +469,10 @@ void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 	print_msg(ctx, MSG_OK,"signed time = %d, offs %"PRIu64"\n",time_ts, t->offs);
 
 	/* Now, when time is synchronized, we can send acks for keys
-	 * received so far. */
+	 * received so far and request signals from nodes we have
+	 * session keys for. */
 	send_acks(ctx);
-}
-
-/**
- * Send authorization request.
- *
- * Requests an authorized signal from communication partner.
- *
- * @param dst_id   com. partner id, the signal source
- * @param sig_num  signal id
- * @param prescaler
- */
-static
-void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint8_t prescaler)
-{
-	uint64_t t;
-	uint8_t plain[8];
-	struct macan_key skey;
-	struct can_frame cf = {0};
-	struct macan_sig_auth_req areq;
-
-	t = macan_get_time(ctx);
-	skey = get_cpart(ctx, dst_id)->skey;
-
-	memcpy(plain, &htole32(t), 4);
-	plain[4] = ctx->config->node_id;
-	plain[5] = dst_id;
-	plain[6] = sig_num;
-	plain[7] = prescaler;
-
-	areq.flags_and_dst_id = FL_AUTH_REQ << 6 | dst_id;
-	areq.sig_num = sig_num;
-	areq.prescaler = prescaler;
-	macan_sign(&skey, areq.cmac, plain, sizeof(plain));
-
-	cf.can_id = CANID(ctx, ctx->config->node_id);
-	cf.can_dlc = 7;
-	memcpy(&cf.data, &areq, 7);
-
-	macan_send(ctx, &cf);
-}
-
-/**
- * Check we have authenticated channel with dst.
- *
- * Checks if has the session key and if the communication partner
- * has acknowledged the communication with an ACK message.
- */
-static
-bool is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
-{
-#ifdef VW_COMPATIBLE
-	/* VW compatible -> ACK is disabled, channel is ready */
-	return true;
-#endif
-
-	struct com_part *cp = get_cpart(ctx, dst);
-	if (cp == NULL)
-		return false;
-
-	uint32_t both = 1U << dst | 1U << ctx->config->node_id;
-	return (cp->group_field & both) == both;
-}
-
-/**
- * Sends signal requests
- *
- * Signal request are send if channel and time is ready
- */
-static
-void macan_send_signal_requests(struct macan_ctx *ctx)
-{
-	uint8_t cp, presc, i;
-	const struct macan_sig_spec *sigspec;
-	struct sig_handle **sighand;
-
-	sighand = ctx->sighand;
-	sigspec = ctx->config->sigspec;
-
-	/* ToDo: repeat auth_req for the case the signal source will restart */
-	for (i = 0; i < ctx->config->sig_count; i++) {
-		if (sigspec[i].dst_id != ctx->config->node_id)
-			continue;
-
-		cp = sigspec[i].src_id;
-		presc = sigspec[i].presc;
-
-		if (!is_channel_ready(ctx, cp))
-			continue;
-
-		if(!ctx->time.ready) // time must be ready before receiving signals
-			continue;
-
-		if(sigspec[i].src_id == ctx->config->time_server_id) // don't send requests for dummy time signals
-			continue;
-
-		if (!(sighand[i]->flags & AUTHREQ_SENT)) {
-			sighand[i]->flags |= AUTHREQ_SENT;
-			print_msg(ctx, MSG_REQUEST,"Sending req auth for signal #%d\n",i);
-			send_auth_req(ctx, cp, i, presc);
-		}
-	}
+	request_signals(ctx);
 }
 
 static
@@ -999,7 +979,6 @@ macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
 	struct macan_ctx *ctx = w->data;
 
 	macan_request_expired_keys(ctx);
-	macan_send_signal_requests(ctx);
 }
 
 static void
