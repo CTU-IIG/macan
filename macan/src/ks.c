@@ -81,7 +81,8 @@ void send_skey(struct macan_ctx *ctx, const struct macan_key *key, macan_ecuid d
 
 	/* ToDo: solve name inconsistency - key */
 	if (lookup_skey(ctx, dst_id, fwd_id, &skey)) {
-		macan_send_challenge(ctx, fwd_id, dst_id, NULL);
+		//FIXME: We should send REQ_CHALLENGE here, not CHALLENGE
+		//macan_send_challenge(ctx, fwd_id, dst_id, NULL);
 	}
 
 	memcpy(plain, skey->data, sizeof(skey->data));

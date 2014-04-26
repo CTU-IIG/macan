@@ -71,201 +71,13 @@ static inline struct com_part *get_cpart(struct macan_ctx *ctx, macan_ecuid i)
  * Allocates com_part and sets it to the default value, i.e. wait
  * for this node and its counterpart to share the key.
  */
+static
 void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
 {
 	struct com_part **cpart = ctx->cpart;
 	cpart[i] = malloc(sizeof(struct com_part));
 	memset(cpart[i], 0, sizeof(struct com_part));
 	cpart[i]->ecu_id = i;
-}
-
-void macan_request_expired_keys(struct macan_ctx *ctx);
-
-void
-macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
-{
-	(void)loop; (void)revents; /* suppress warnings */
-	struct macan_ctx *ctx = w->data;
-	macan_request_expired_keys(ctx);
-	macan_wait_for_key_acks(ctx);
-	macan_send_signal_requests(ctx);
-}
-
-static void
-can_rx_cb(macan_ev_loop *loop, macan_ev_can *w, int revents)
-{
-	(void)loop; (void)revents; /* suppress warnings */
-	struct macan_ctx *ctx = w->data;
-	struct can_frame cf;
-
-	macan_read(ctx, &cf);
-	macan_process_frame(ctx, &cf);
-}
-
-/**
- * Initialize MaCAN context.
- *
- * This function fills the macan_ctx structure. This function should be
- * called before using the MaCAN library.
- *
- * @param *ctx pointer to MaCAN context
- * @param *config pointer to configuration
- */
-int __macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd)
-{
-	unsigned i;
-	uint8_t cp;
-
-	memset(ctx, 0, sizeof(struct macan_ctx));
-	ctx->config = config;
-	ctx->cpart = malloc(config->node_count * sizeof(struct com_part *));
-	memset(ctx->cpart, 0, config->node_count * sizeof(struct com_part *));
-	ctx->sighand = malloc(config->sig_count * sizeof(struct sig_handle *));
-	memset(ctx->sighand, 0, config->sig_count * sizeof(struct sig_handle *));
-
-	if(config->node_id == config->time_server_id) {
-		/* We are timeserver, we need to init communication with
-		 * every other node */
-		for(i = 0; i < config->node_count; i++) {
-			if(i == config->key_server_id || i == config->time_server_id) {
-				/* skip KS and TS */
-				continue;
-			}
-			init_cpart(ctx, (uint8_t)i);
-		}
-	} else {
-		/* We are normal node */
-		for (i = 0; i < config->sig_count; i++) {
-			if (config->sigspec[i].src_id == config->node_id) {
-				cp = config->sigspec[i].dst_id;
-
-				if (ctx->cpart[cp] == NULL) {
-					init_cpart(ctx, cp);
-				}
-			}
-			if (config->sigspec[i].dst_id == config->node_id) {
-				cp = config->sigspec[i].src_id;
-
-				if (ctx->cpart[cp] == NULL) {
-					init_cpart(ctx, cp);
-				}
-			}
-
-			ctx->sighand[i] = malloc(sizeof(struct sig_handle));
-			ctx->sighand[i]->presc = SIG_DONTSIGN; //SIG_DONTSIGN;
-			ctx->sighand[i]->presc_cnt = 0;
-			ctx->sighand[i]->flags = 0;
-			ctx->sighand[i]->cback = NULL;
-		}
-
-		/* also need to communicate with TS */
-		init_cpart(ctx,config->time_server_id);
-	}
-
-	ctx->sockfd = sockfd;
-
-	return 0;
-}
-
-int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd)
-{
-	assert(config->node_id != config->key_server_id);
-	assert(config->node_id != config->time_server_id);
-
-	int ret = __macan_init(ctx, config, sockfd);
-
-	macan_ev_can_init (&ctx->can_watcher, can_rx_cb, sockfd, MACAN_EV_READ);
-	ctx->can_watcher.data = ctx;
-	macan_ev_can_start (loop, &ctx->can_watcher);
-
-	macan_ev_timer_init (&ctx->housekeeping, macan_housekeeping_cb, 0, 1000);
-	ctx->housekeeping.data = ctx;
-	macan_ev_timer_start(loop, &ctx->housekeeping);
-
-	return ret;
-}
-
-static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id);
-
-/**
- * Establishes authenticated channel.
- *
- * ACK messages are broadcasted in order to create authenticated
- * communication channel. This function sends ACK messages, if channel
- * is not ready (given we already have received key from KS)
- *
- * @param *ctx pointer to MaCAN context
- * @param s socket file descriptor
- */
-int macan_wait_for_key_acks(struct macan_ctx *ctx)
-{
-	uint8_t i;
-	int r = 0;
-	struct com_part **cpart;
-
-	cpart = ctx->cpart;
-
-	if (ctx->ack_timeout_abs > read_time())
-		return -1;
-	ctx->ack_timeout_abs = read_time() + ctx->config->ack_timeout;
-
-	for (i = 0; i < ctx->config->node_count; i++) {
-		if (i == ctx->config->time_server_id)
-			continue;
-
-		if (cpart[i] == NULL)
-			continue;
-
-		if (!is_skey_ready(ctx, i))
-			continue;
-
-		if (!is_channel_ready(ctx, i)) {
-			r++;
-			send_ack(ctx, i);
-			continue;
-		}
-	}
-
-	return 0;
-}
-/**
- * Sends signal requests
- *
- * Signal request are send if channel and time is ready
- */
-void macan_send_signal_requests(struct macan_ctx *ctx)
-{
-
-	uint8_t cp, presc, i;
-	const struct macan_sig_spec *sigspec;
-	struct sig_handle **sighand;
-
-	sighand = ctx->sighand;
-	sigspec = ctx->config->sigspec;
-
-	/* ToDo: repeat auth_req for the case the signal source will restart */
-	for (i = 0; i < ctx->config->sig_count; i++) {
-		if (sigspec[i].dst_id != ctx->config->node_id)
-			continue;
-
-		cp = sigspec[i].src_id;
-		presc = sigspec[i].presc;
-
-		if (!is_channel_ready(ctx, cp))
-			continue;
-
-		if(!is_time_ready(ctx)) // time must be ready before receiving signals
-			continue;
-
-		if(sigspec[i].src_id == ctx->config->time_server_id) // don't send requests for dummy time signals
-			continue;
-
-		if (!(sighand[i]->flags & AUTHREQ_SENT)) {
-			sighand[i]->flags |= AUTHREQ_SENT;
-			print_msg(ctx, MSG_REQUEST,"Sending req auth for signal #%d\n",i);
-			send_auth_req(ctx, cp, i, presc);
-		}
-	}
 }
 
 /**
@@ -358,6 +170,7 @@ static void receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 		send_ack(ctx, cp->ecu_id);
 }
 
+static
 void gen_challenge(struct macan_ctx *ctx, uint8_t *chal)
 {
 	if(!gen_rand_data(chal, 6)) {
@@ -438,6 +251,7 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	return RECEIVE_SKEY_IN_PROGRESS;
 }
 
+static
 void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg)
 {
 	struct can_frame cf = {0};
@@ -476,6 +290,7 @@ void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid
  * Receives time and checks whether local clock is in sync. If local clock
  * is out of sync, it sends a request for signed time.
  */
+static
 void receive_time(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t time_ts;
@@ -515,6 +330,7 @@ void receive_time(struct macan_ctx *ctx, const struct can_frame *cf)
  *
  * Receives time and sets local clock according to it.
  */
+static
 void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t time_ts;
@@ -564,6 +380,7 @@ void receive_signed_time(struct macan_ctx *ctx, const struct can_frame *cf)
  * @param sig_num  signal id
  * @param prescaler
  */
+static
 void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint8_t prescaler)
 {
 	uint64_t t;
@@ -593,6 +410,69 @@ void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, u
 	macan_send(ctx, &cf);
 }
 
+/**
+ * Check we have authenticated channel with dst.
+ *
+ * Checks if has the session key and if the communication partner
+ * has acknowledged the communication with an ACK message.
+ */
+static
+bool is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
+{
+#ifdef VW_COMPATIBLE
+	/* VW compatible -> ACK is disabled, channel is ready */
+	return true;
+#endif
+
+	struct com_part *cp = get_cpart(ctx, dst);
+	if (cp == NULL)
+		return false;
+
+	uint32_t both = 1U << dst | 1U << ctx->config->node_id;
+	return (cp->group_field & both) == both;
+}
+
+/**
+ * Sends signal requests
+ *
+ * Signal request are send if channel and time is ready
+ */
+static
+void macan_send_signal_requests(struct macan_ctx *ctx)
+{
+	uint8_t cp, presc, i;
+	const struct macan_sig_spec *sigspec;
+	struct sig_handle **sighand;
+
+	sighand = ctx->sighand;
+	sigspec = ctx->config->sigspec;
+
+	/* ToDo: repeat auth_req for the case the signal source will restart */
+	for (i = 0; i < ctx->config->sig_count; i++) {
+		if (sigspec[i].dst_id != ctx->config->node_id)
+			continue;
+
+		cp = sigspec[i].src_id;
+		presc = sigspec[i].presc;
+
+		if (!is_channel_ready(ctx, cp))
+			continue;
+
+		if(!is_time_ready(ctx)) // time must be ready before receiving signals
+			continue;
+
+		if(sigspec[i].src_id == ctx->config->time_server_id) // don't send requests for dummy time signals
+			continue;
+
+		if (!(sighand[i]->flags & AUTHREQ_SENT)) {
+			sighand[i]->flags |= AUTHREQ_SENT;
+			print_msg(ctx, MSG_REQUEST,"Sending req auth for signal #%d\n",i);
+			send_auth_req(ctx, cp, i, presc);
+		}
+	}
+}
+
+static
 void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint8_t sig_num;
@@ -655,6 +535,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
  *
  * Signs signal using CMAC and transmits it.
  */
+static
 int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint32_t sig_val)
 {
 	struct can_frame cf = {0};
@@ -766,6 +647,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
  * Receives signal, checks its CMAC and calls appropriate callback.
  */
 /* ToDo: receive signal frame with 32bits */
+static
 void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t sig_num)
 {
 	uint8_t plain[10];
@@ -798,6 +680,7 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 	__receive_sig(ctx, sig_num, sig_val, cmac, plain, fill_time, plain_length);
 }
 
+static
 void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint8_t plain[10];
@@ -884,27 +767,6 @@ bool is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
 	return !!(cpart->group_field & (1U << ctx->config->node_id));
 }
 
-/**
- * Check we have authenticated channel with dst.
- *
- * Checks if has the session key and if the communication partner
- * has acknowledged the communication with an ACK message.
- */
-bool is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
-{
-#ifdef VW_COMPATIBLE
-	/* VW compatible -> ACK is disabled, channel is ready */	
-	return true;
-#endif
-
-	struct com_part *cp = get_cpart(ctx, dst);
-	if (cp == NULL)
-		return false;
-
-	uint32_t both = 1U << dst | 1U << ctx->config->node_id;
-	return (cp->group_field & both) == both;
-}
-
 /*
  * Check whether we have clock synchronized with TS
  *
@@ -948,6 +810,30 @@ void macan_request_expired_keys(struct macan_ctx *ctx)
 uint64_t macan_get_time(struct macan_ctx *ctx)
 {
 	return (read_time() + (uint64_t)ctx->time.offs) / ctx->config->time_div;
+}
+
+/*
+ * Get signal number of 32bit signal from it's secure CAN-ID.
+ *
+ * @param[in]  ctx     Macan context.
+ * @param[in]  can_id  secure CAN-ID of signal
+ * @param[out] sig_num Pointer where signal number will be written
+ * @return true if singal number was found, false otherwise.
+ */
+static
+bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
+{
+	uint32_t i;
+
+	for(i = 0; i < ctx->config->sig_count; i++) {
+		if(ctx->config->sigspec[i].can_sid == can_id) {
+			if(sig_num != NULL) {
+				*sig_num = i;
+			}
+			return SUCCESS;
+		}
+	}
+	return ERROR;
 }
 
 /**
@@ -1048,29 +934,6 @@ bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num)
     return (ctx->config->sigspec[sig_num].can_sid != 0 ? SUCCESS : ERROR);
 }
 
-/* 
- * Get signal number of 32bit signal from it's secure CAN-ID.
- * 
- * @param[in]  ctx     Macan context.
- * @param[in]  can_id  secure CAN-ID of signal
- * @param[out] sig_num Pointer where signal number will be written 
- * @return true if singal number was found, false otherwise.
- */
-bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
-{
-	uint32_t i;
-   
-	for(i = 0; i < ctx->config->sig_count; i++) {
-		if(ctx->config->sigspec[i].can_sid == can_id) {
-			if(sig_num != NULL) {
-				*sig_num = i;
-			}
-			return SUCCESS;
-		}
-	} 
-	return ERROR;
-}
-
 /*
  * Get node's ECU-ID from CAN-ID.
  *
@@ -1117,4 +980,151 @@ struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id)
 	 * it's cpart pointer is initialized to NULL,
 	 * so we can directly return it. */
 	return get_cpart(ctx, ecu_id);
+}
+
+/**
+ * Establishes authenticated channel.
+ *
+ * ACK messages are broadcasted in order to create authenticated
+ * communication channel. This function sends ACK messages, if channel
+ * is not ready (given we already have received key from KS)
+ *
+ * @param *ctx pointer to MaCAN context
+ * @param s socket file descriptor
+ */
+static
+int macan_wait_for_key_acks(struct macan_ctx *ctx)
+{
+	uint8_t i;
+	int r = 0;
+	struct com_part **cpart;
+
+	cpart = ctx->cpart;
+
+	if (ctx->ack_timeout_abs > read_time())
+		return -1;
+	ctx->ack_timeout_abs = read_time() + ctx->config->ack_timeout;
+
+	for (i = 0; i < ctx->config->node_count; i++) {
+		if (i == ctx->config->time_server_id)
+			continue;
+
+		if (cpart[i] == NULL)
+			continue;
+
+		if (!is_skey_ready(ctx, i))
+			continue;
+
+		if (!is_channel_ready(ctx, i)) {
+			r++;
+			send_ack(ctx, i);
+			continue;
+		}
+	}
+
+	return 0;
+}
+
+void
+macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
+{
+	(void)loop; (void)revents; /* suppress warnings */
+	struct macan_ctx *ctx = w->data;
+	macan_request_expired_keys(ctx);
+	macan_wait_for_key_acks(ctx);
+	macan_send_signal_requests(ctx);
+}
+
+static void
+can_rx_cb(macan_ev_loop *loop, macan_ev_can *w, int revents)
+{
+	(void)loop; (void)revents; /* suppress warnings */
+	struct macan_ctx *ctx = w->data;
+	struct can_frame cf;
+
+	macan_read(ctx, &cf);
+	macan_process_frame(ctx, &cf);
+}
+
+/**
+ * Initialize MaCAN context.
+ *
+ * This function fills the macan_ctx structure. This function should be
+ * called before using the MaCAN library.
+ *
+ * @param *ctx pointer to MaCAN context
+ * @param *config pointer to configuration
+ */
+int __macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd)
+{
+	unsigned i;
+	uint8_t cp;
+
+	memset(ctx, 0, sizeof(struct macan_ctx));
+	ctx->config = config;
+	ctx->cpart = malloc(config->node_count * sizeof(struct com_part *));
+	memset(ctx->cpart, 0, config->node_count * sizeof(struct com_part *));
+	ctx->sighand = malloc(config->sig_count * sizeof(struct sig_handle *));
+	memset(ctx->sighand, 0, config->sig_count * sizeof(struct sig_handle *));
+
+	if(config->node_id == config->time_server_id) {
+		/* We are timeserver, we need to init communication with
+		 * every other node */
+		for(i = 0; i < config->node_count; i++) {
+			if(i == config->key_server_id || i == config->time_server_id) {
+				/* skip KS and TS */
+				continue;
+			}
+			init_cpart(ctx, (uint8_t)i);
+		}
+	} else {
+		/* We are normal node */
+		for (i = 0; i < config->sig_count; i++) {
+			if (config->sigspec[i].src_id == config->node_id) {
+				cp = config->sigspec[i].dst_id;
+
+				if (ctx->cpart[cp] == NULL) {
+					init_cpart(ctx, cp);
+				}
+			}
+			if (config->sigspec[i].dst_id == config->node_id) {
+				cp = config->sigspec[i].src_id;
+
+				if (ctx->cpart[cp] == NULL) {
+					init_cpart(ctx, cp);
+				}
+			}
+
+			ctx->sighand[i] = malloc(sizeof(struct sig_handle));
+			ctx->sighand[i]->presc = SIG_DONTSIGN; //SIG_DONTSIGN;
+			ctx->sighand[i]->presc_cnt = 0;
+			ctx->sighand[i]->flags = 0;
+			ctx->sighand[i]->cback = NULL;
+		}
+
+		/* also need to communicate with TS */
+		init_cpart(ctx,config->time_server_id);
+	}
+
+	ctx->sockfd = sockfd;
+
+	return 0;
+}
+
+int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd)
+{
+	assert(config->node_id != config->key_server_id);
+	assert(config->node_id != config->time_server_id);
+
+	int ret = __macan_init(ctx, config, sockfd);
+
+	macan_ev_can_init (&ctx->can_watcher, can_rx_cb, sockfd, MACAN_EV_READ);
+	ctx->can_watcher.data = ctx;
+	macan_ev_can_start (loop, &ctx->can_watcher);
+
+	macan_ev_timer_init (&ctx->housekeeping, macan_housekeeping_cb, 0, 1000);
+	ctx->housekeeping.data = ctx;
+	macan_ev_timer_start(loop, &ctx->housekeeping);
+
+	return ret;
 }

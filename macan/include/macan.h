@@ -103,10 +103,8 @@ int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, mac
 int  macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
 
 void macan_request_keys(struct macan_ctx *ctx);
-int  macan_wait_for_key_acks(struct macan_ctx *ctx);
 int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback fnc, macan_sig_cback invalid_cmac);
 void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t signal);
 enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struct can_frame *cf);
-void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chg);
 
 #endif /* MACAN_H */
