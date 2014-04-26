@@ -94,15 +94,13 @@ static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
 	struct macan_ack ack = { .flags_and_dst_id = (uint8_t)(FL_ACK << 6 | (dst_id & 0x3f)), .group = {0}, .cmac = {0}};
 	uint8_t plain[8] = {0};
 	struct can_frame cf = {0};
-	struct com_part *cpart;
+	struct com_part *cpart = get_cpart(ctx, dst_id);
 
-	if (!is_skey_ready(ctx, dst_id) ||
+	if (!cpart ||
+	    !is_skey_ready(ctx, dst_id) ||
 	    !ctx->time.ready)
 		return;
 
-	cpart = get_cpart(ctx, dst_id);
-	if (cpart == NULL)
-		return;
 	uint32_t group_field = htole32(cpart->group_field);
 	memcpy(&ack.group, &group_field, 3);
 	uint32_t time = htole32((uint32_t)macan_get_time(ctx));
@@ -339,6 +337,14 @@ void receive_time_nonauth(struct macan_ctx *ctx, const struct can_frame *cf)
 	t->nonauth_loc = now;
 }
 
+static void send_acks(struct macan_ctx *ctx)
+{
+        macan_ecuid i;
+	for (i = 0; i < ctx->config->node_count; i++)
+		if (is_skey_ready(ctx, i))
+			send_ack(ctx, i);
+}
+
 /**
  * Receive signed time.
  *
@@ -382,6 +388,10 @@ void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 	t->ready = true;
 
 	print_msg(ctx, MSG_OK,"signed time = %d, offs %"PRIu64"\n",time_ts, t->offs);
+
+	/* Now, when time is synchronized, we can send acks for keys
+	 * received so far. */
+	send_acks(ctx);
 }
 
 /**
@@ -975,54 +985,11 @@ struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id)
 		/* there is no node with given CAN-ID */
 		return NULL;
 	}
-	
+
 	/* if ECU-ID is not our communication partner
 	 * it's cpart pointer is initialized to NULL,
 	 * so we can directly return it. */
 	return get_cpart(ctx, ecu_id);
-}
-
-/**
- * Establishes authenticated channel.
- *
- * ACK messages are broadcasted in order to create authenticated
- * communication channel. This function sends ACK messages, if channel
- * is not ready (given we already have received key from KS)
- *
- * @param *ctx pointer to MaCAN context
- * @param s socket file descriptor
- */
-static
-int macan_wait_for_key_acks(struct macan_ctx *ctx)
-{
-	uint8_t i;
-	int r = 0;
-	struct com_part **cpart;
-
-	cpart = ctx->cpart;
-
-	if (ctx->ack_timeout_abs > read_time())
-		return -1;
-	ctx->ack_timeout_abs = read_time() + ctx->config->ack_timeout;
-
-	for (i = 0; i < ctx->config->node_count; i++) {
-		if (i == ctx->config->time_server_id)
-			continue;
-
-		if (cpart[i] == NULL)
-			continue;
-
-		if (!is_skey_ready(ctx, i))
-			continue;
-
-		if (!is_channel_ready(ctx, i)) {
-			r++;
-			send_ack(ctx, i);
-			continue;
-		}
-	}
-
-	return 0;
 }
 
 void
@@ -1032,7 +999,6 @@ macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
 	struct macan_ctx *ctx = w->data;
 
 	macan_request_expired_keys(ctx);
-	macan_wait_for_key_acks(ctx);
 	macan_send_signal_requests(ctx);
 }
 

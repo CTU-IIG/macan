@@ -75,7 +75,6 @@ struct macan_config {
 	macan_ecuid key_server_id;            /**< ECU-ID of the key server */
 	macan_ecuid time_server_id;           /**< ECU-ID of the time server */
 	uint32_t time_div;                    /**< Number of microseconds in one MaCAN time unit */
-	uint32_t ack_timeout;                 /**< Timeout for waiting for key acknowledge (microseconds) */
 	uint64_t skey_validity;               /**< Session key expiration time (microseconds) */
 	uint32_t skey_chg_timeout;            /**< Timeout for waiting for session key (microseconds) */
 	uint32_t time_timeout;                /**< Timeout for authenticated time (microseconds) */

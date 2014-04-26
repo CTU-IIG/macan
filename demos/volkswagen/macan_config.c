@@ -64,7 +64,6 @@ struct macan_config config = {
 	.key_server_id = KEY_SERVER,
 	.time_server_id = TIME_SERVER,
 	.time_div = TIME_DIV,
-	.ack_timeout = ACK_TIMEOUT,
 	.skey_validity = SKEY_TIMEOUT,
 	.skey_chg_timeout = SKEY_CHG_TIMEOUT,
 	.time_timeout = ACK_TIMEOUT,

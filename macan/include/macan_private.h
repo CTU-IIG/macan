@@ -155,7 +155,6 @@ struct macan_ctx {
 	struct com_part **cpart;               /* vector of communication partners, e.g. stores keys */
 	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
 	struct macan_timekeeping time; 	       /* used to manage time of the protocol */
-	uint64_t ack_timeout_abs;	       /* timeout for sending ACK messages ??? */
 	uint8_t keywrap[32];		       /* Temporary storage for wrapped session key */
 	int sockfd;			       /* Socket (or CAN interface id) used for CAN communication */
 	macan_ev_loop *loop;
