@@ -66,21 +66,6 @@ static inline struct com_part *get_cpart(struct macan_ctx *ctx, macan_ecuid i)
 }
 
 /**
- * Initialize communication partner.
- *
- * Allocates com_part and sets it to the default value, i.e. wait
- * for this node and its counterpart to share the key.
- */
-static
-void init_cpart(struct macan_ctx *ctx, macan_ecuid i)
-{
-	struct com_part **cpart = ctx->cpart;
-	cpart[i] = malloc(sizeof(struct com_part));
-	memset(cpart[i], 0, sizeof(struct com_part));
-	cpart[i]->ecu_id = i;
-}
-
-/**
  * Register a callback function.
  *
  * The callback should serve signal reception.
@@ -1062,6 +1047,23 @@ can_rx_cb(macan_ev_loop *loop, macan_ev_can *w, int revents)
 		macan_process_frame(ctx, &cf);
 }
 
+void __macan_init_cpart(struct macan_ctx *ctx, macan_ecuid i)
+{
+	if (ctx->cpart[i] == NULL) {
+		ctx->cpart[i] = calloc(1, sizeof(struct com_part));
+		ctx->cpart[i]->ecu_id = i;
+	}
+}
+
+void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd)
+{
+	memset(ctx, 0, sizeof(struct macan_ctx));
+	ctx->config = config;
+	ctx->cpart = calloc(config->node_count, sizeof(struct com_part *));
+	ctx->sighand = calloc(config->sig_count, sizeof(struct sig_handle *));
+	ctx->sockfd = sockfd;
+}
+
 /**
  * Initialize MaCAN context.
  *
@@ -1071,69 +1073,33 @@ can_rx_cb(macan_ev_loop *loop, macan_ev_can *w, int revents)
  * @param *ctx pointer to MaCAN context
  * @param *config pointer to configuration
  */
-int __macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd)
-{
-	unsigned i;
-	uint8_t cp;
-
-	memset(ctx, 0, sizeof(struct macan_ctx));
-	ctx->config = config;
-	ctx->cpart = malloc(config->node_count * sizeof(struct com_part *));
-	memset(ctx->cpart, 0, config->node_count * sizeof(struct com_part *));
-	ctx->sighand = malloc(config->sig_count * sizeof(struct sig_handle *));
-	memset(ctx->sighand, 0, config->sig_count * sizeof(struct sig_handle *));
-
-	if(config->node_id == config->time_server_id) {
-		/* We are timeserver, we need to init communication with
-		 * every other node */
-		for(i = 0; i < config->node_count; i++) {
-			if(i == config->key_server_id || i == config->time_server_id) {
-				/* skip KS and TS */
-				continue;
-			}
-			init_cpart(ctx, (uint8_t)i);
-		}
-	} else {
-		/* We are normal node */
-		for (i = 0; i < config->sig_count; i++) {
-			if (config->sigspec[i].src_id == config->node_id) {
-				cp = config->sigspec[i].dst_id;
-
-				if (ctx->cpart[cp] == NULL) {
-					init_cpart(ctx, cp);
-				}
-			}
-			if (config->sigspec[i].dst_id == config->node_id) {
-				cp = config->sigspec[i].src_id;
-
-				if (ctx->cpart[cp] == NULL) {
-					init_cpart(ctx, cp);
-				}
-			}
-
-			ctx->sighand[i] = malloc(sizeof(struct sig_handle));
-			ctx->sighand[i]->presc = SIG_DONTSIGN; //SIG_DONTSIGN;
-			ctx->sighand[i]->presc_cnt = 0;
-			ctx->sighand[i]->flags = 0;
-			ctx->sighand[i]->cback = NULL;
-		}
-
-		/* also need to communicate with TS */
-		init_cpart(ctx,config->time_server_id);
-	}
-
-	ctx->sockfd = sockfd;
-
-	return 0;
-}
-
 int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd)
 {
 	assert(config->node_id != config->key_server_id);
 	assert(config->node_id != config->time_server_id);
 
-	int ret = __macan_init(ctx, config, sockfd);
+	__macan_init(ctx, config, sockfd);
+	unsigned i;
 
+	/* Initialzize all possible communication partners based on configured signals */
+	for (i = 0; i < config->sig_count; i++) {
+		if (config->sigspec[i].src_id == config->node_id) {
+			__macan_init_cpart(ctx, config->sigspec[i].dst_id);
+		}
+		if (config->sigspec[i].dst_id == config->node_id)
+			__macan_init_cpart(ctx, config->sigspec[i].src_id);
+
+		ctx->sighand[i] = malloc(sizeof(struct sig_handle));
+		ctx->sighand[i]->presc = SIG_DONTSIGN; //SIG_DONTSIGN;
+		ctx->sighand[i]->presc_cnt = 0;
+		ctx->sighand[i]->flags = 0;
+		ctx->sighand[i]->cback = NULL;
+	}
+
+	/* Also need to communicate with TS */
+	__macan_init_cpart(ctx,config->time_server_id);
+
+	/* Initialize event handlers */
 	macan_ev_can_init (&ctx->can_watcher, can_rx_cb, sockfd, MACAN_EV_READ);
 	ctx->can_watcher.data = ctx;
 	macan_ev_can_start (loop, &ctx->can_watcher);
@@ -1142,5 +1108,5 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_e
 	ctx->housekeeping.data = ctx;
 	macan_ev_timer_start(loop, &ctx->housekeeping);
 
-	return ret;
+	return 0;
 }

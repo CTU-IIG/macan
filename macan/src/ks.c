@@ -176,7 +176,7 @@ int macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, maca
 {
 	assert(config->node_id == config->key_server_id);
 
-	int ret = __macan_init(ctx, config, sockfd);
+	__macan_init(ctx, config, sockfd);
 
 	macan_ev_can_init (&ctx->can_watcher, can_cb_ks, sockfd, MACAN_EV_READ);
 	ctx->can_watcher.data = ctx;
@@ -184,5 +184,5 @@ int macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, maca
 
 	ctx->ks.ltk = ltks;
 
-	return ret;
+	return 0;
 }

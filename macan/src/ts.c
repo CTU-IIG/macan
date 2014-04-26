@@ -119,9 +119,16 @@ int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, maca
 {
 	assert(config->node_id == config->time_server_id);
 
+	macan_ecuid i;
+
 	read_time(); /* Ensure that MaCAN time starts before "event loop time" */
 
-	int ret = __macan_init(ctx, config, sockfd);
+	__macan_init(ctx, config, sockfd);
+
+	/* Timeserver needs to communication with every node */
+	for(i = 0; i < config->node_count; i++)
+		if (i != config->key_server_id && i != config->time_server_id)
+			__macan_init_cpart(ctx, i);
 
 	ctx->ts.auth_req = calloc(ctx->config->node_count, sizeof(*ctx->ts.auth_req));
 
@@ -137,5 +144,5 @@ int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, maca
 	ctx->ts.time_bcast.data = ctx;
 	macan_ev_timer_start(loop, &ctx->ts.time_bcast);
 
-	return ret;
+	return 0;
 }
