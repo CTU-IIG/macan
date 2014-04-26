@@ -76,7 +76,7 @@ void send_req_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid f
 	struct can_frame cf;
 	struct macan_req_challenge *rch = (struct macan_req_challenge*)&cf.data;
 
-	rch->flags_and_dst_id = FL_REQ_CHALLENGE << 6 || dst_id & 0x3f;
+	rch->flags_and_dst_id = FL_REQ_CHALLENGE << 6 | (dst_id & 0x3f);
 	rch->fwd_id = fwd_id;
 
 	cf.can_id = CANID(ctx, ctx->config->key_server_id);
