@@ -4,8 +4,10 @@
 
 WVSTART Demo 4signals
 
-trap 'kill $KSPID $TSPID $N2PID' EXIT
+trap 'kill $KSPID $TSPID $N2PID $MON' EXIT
 
+macanmon -c libdemo_4signals_cfg.so &
+MON=$!
 keysvr -c libdemo_4signals_cfg.so -k libdemo_4signals_keys.so &
 KSPID=$!
 timesvr -c libdemo_4signals_cfg.so -k libdemo_4signals_keys.so &
