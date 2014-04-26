@@ -147,5 +147,5 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix
 		}
 	}
 	uint64_t time = read_time();
-	printf("%s%s%4"PRIu64".%04"PRIu64" %-20s %s" ANSI_COLOR_RESET "\n", prefix, color, time/1000000, (time/100)%1000, frame, comment);
+	printf("%s%s%4"PRIu64".%03"PRIu64" %-20s %s" ANSI_COLOR_RESET "\n", prefix, color, time/1000000, (time/1000)%1000, frame, comment);
 }
