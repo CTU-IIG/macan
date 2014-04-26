@@ -900,15 +900,12 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 			macan_request_key(ctx, fwd_id);
 			return MACAN_FRAME_PROCESSED;
 		}
+		return MACAN_FRAME_UNKNOWN;
 	case FL_SESS_KEY_OR_ACK:
-		if (src == ctx->config->key_server_id) {
-			if (receive_skey(ctx, cf) == SUCCESS)
-				return MACAN_FRAME_PROCESSED;
-			else
-				return MACAN_FRAME_UNKNOWN;
-		}
-
-		receive_ack(ctx, cf);
+		if (src == ctx->config->key_server_id)
+			receive_skey(ctx, cf);
+		else
+			receive_ack(ctx, cf);
 		return MACAN_FRAME_PROCESSED;
 	case FL_SIGNAL_OR_AUTH_REQ:
 		// can_dlc is 3 => req_auth without CMAC (sent by VW)
