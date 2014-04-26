@@ -70,40 +70,48 @@ uint8_t lookup_skey(struct macan_ctx *ctx, macan_ecuid src_id, macan_ecuid dst_i
 	return 0;
 }
 
-void send_skey(struct macan_ctx *ctx, const struct macan_key *key, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chal)
+static
+void send_req_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid fwd_id)
+{
+	struct can_frame cf;
+	struct macan_req_challenge *rch = (struct macan_req_challenge*)&cf.data;
+
+	rch->flags_and_dst_id = FL_REQ_CHALLENGE << 6 || dst_id & 0x3f;
+	rch->fwd_id = fwd_id;
+
+	cf.can_id = CANID(ctx, ctx->config->key_server_id);
+	cf.can_dlc = sizeof(*rch);
+	macan_send(ctx, &cf);
+}
+
+static
+void send_skey(struct macan_ctx *ctx, const struct macan_key *ltk, const struct macan_key *skey, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chal)
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
-	struct macan_key *skey;
 	struct can_frame cf = {0};
-	struct macan_sess_key macan_skey;
+	struct macan_sess_key skey_frame;
 	int i;
-
-	/* ToDo: solve name inconsistency - key */
-	if (lookup_skey(ctx, dst_id, fwd_id, &skey)) {
-		//FIXME: We should send REQ_CHALLENGE here, not CHALLENGE
-		//macan_send_challenge(ctx, fwd_id, dst_id, NULL);
-	}
 
 	memcpy(plain, skey->data, sizeof(skey->data));
 	plain[16] = dst_id;
 	plain[17] = fwd_id;
 	memcpy(plain + 18, chal, 6);
-	macan_aes_wrap(key, 24, wrap, plain);
+	macan_aes_wrap(ltk, 24, wrap, plain);
 
 /* 	print_msg(ctx, MSG_INFO,"send KEY (wrap, plain):\n"); */
 /* 	print_hexn(wrap, 32); */
 /* 	print_hexn(plain, 24); */
 
-	macan_skey.flags_and_dst_id = (macan_ecuid)(FL_SESS_KEY << 6 | (dst_id & 0x3F));
+	skey_frame.flags_and_dst_id = (macan_ecuid)(FL_SESS_KEY << 6 | (dst_id & 0x3F));
 
 	cf.can_id = CANID(ctx, ctx->config->key_server_id);
-	cf.can_dlc = 8;
+	cf.can_dlc = sizeof(skey_frame);
 
 	for (i = 0; i < 6; i++) {
-		macan_skey.seq_and_len = (uint8_t)((i << 4) /* seq */ | ((i == 5) ? 2 : 6) /* len */);
-		memcpy(macan_skey.data, wrap + (6 * i), 6);
-		memcpy(cf.data, &macan_skey, 8);
+		skey_frame.seq_and_len = (uint8_t)((i << 4) /* seq */ | ((i == 5) ? 2 : 6) /* len */);
+		memcpy(skey_frame.data, wrap + (6 * i), 6);
+		memcpy(cf.data, &skey_frame, sizeof(skey_frame));
 
 		/* ToDo: check all writes for success */
 		macan_send(ctx, &cf);
@@ -124,14 +132,11 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	macan_ecuid dst_id, fwd_id;
 	uint8_t *chg;
 
-	if (cf->can_dlc != 8)
+	if (cf->can_dlc != 8 ||
+	    !macan_canid2ecuid(ctx, cf->can_id, &dst_id))
 		return;
 
 	chal = (struct macan_challenge *)cf->data;
-
-	if(!macan_canid2ecuid(ctx, cf->can_id, &dst_id)) {
-		return;
-	}
 
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
@@ -140,8 +145,11 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 		return;
 
 	const struct macan_key *ltk = ctx->ks.ltk[dst_id];
-/* 	print_hexn(ltk, 16); */
-	send_skey(ctx, ltk, dst_id, fwd_id, chg);
+	struct macan_key *skey;
+	bool new_key = lookup_skey(ctx, dst_id, fwd_id, &skey);
+	send_skey(ctx, ltk, skey, dst_id, fwd_id, chg);
+	if (new_key)
+		send_req_challenge(ctx, fwd_id, dst_id);
 }
 
 static void
