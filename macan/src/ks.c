@@ -124,6 +124,9 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	macan_ecuid dst_id, fwd_id;
 	uint8_t *chg;
 
+	if (cf->can_dlc != 8)
+		return;
+
 	chal = (struct macan_challenge *)cf->data;
 
 	if(!macan_canid2ecuid(ctx, cf->can_id, &dst_id)) {
@@ -151,7 +154,7 @@ can_cb_ks (macan_ev_loop *loop, macan_ev_can *w, int revents)
 	macan_read(ctx, &cf);
 
 	/* Simple sanity checks first */
-	if (cf.can_dlc < 8 ||
+	if (cf.can_dlc < 1 ||
 	    macan_crypt_dst(&cf) != ctx->config->key_server_id ||
 	    macan_crypt_flags(&cf) != FL_CHALLENGE)
 		return;
