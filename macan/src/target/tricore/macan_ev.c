@@ -64,9 +64,14 @@ macan_ev_timer_again(macan_ev_loop *loop, macan_ev_timer *w)
 	w->expire_us = read_time() + w->repeat_us;
 }
 
-void macan_read(struct macan_ctx *ctx, struct can_frame *cf)
+bool macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 {
-	*cf = *ctx->loop->cans->received;
+	if (ctx->loop->cans->received) {
+		*cf = *ctx->loop->cans->received;
+		ctx->loop->cans->received = NULL;
+		return true;
+	} else
+		return false;
 }
 
 void macan_ev_recv_cb(struct can_frame *cf, void *data)

@@ -1042,8 +1042,8 @@ can_rx_cb(macan_ev_loop *loop, macan_ev_can *w, int revents)
 	struct macan_ctx *ctx = w->data;
 	struct can_frame cf;
 
-	macan_read(ctx, &cf);
-	macan_process_frame(ctx, &cf);
+	while (macan_read(ctx, &cf))
+		macan_process_frame(ctx, &cf);
 }
 
 /**

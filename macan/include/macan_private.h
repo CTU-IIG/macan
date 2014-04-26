@@ -182,7 +182,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix
 bool is_time_ready(struct macan_ctx *ctx);
 struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id);
 bool gen_rand_data(void *dest, size_t len);
-void macan_read(struct macan_ctx *ctx, struct can_frame *cf);
+bool macan_read(struct macan_ctx *ctx, struct can_frame *cf);
 bool macan_send(struct macan_ctx *ctx,  const struct can_frame *cf);
 
 static inline macan_ecuid macan_crypt_dst(const struct can_frame *cf)

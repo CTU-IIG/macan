@@ -80,13 +80,14 @@ void macan_rx_cb_ts(macan_ev_loop *loop, macan_ev_can *w, int revents)
 	struct macan_ctx *ctx = w->data;
 	struct can_frame cf;
 
-	macan_read(ctx, &cf);
-	enum macan_process_status status;
+	while (macan_read(ctx, &cf)) {
+		enum macan_process_status status;
 
-	status = macan_process_frame(ctx, &cf);
+		status = macan_process_frame(ctx, &cf);
 
-	if (status == MACAN_FRAME_CHALLENGE)
-		ts_receive_challenge(ctx, &cf);
+		if (status == MACAN_FRAME_CHALLENGE)
+			ts_receive_challenge(ctx, &cf);
+	}
 }
 
 static void
