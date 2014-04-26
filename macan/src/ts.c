@@ -38,7 +38,7 @@
  * and signs it. Subsequently, the message is sent.
  */
 static
-int ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
+void ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 {
 	struct can_frame canf;
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
@@ -48,13 +48,13 @@ int ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	struct com_part *cp;
 
 	if(!(cp = canid2cpart(ctx, cf->can_id)))
-		return -1;
+		return;
 
 	dst_id = (uint8_t) (cp->ecu_id);
 
 	if (!is_skey_ready(ctx, dst_id)) {
 		print_msg(ctx, MSG_FAIL,"cannot send time, because don't have key\n");
-		return -1;
+		return;
 	}
 
 	skey = cp->skey;
@@ -68,10 +68,9 @@ int ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	memcpy(canf.data, &ctx->ts.bcast_time, 4);
 	macan_sign(&skey, canf.data + 4, plain, 12);
 
-	macan_send(ctx, &canf);
+	print_msg(ctx, MSG_INFO,"sending signed time to #%d\n", dst_id);
 
-	print_msg(ctx, MSG_INFO,"signed time sent\n");
-	return 0;
+	macan_send(ctx, &canf);
 }
 
 static
