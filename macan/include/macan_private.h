@@ -178,7 +178,7 @@ void receive_challenge(struct macan_ctx *ctx, const struct can_frame *cf);
 uint64_t read_time(void);
 uint64_t macan_get_time(struct macan_ctx *ctx);
 bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
-void print_frame(struct macan_ctx *ctx, struct can_frame *cf);
+void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix);
 bool is_time_ready(struct macan_ctx *ctx);
 struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id);
 bool gen_rand_data(void *dest, size_t len);

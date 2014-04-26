@@ -43,7 +43,7 @@ void debug_printf(const char* format, ...)
 #define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
 #define GET_LEN(byte) ((byte) & 0x0F)
 
-void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
+void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix)
 {
 	char frame[80], comment[80];
 	macan_ecuid src;
@@ -51,7 +51,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);
 	if (ctx && ctx->config) {
-		if (cf->can_id == CANID(ctx,ctx->config->time_server_id)) {
+		if (cf->can_id == ctx->config->time_canid) {
 			uint32_t time;
 			memcpy(&time, cf->data, 4); /* FIXME: Handle endian */
 			if (cf->can_dlc == 4) {
@@ -123,13 +123,13 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 				char srcstr[5], dststr[5];
 				if (src == ctx->config->key_server_id)       strcpy(srcstr, "KS");
 				else if (src == ctx->config->time_server_id) strcpy(srcstr, "TS");
-				else sprintf(srcstr, "%d", src);
+				else sprintf(srcstr, "%02d", src);
 				if (src == ctx->config->node_id) strcat(srcstr, "me");
 
 				macan_ecuid dst = macan_crypt_dst(cf);
 				if (dst == ctx->config->key_server_id)       strcpy(dststr, "KS");
 				else if (dst == ctx->config->time_server_id) strcpy(dststr, "TS");
-				else sprintf(dststr, "%d", dst);
+				else sprintf(dststr, "%02d", dst);
 				if (dst == ctx->config->node_id) strcat(dststr, "me");
 
 
@@ -147,5 +147,5 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf)
 		}
 	}
 	uint64_t time = read_time();
-	printf("RECV %s%4"PRIu64".%04"PRIu64" %-20s %s" ANSI_COLOR_RESET "\n", color, time/1000000, (time/100)%1000, frame, comment);
+	printf("%s%s%4"PRIu64".%04"PRIu64" %-20s %s" ANSI_COLOR_RESET "\n", prefix, color, time/1000000, (time/100)%1000, frame, comment);
 }

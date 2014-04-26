@@ -102,8 +102,12 @@ void macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 		exit(0);
 	}
 
-	if (getenv("MACAN_DUMP"))
-		print_frame(ctx, cf);
+	if (getenv("MACAN_DUMP")) {
+		static char prefix[20];
+		if (!prefix[0])
+			snprintf(prefix, sizeof(prefix), "macan%05d", getpid());
+		print_frame(ctx, cf, prefix);
+	}
 }
 
 int helper_init()

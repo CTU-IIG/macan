@@ -83,7 +83,7 @@ static void print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
 	struct macan_ctx ctx = { .sockfd = w->fd, .config = &config };
 
 	macan_read(&ctx, &cf);
-	print_frame(&ctx, &cf);
+	print_frame(&ctx, &cf, "       ");
 }
 
 struct node {

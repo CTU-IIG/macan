@@ -80,7 +80,7 @@ void memcpy_bw(void *dst, const void *src, size_t len) {
 void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...) {
 
 	va_list ap;
-	int nodeid = -1;
+	char nodestr[4] = "#??";
 	char *msg_type_strings[] = {
 		[MSG_OK]      = ANSI_COLOR_GREEN   "OK  " ANSI_COLOR_RESET,
 		[MSG_WARN]    = ANSI_COLOR_YELLOW  "WARN" ANSI_COLOR_RESET,
@@ -91,9 +91,9 @@ void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...) {
 
 	};
 	if (ctx && ctx->config)
-		nodeid = ctx->config->node_id;
+		snprintf(nodestr, sizeof(nodestr), "#%d", ctx->config->node_id);
 
 	va_start(ap, format);
-	printf("node%2d %s: ", nodeid, msg_type_strings[type]);
+	printf("%s %3s: ", msg_type_strings[type], nodestr);
 	vprintf(format,ap);
 }
