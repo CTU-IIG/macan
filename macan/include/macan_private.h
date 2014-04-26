@@ -97,6 +97,9 @@ struct macan_signal_ex {
 struct macan_timekeeping {
 	uint64_t offs;      /* contains the time difference between local time and TS time
 			       i.e. TS_time = Local_time + offs */
+	uint32_t nonauth_ts;	/* Last received non-authenticated time */
+	uint64_t nonauth_loc;	/* Local time when last non-authenticated time was received */
+
 	uint64_t chal_ts;   /* local timestamp when request for signed time was sent  */
 	uint8_t chg[6];	    /* challenge to the time server */
 	bool ready;   	    /* set to true after first signed time message was received */

@@ -329,6 +329,7 @@ static void time_skey_received(struct macan_ctx *ctx, macan_ecuid dst_id)
 static
 void receive_time_nonauth(struct macan_ctx *ctx, const struct can_frame *cf)
 {
+	struct macan_timekeeping *t = &ctx->time;
 	uint32_t time_ts;
 	uint64_t loc_us;	/* Local time in microseconds */
 	uint64_t ts_us;		/* Time server time in microseconds */
@@ -338,15 +339,19 @@ void receive_time_nonauth(struct macan_ctx *ctx, const struct can_frame *cf)
 	memcpy(&time_ts, cf->data, 4);
 	time_ts = le32toh(time_ts);
 	ts_us = (uint64_t)time_ts * ctx->config->time_div;
-	loc_us = now + ctx->time.offs; /* Estimated time on TS (us) */
+	loc_us = now + t->offs; /* Estimated time on TS (us) */
 	delta = (loc_us > ts_us) ? loc_us - ts_us : ts_us - loc_us;
 
-	if (delta > ctx->config->time_delta || !ctx->time.ready) {
-		if (ctx->time.ready)
+	if (delta > ctx->config->time_delta || !t->ready) {
+		if (t->ready)
 			print_msg(ctx, MSG_WARN, "time out of sync by %llu us  (local:%"PRIu64", TS:%"PRIu64")\n",
 				  delta, loc_us, ts_us);
 		request_time_auth(ctx);
 	}
+
+	/* Store data that is needed in authenticated time handler */
+	t->nonauth_ts = time_ts;
+	t->nonauth_loc = now;
 }
 
 /**
@@ -357,6 +362,7 @@ void receive_time_nonauth(struct macan_ctx *ctx, const struct can_frame *cf)
 static
 void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 {
+	struct macan_timekeeping *t = &ctx->time;
 	uint32_t time_ts;
 	uint8_t plain[12];
 	struct macan_key skey;
@@ -369,7 +375,7 @@ void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	skey = ctx->cpart[ctx->config->time_server_id]->skey;
 	memcpy(plain, &time_ts, 4); // received time
-	memcpy(plain + 4, ctx->time.chg, 6); // challenge
+	memcpy(plain + 4, t->chg, 6); // challenge
 	memcpy(plain + 10, &htole32(CANID(ctx, ctx->config->time_server_id)),2);
 
 	if (!macan_check_cmac(ctx, &skey, cf->data + 4, plain, NULL, sizeof(plain))) {
@@ -379,13 +385,18 @@ void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	/* cmac check ok, convert to our endianess */
 	time_ts = le32toh(time_ts);
-
 	time_ts_us = time_ts * ctx->config->time_div;
 
-	ctx->time.offs += (time_ts_us - ctx->time.chal_ts);
-	ctx->time.ready = true;
+	if (time_ts == t->nonauth_ts) {
+		t->offs = (time_ts_us - t->nonauth_loc);
+	} else {
+		t->offs = (time_ts_us - read_time());
+		print_msg(ctx, MSG_FAIL, "auth. time %u differ from non-auth. time %u\n",
+			  time_ts, t->nonauth_ts);
+	}
+	t->ready = true;
 
-	print_msg(ctx, MSG_OK,"signed time = %d, offs %"PRIu64"\n",time_ts, ctx->time.offs);
+	print_msg(ctx, MSG_OK,"signed time = %d, offs %"PRIu64"\n",time_ts, t->offs);
 }
 
 /**
