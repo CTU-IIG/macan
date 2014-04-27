@@ -3,3 +3,6 @@ test_PROGRAMS = 1signal
 1signal_SOURCES = 1signal.c
 
 lib_LOADLIBES = macan ev nettle
+
+
+SUBDIRS=attack

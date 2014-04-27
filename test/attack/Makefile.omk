@@ -1,0 +1,6 @@
+test_PROGRAMS = attack-scenario attacker-gw
+
+attack-scenario_SOURCES = attack-scenario.c cfg.c
+attacker-gw_SOURCES = attacker-gw.c cfg.c
+
+lib_LOADLIBES = macan ev nettle

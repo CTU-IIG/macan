@@ -109,6 +109,7 @@ void macan_request_keys(struct macan_ctx *ctx);
 int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback fnc, macan_sig_cback invalid_cmac);
 void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t signal);
 enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struct can_frame *cf);
+void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id);
 
 void macan_ev_timer_setup(struct macan_ctx *ctx, macan_ev_timer *ev,
 			  void (*cb) (macan_ev_loop *loop,  macan_ev_timer *w, int revents),
