@@ -351,6 +351,7 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 			send_ack(ctx, fwd_id);
 		}
 
+
 		if (!ctx->time.ready && fwd_id == ctx->config->time_server_id)
 			request_time_auth(ctx);
 
@@ -772,10 +773,13 @@ void macan_request_expired_keys(struct macan_ctx *ctx)
 {
 	uint8_t i;
 	struct com_part **cpart = ctx->cpart;
+	const struct macan_config *cfg = ctx->config;
 
 	for (i = 0; i < ctx->config->node_count; i++)
 		if (cpart[i] && cpart[i]->valid_until < read_time())
-			macan_request_key(ctx, i);
+			if (cfg->node_id == cfg->time_server_id ||
+			    i		 == cfg->time_server_id)
+				macan_request_key(ctx, i);
 }
 
 /**
