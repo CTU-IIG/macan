@@ -68,11 +68,12 @@ send_cb (macan_ev_loop *loop, ev_timer *w, int revents)
 {
 	(void)loop; (void)revents;
 	struct macan_ctx *ctx = w->data;
+	static unsigned i;
 
-	macan_send_sig(ctx, SIGNAL_A, 10);
-	macan_send_sig(ctx, SIGNAL_B, 200000);
-	macan_send_sig(ctx, SIGNAL_C, 30);
-	macan_send_sig(ctx, SIGNAL_D, 400000);
+	macan_send_sig(ctx, SIGNAL_A, i++);
+	macan_send_sig(ctx, SIGNAL_B, i++);
+	macan_send_sig(ctx, SIGNAL_C, i++);
+	macan_send_sig(ctx, SIGNAL_D, i++);
 }
 
 
