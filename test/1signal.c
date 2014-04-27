@@ -68,7 +68,7 @@ static void sig_callback(uint8_t sig_num, uint32_t sig_val)
 	exit(0);
 }
 
-static void send_cb(struct ev_loop *loop, ev_timer *w, int revents)
+static void send_cb(macan_ev_loop *loop, ev_timer *w, int revents)
 {
 	(void)loop; (void)revents;
 	struct macan_ctx *ctx = w->data;
@@ -95,7 +95,7 @@ struct node {
 int main(int argc, char *argv[])
 {
 	(void)argc; (void)argv;
-	struct ev_loop *loop = MACAN_EV_DEFAULT;
+	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 	ev_timer sig_send;
 	macan_ev_can can_print;
 	int i;

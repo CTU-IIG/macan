@@ -64,7 +64,7 @@ extern const struct macan_key MACAN_CONFIG_LTK(NODE_ID);
 
 
 static void
-send_cb (struct ev_loop *loop, ev_timer *w, int revents)
+send_cb (macan_ev_loop *loop, ev_timer *w, int revents)
 {
 	(void)loop; (void)revents;
 	struct macan_ctx *ctx = w->data;
@@ -84,7 +84,7 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 int main()
 {
 	int s;
-	struct ev_loop *loop = MACAN_EV_DEFAULT;
+	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 	ev_timer sig_send;
 
 	s = helper_init();
