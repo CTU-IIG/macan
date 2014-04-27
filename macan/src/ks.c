@@ -176,11 +176,9 @@ int macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, maca
 {
 	assert(config->node_id == config->key_server_id);
 
-	__macan_init(ctx, config, sockfd);
+	__macan_init(ctx, config, loop, sockfd);
 
-	macan_ev_can_init (&ctx->can_watcher, can_cb_ks, sockfd, MACAN_EV_READ);
-	ctx->can_watcher.data = ctx;
-	macan_ev_can_start (loop, &ctx->can_watcher);
+	macan_ev_canrx_setup(ctx, &ctx->can_watcher, can_cb_ks);
 
 	ctx->ks.ltk = ltks;
 

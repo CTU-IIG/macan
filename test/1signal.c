@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
 	(void)argc; (void)argv;
 	struct ev_loop *loop = MACAN_EV_DEFAULT;
 	ev_timer sig_send;
+	macan_ev_can can_print;
 	int i;
 
 	for (i = 0; i < NODE_COUNT; i++) {
@@ -120,11 +121,8 @@ int main(int argc, char *argv[])
 
 	macan_reg_callback(&node[RECEIVER].ctx, SIGNAL_0, sig_callback, NULL);
 
-	macan_ev_timer_init(&sig_send, send_cb, 100, 100);
-	sig_send.data = &node[SENDER].ctx;
-	macan_ev_timer_start(loop, &sig_send);
+	macan_ev_timer_setup(&node[SENDER].ctx, &sig_send, send_cb, 100, 100);
 
-	macan_ev_can can_print;
 	macan_ev_can_init (&can_print, print_frame_cb, helper_init(), EV_READ);
 	macan_ev_can_start (loop, &can_print);
 

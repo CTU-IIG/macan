@@ -111,4 +111,11 @@ int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback 
 void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t signal);
 enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struct can_frame *cf);
 
+void macan_ev_timer_setup(struct macan_ctx *ctx, macan_ev_timer *ev,
+			  void (*cb) (macan_ev_loop *loop,  macan_ev_timer *w, int revents),
+			  unsigned after_ms, unsigned repeat_ms);
+void macan_ev_canrx_setup(struct macan_ctx *ctx, macan_ev_can *ev,
+			  void (*cb) (macan_ev_loop *loop,  macan_ev_can *w, int revents));
+
+
 #endif /* MACAN_H */

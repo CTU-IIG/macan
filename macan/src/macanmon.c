@@ -95,8 +95,9 @@ int main(int argc, char *argv[])
 
 	macan_ctx.sockfd = s;
 	macan_ctx.config = config;
+	macan_ctx.loop = loop;
 
-	macan_ev_can_init (&can_watcher, print_frame_cb, s, EV_READ);
+	macan_ev_canrx_setup (&macan_ctx, &can_watcher, print_frame_cb);
 	macan_ev_can_start (loop, &can_watcher);
 
 	macan_ev_run(loop);

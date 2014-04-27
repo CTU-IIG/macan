@@ -202,7 +202,7 @@ static inline unsigned macan_crypt_flags(const struct can_frame *cf)
 	return (cf->data[0] & 0xc0) >> 6;
 }
 
-void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd);
+void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
 void __macan_init_cpart(struct macan_ctx *ctx, macan_ecuid i);
 void macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents);
 

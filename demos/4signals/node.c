@@ -100,9 +100,7 @@ int main()
 	macan_reg_callback(&macan_ctx, SIGNAL_C, sig_callback, NULL);
 	macan_reg_callback(&macan_ctx, SIGNAL_D, sig_callback, NULL);
 
-	macan_ev_timer_init(&sig_send, send_cb, 1000, 1000);
-	sig_send.data = &macan_ctx;
-	macan_ev_timer_start(loop, &sig_send);
+	macan_ev_timer_setup(&macan_ctx, &sig_send, send_cb, 1000, 1000);
 
 	macan_ev_run(loop);
 

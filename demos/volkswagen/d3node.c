@@ -208,13 +208,8 @@ int main()
 	macan_init(&macan_ctx, &config, loop, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);
 
-	macan_ev_timer_init (&btn_chk, btn_chk_cb, 0, 10);
-	btn_chk.data = &macan_ctx;
-	macan_ev_timer_start(loop, &btn_chk);
-
-	macan_ev_timer_init (&timeout, timeout_cb, 0, 1000);
-	btn_chk.data = &macan_ctx;
-	macan_ev_timer_start(loop, &timeout);
+	macan_ev_timer_setup (&macan_ctx, &btn_chk, btn_chk_cb, 0, 10);
+	macan_ev_timer_setup (&macan_ctx, &timeout, timeout_cb, 0, 1000);
 
 	macan_ev_run(loop);
 

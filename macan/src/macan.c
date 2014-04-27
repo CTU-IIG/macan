@@ -976,13 +976,14 @@ void __macan_init_cpart(struct macan_ctx *ctx, macan_ecuid i)
 	}
 }
 
-void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, int sockfd)
+void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd)
 {
 	memset(ctx, 0, sizeof(struct macan_ctx));
 	ctx->config = config;
 	ctx->cpart = calloc(config->node_count, sizeof(struct com_part *));
 	ctx->sighand = calloc(config->sig_count, sizeof(struct sig_handle *));
 	ctx->sockfd = sockfd;
+	ctx->loop = loop;
 }
 
 /**
@@ -999,7 +1000,7 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_e
 	assert(config->node_id != config->key_server_id);
 	assert(config->node_id != config->time_server_id);
 
-	__macan_init(ctx, config, sockfd);
+	__macan_init(ctx, config, loop, sockfd);
 	unsigned i;
 
 	/* Initialzize all possible communication partners based on configured signals */
@@ -1021,13 +1022,27 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_e
 	__macan_init_cpart(ctx,config->time_server_id);
 
 	/* Initialize event handlers */
-	macan_ev_can_init (&ctx->can_watcher, can_rx_cb, sockfd, MACAN_EV_READ);
-	ctx->can_watcher.data = ctx;
-	macan_ev_can_start (loop, &ctx->can_watcher);
-
-	macan_ev_timer_init (&ctx->housekeeping, macan_housekeeping_cb, 0, 1000);
-	ctx->housekeeping.data = ctx;
-	macan_ev_timer_start(loop, &ctx->housekeeping);
+	macan_ev_canrx_setup (ctx, &ctx->can_watcher, can_rx_cb);
+	macan_ev_timer_setup (ctx, &ctx->housekeeping, macan_housekeeping_cb, 0, 1000);
 
 	return 0;
+}
+
+void
+macan_ev_timer_setup(struct macan_ctx *ctx, macan_ev_timer *ev,
+		    void (*cb) (macan_ev_loop *loop,  macan_ev_timer *w, int revents),
+		    unsigned after_ms, unsigned repeat_ms)
+{
+	macan_ev_timer_init(ev, cb, after_ms, repeat_ms);
+	ev->data = ctx;
+	macan_ev_timer_start(ctx->loop, ev);
+}
+
+void
+macan_ev_canrx_setup(struct macan_ctx *ctx, macan_ev_can *ev,
+		   void (*cb) (macan_ev_loop *loop,  macan_ev_can *w, int revents))
+{
+	macan_ev_can_init(ev, cb, ctx->sockfd, MACAN_EV_READ);
+	ev->data = ctx;
+	macan_ev_can_start (ctx->loop, ev);
 }

@@ -123,7 +123,7 @@ int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, maca
 
 	read_time(); /* Ensure that MaCAN time starts before "event loop time" */
 
-	__macan_init(ctx, config, sockfd);
+	__macan_init(ctx, config, loop, sockfd);
 
 	/* Timeserver needs to communication with every node */
 	for(i = 0; i < config->node_count; i++)
@@ -132,17 +132,9 @@ int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, maca
 
 	ctx->ts.auth_req = calloc(ctx->config->node_count, sizeof(*ctx->ts.auth_req));
 
-	macan_ev_can_init (&ctx->can_watcher, macan_rx_cb_ts, sockfd, MACAN_EV_READ);
-	ctx->can_watcher.data = ctx;
-	macan_ev_can_start (loop, &ctx->can_watcher);
-
-	macan_ev_timer_init (&ctx->housekeeping, macan_housekeeping_cb, 0, 1000);
-	ctx->housekeeping.data = ctx;
-	macan_ev_timer_start(loop, &ctx->housekeeping);
-
-	macan_ev_timer_init (&ctx->ts.time_bcast, time_broadcast_cb, 0, config->time_div / 1000);
-	ctx->ts.time_bcast.data = ctx;
-	macan_ev_timer_start(loop, &ctx->ts.time_bcast);
+	macan_ev_canrx_setup(ctx, &ctx->can_watcher, macan_rx_cb_ts);
+	macan_ev_timer_setup(ctx, &ctx->housekeeping, macan_housekeeping_cb, 0, 1000);
+	macan_ev_timer_setup(ctx, &ctx->ts.time_bcast, time_broadcast_cb, 0, config->time_div / 1000);
 
 	return 0;
 }
