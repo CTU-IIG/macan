@@ -67,7 +67,7 @@ void ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	struct macan_challenge *ch = (struct macan_challenge *)cf->data;
 	macan_ecuid dst_id;
 
-	if (!macan_canid2ecuid(ctx, cf->can_id, &dst_id))
+	if (!macan_canid2ecuid(ctx->config, cf->can_id, &dst_id))
 		return;
 
 	if (is_skey_ready(ctx, dst_id))

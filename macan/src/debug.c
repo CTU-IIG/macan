@@ -43,15 +43,15 @@ void debug_printf(const char* format, ...)
 #define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
 #define GET_LEN(byte) ((byte) & 0x0F)
 
-void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix)
+void print_frame(const struct macan_config *cfg, struct can_frame *cf, const char *prefix)
 {
 	char frame[80], comment[80];
 	macan_ecuid src;
 	const char *color = "";
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);
-	if (ctx && ctx->config) {
-		if (cf->can_id == ctx->config->time_canid) {
+	if (cfg) {
+		if (cf->can_id == cfg->time_canid) {
 			uint32_t time;
 			memcpy(&time, cf->data, 4); /* FIXME: Handle endian */
 			switch (cf->can_dlc) {
@@ -65,7 +65,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix
 				sprintf(comment, "broken time!!!");
 			}
 		}
-		else if (macan_canid2ecuid(ctx, cf->can_id, &src)) {
+		else if (macan_canid2ecuid(cfg, cf->can_id, &src)) {
 			/* Crypt frame */
 			if (cf->can_dlc < 2) {
 				sprintf(comment, "broken crypt frame");
@@ -85,7 +85,7 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix
 					break;
 				}
 				case FL_SESS_KEY_OR_ACK:
-					if (src == ctx->config->key_server_id) {
+					if (src == cfg->key_server_id) {
 						struct macan_sess_key *sk = (struct macan_sess_key*)cf->data;
 						color = ANSI_COLOR_DBLUE;
 						sprintf(type, "sess_key seq=%d len=%d", GET_SEQ(sk->seq_and_len), GET_LEN(sk->seq_and_len));
@@ -124,24 +124,24 @@ void print_frame(struct macan_ctx *ctx, struct can_frame *cf, const char *prefix
 					strcpy(type, "???");
 				}
 				char srcstr[5], dststr[5];
-				if (src == ctx->config->key_server_id)       strcpy(srcstr, "KS");
-				else if (src == ctx->config->time_server_id) strcpy(srcstr, "TS");
+				if (src == cfg->key_server_id)       strcpy(srcstr, "KS");
+				else if (src == cfg->time_server_id) strcpy(srcstr, "TS");
 				else sprintf(srcstr, "%02d", src);
-				if (src == ctx->config->node_id) strcat(srcstr, "me");
+				if (src == cfg->node_id) strcat(srcstr, "me");
 
 				macan_ecuid dst = macan_crypt_dst(cf);
-				if (dst == ctx->config->key_server_id)       strcpy(dststr, "KS");
-				else if (dst == ctx->config->time_server_id) strcpy(dststr, "TS");
+				if (dst == cfg->key_server_id)       strcpy(dststr, "KS");
+				else if (dst == cfg->time_server_id) strcpy(dststr, "TS");
 				else sprintf(dststr, "%02d", dst);
-				if (dst == ctx->config->node_id) strcat(dststr, "me");
+				if (dst == cfg->node_id) strcat(dststr, "me");
 
 
 				sprintf(comment, "crypt %s->%s (%d->%d): %s", srcstr, dststr, src, dst, type);
 			}
 		} else {
 			unsigned i;
-			for (i = 0; i < ctx->config->sig_count; i++) {
-				const struct macan_sig_spec *ss = &ctx->config->sigspec[i];
+			for (i = 0; i < cfg->sig_count; i++) {
+				const struct macan_sig_spec *ss = &cfg->sigspec[i];
 				if (cf->can_id == ss->can_nsid)
 					sprintf(comment, "non-secure signal #%d", i);
 				else if (cf->can_id == ss->can_sid)

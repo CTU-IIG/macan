@@ -846,7 +846,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 		return MACAN_FRAME_PROCESSED;
 	}
 
-	if (macan_canid2ecuid(ctx, cf->can_id, &src) == ERROR)
+	if (macan_canid2ecuid(ctx->config, cf->can_id, &src) == ERROR)
 		return MACAN_FRAME_UNKNOWN;
 
 	if (macan_crypt_dst(cf) != ctx->config->node_id)
@@ -903,18 +903,18 @@ bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num)
 /*
  * Get node's ECU-ID from CAN-ID.
  *
- * @param[in]  ctx   Macan context.
+ * @param[in]  cfg   Macan configuration (ctx->config).
  * @param[in]  canid CAN-ID of node
  * @param[out] ecuid Pointer where to save ECU-ID
  *
  * @return True if node with passed CAN-ID was found, false otherwise.
  */
-bool macan_canid2ecuid(struct macan_ctx *ctx, uint32_t can_id, macan_ecuid *ecu_id)
+bool macan_canid2ecuid(const struct macan_config *cfg, uint32_t can_id, macan_ecuid *ecu_id)
 {
 	macan_ecuid i;
 
-	for (i = 0; i < ctx->config->node_count; i++) {
-		if (ctx->config->canid->ecu[i] == can_id) {
+	for (i = 0; i < cfg->node_count; i++) {
+		if (cfg->canid->ecu[i] == can_id) {
 			if(ecu_id != NULL) {
 				*ecu_id = i;
 			}
@@ -937,7 +937,7 @@ struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id)
 {
 	macan_ecuid ecu_id;
 
-	if(!macan_canid2ecuid(ctx, can_id, &ecu_id)) {
+	if(!macan_canid2ecuid(ctx->config, can_id, &ecu_id)) {
 		/* there is no node with given CAN-ID */
 		return NULL;
 	}

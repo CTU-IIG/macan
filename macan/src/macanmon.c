@@ -52,7 +52,7 @@ print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
 	struct can_frame cf;
 
 	while (macan_read(&macan_ctx, &cf))
-		print_frame(&macan_ctx, &cf, "");
+		print_frame(macan_ctx.config, &cf, "");
 }
 
 

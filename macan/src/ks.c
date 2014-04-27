@@ -133,7 +133,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	uint8_t *chg;
 
 	if (cf->can_dlc != 8 ||
-	    !macan_canid2ecuid(ctx, cf->can_id, &dst_id))
+	    !macan_canid2ecuid(ctx->config, cf->can_id, &dst_id))
 		return;
 
 	chal = (struct macan_challenge *)cf->data;

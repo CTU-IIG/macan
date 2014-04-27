@@ -106,7 +106,7 @@ bool macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 		static char prefix[20];
 		if (!prefix[0])
 			snprintf(prefix, sizeof(prefix), "macan%05d", getpid());
-		print_frame(ctx, cf, prefix);
+		print_frame(ctx->config, cf, prefix);
 	}
 	return true;
 }
