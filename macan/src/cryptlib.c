@@ -137,7 +137,7 @@ int macan_aes_unwrap(const struct macan_key *key, size_t length, uint8_t *dst, u
  * @param plain: plain text to be CMACked and checked against
  * @param len:   length of plain text in bytes
  */
-int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, uint8_t len)
+int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, unsigned len)
 {
 	uint8_t cmac[16];
 	uint64_t time;
@@ -171,7 +171,7 @@ int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_
  * @plain: a plain text to sign
  * @len:   length of the plain text
  */
-void macan_sign(struct macan_key *skey, uint8_t *cmac4, uint8_t *plain, uint8_t len)
+void macan_sign(struct macan_key *skey, uint8_t *cmac4, uint8_t *plain, unsigned len)
 {
 	uint8_t cmac[16];
 	macan_aes_cmac(skey, len, cmac, plain);

@@ -514,6 +514,13 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 
 }
 
+static void
+append(void *dst, unsigned *dstlen, const void *src, unsigned srclen)
+{
+	memcpy(dst + *dstlen, src, srclen);
+	*dstlen += srclen;
+}
+
 /**
  * Send MaCAN signal frame.
  *
@@ -524,51 +531,50 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 {
 	struct can_frame cf = {0};
 	uint8_t plain[10],sig[8];
-	uint8_t plain_length;
+	unsigned plain_length = 0;
 	uint32_t t;
 	struct macan_key skey;
-	uint8_t *cmac;
+	uint8_t *cmac_ptr;
 
 	if (!is_channel_ready(ctx, dst_id))
 		return -1;
 
 	skey = get_cpart(ctx, dst_id)->skey;
 	t = (uint32_t)macan_get_time(ctx);
-	
+
+	t = htole32(t);
+	sig_val = htole32(sig_val);
 
 	if(is_32bit_signal(ctx,sig_num)) {
-		/* changed to be compatible with VW macangw */
-		memcpy(plain+4, &htole32(t), 4);
-		struct macan_signal *sig32 = (struct macan_signal *) sig;
-		// changed to be compatible with macangw
-		memcpy(plain, &htole32(sig_val), 4);
-		memcpy(plain+8, &ctx->config->sigspec[sig_num].can_sid,2); 
-		memcpy(sig32->sig, &htole32(sig_val), 4);
-		cf.can_id = ctx->config->sigspec[sig_num].can_sid;
-		plain_length = 10;
-		cmac = sig32->cmac;
-	} else {
-		struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
+		uint32_t can_sid = htole32(ctx->config->sigspec[sig_num].can_sid);
 
+		append(plain, &plain_length, &sig_val, 4);
+		append(plain, &plain_length, &t, 4);
+		append(plain, &plain_length, &can_sid, 2);
+
+		struct macan_signal *sig32 = (struct macan_signal *) sig;
+		cf.can_id = ctx->config->sigspec[sig_num].can_sid;
+		memcpy(sig32->sig, &sig_val, 4);
+		cmac_ptr = sig32->cmac;
+	} else {
+		append(plain, &plain_length, &t, 4);
+		append(plain, &plain_length, &(ctx->config->node_id), 1);
+		append(plain, &plain_length, &dst_id, 1);
+		append(plain, &plain_length, &sig_val, 2);
+
+		struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
+		cf.can_id = CANID(ctx, ctx->config->node_id);
 		sig16->flags_and_dst_id = FL_SIGNAL << 6 | (dst_id & 0x3f);
 		sig16->sig_num = sig_num;
 		memcpy(&sig16->sig_val, &sig_val, 2);
-
-		memcpy(plain, &htole32(t), 4);
-		memcpy(plain + 4, &(ctx->config->node_id), 1);
-		memcpy(plain + 5, &dst_id, 1);
-		memcpy(plain + 6, &htole32(sig_val), 2);
-		plain_length = 8;
-
-		cf.can_id = CANID(ctx, ctx->config->node_id);
-		cmac = sig16->cmac;
+		cmac_ptr = sig16->cmac;
 	}
 
 
 #ifdef DEBUG_TS
-	memcpy(cmac, &time, 4);
+	memcpy(cmac_ptr, &time, 4);
 #else
-	macan_sign(&skey, cmac, plain, plain_length);
+	macan_sign(&skey, cmac_ptr, plain, plain_length);
 #endif
 
 	cf.can_dlc = 8;
@@ -622,8 +628,8 @@ void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
 	}
 }
 
-static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_val, uint8_t *cmac,
-			  uint8_t plain[10], uint8_t *fill_time, uint8_t plain_length);
+static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_val, uint8_t *cmac_ptr,
+			  uint8_t plain[10], uint8_t *fill_time, unsigned plain_length);
 
 /**
  * Receive signal.
@@ -637,8 +643,13 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 	uint8_t plain[10];
 	uint8_t *fill_time;
 	uint32_t sig_val = 0;
-	uint8_t *cmac;
-	uint8_t plain_length;
+	uint8_t *cmac_ptr;
+	unsigned plain_length = 0;
+	uint32_t dummy_time = 0;
+	uint32_t can_sid = htole32(cf->can_id);
+
+	if (cf->can_dlc != 8)
+		return;
 
 	// we have received 32 bit signal
 	struct macan_signal *sig32 = (struct macan_signal *)cf->data;
@@ -650,18 +661,17 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 		return; /* Ignore signals for other nodes. We don't
 			 * have a session key to check its CMAC. */
 
-	cmac = sig32->cmac;
+	cmac_ptr = sig32->cmac;
 	memcpy(&sig_val, sig32->sig, 4);
 	sig_val = le32toh(sig_val);
 
 	/* Prepare plain text for CMAC */
-	plain_length = 10;
-	memcpy(plain,&sig32->sig,4);
-	fill_time = plain+4;
-	memcpy(plain + 8,&(cf->can_id),2);
+	append(plain, &plain_length, &sig32->sig, 4);
+	fill_time = plain + plain_length;
+	append(plain, &plain_length, &dummy_time, 4); /* will be replaced in __receive_sig() */
 
-
-	__receive_sig(ctx, sig_num, sig_val, cmac, plain, fill_time, plain_length);
+	append(plain, &plain_length, &can_sid, 2);
+	__receive_sig(ctx, sig_num, sig_val, cmac_ptr, plain, fill_time, plain_length);
 }
 
 static
@@ -671,8 +681,9 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 	uint8_t *fill_time;
 	uint32_t sig_num;
 	uint32_t sig_val = 0;
-	uint8_t *cmac;
-	uint8_t plain_length;
+	uint8_t *cmac_ptr;
+	unsigned plain_length = 0;
+	uint32_t dummy_time = 0;
 	const struct macan_sig_spec *sigspec;
 
 	struct macan_signal_ex *sig16 = (struct macan_signal_ex *)cf->data;
@@ -687,22 +698,22 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 		return; /* Ignore signals for other nodes. We don't
 			 * have a session key to check its CMAC. */
 
-	cmac = sig16->cmac;
+	cmac_ptr = sig16->cmac;
 	memcpy(&sig_val, sig16->sig_val, 2);
 	sig_val = le32toh(sig_val);
 
 	/* Prepare plain text for CMAC */
-	plain_length = 8;
 	fill_time = plain;
-	memcpy(plain + 4, &(sigspec->src_id), 1);
-	memcpy(plain + 5, &(ctx->config->node_id), 1);
-	memcpy(plain + 6, sig16->sig_val, 2);
+	append(plain, &plain_length, &dummy_time, 4);
+	append(plain, &plain_length, &sigspec->src_id, 1);
+	append(plain, &plain_length, &ctx->config->node_id, 1);
+	append(plain, &plain_length, &sig16->sig_val, 2);
 
-	__receive_sig(ctx, sig_num, sig_val, cmac, plain, fill_time, plain_length);
+	__receive_sig(ctx, sig_num, sig_val, cmac_ptr, plain, fill_time, plain_length);
 }
 
 static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_val, uint8_t *cmac,
-			  uint8_t plain[10], uint8_t *fill_time, uint8_t plain_length)
+			  uint8_t plain[10], uint8_t *fill_time, unsigned plain_length)
 {
 	struct macan_key skey;
 	struct com_part *cp;
