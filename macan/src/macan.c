@@ -530,7 +530,7 @@ static
 int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint32_t sig_val)
 {
 	struct can_frame cf = {0};
-	uint8_t plain[10],sig[8];
+	uint8_t plain[12], sig[8];
 	unsigned plain_length = 0;
 	uint32_t t;
 	struct macan_key skey;
@@ -550,8 +550,13 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 
 		append(plain, &plain_length, &sig_val, 4);
 		append(plain, &plain_length, &t, 4);
+#ifdef VW_COMPATIBLE
 		append(plain, &plain_length, &can_sid, 2);
-
+#else
+		/* We want to cover EFF IDs as well. Note that EFF IDs
+		 * have the CAN_EFF_FLAG (0x80000000U) set */
+		append(plain, &plain_length, &can_sid, 4);
+#endif
 		struct macan_signal *sig32 = (struct macan_signal *) sig;
 		cf.can_id = ctx->config->sigspec[sig_num].can_sid;
 		memcpy(sig32->sig, &sig_val, 4);
@@ -640,7 +645,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 static
 void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t sig_num)
 {
-	uint8_t plain[10];
+	uint8_t plain[12];
 	uint8_t *fill_time;
 	uint32_t sig_val = 0;
 	uint8_t *cmac_ptr;
@@ -669,8 +674,13 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 	append(plain, &plain_length, &sig32->sig, 4);
 	fill_time = plain + plain_length;
 	append(plain, &plain_length, &dummy_time, 4); /* will be replaced in __receive_sig() */
-
+#ifdef VW_COMPATIBLE
 	append(plain, &plain_length, &can_sid, 2);
+#else
+	/* We want to cover EFF IDs as well. Note that EFF IDs have
+	 * the CAN_EFF_FLAG (0x80000000U) set */
+	append(plain, &plain_length, &can_sid, 4);
+#endif
 	__receive_sig(ctx, sig_num, sig_val, cmac_ptr, plain, fill_time, plain_length);
 }
 
