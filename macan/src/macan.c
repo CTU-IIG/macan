@@ -754,7 +754,7 @@ void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 	struct com_part *cpart = ctx->cpart[fwd_id];
 
 	if (cpart && !cpart->awaiting_skey) {
-		print_msg(ctx, MSG_REQUEST,"Requesting skey for node #%d\n",fwd_id);
+		print_msg(ctx, MSG_REQUEST,"Requesting skey for node %s\n",macan_ecu_name(ctx, fwd_id));
 		gen_challenge(ctx, cpart->chg);
 		macan_send_challenge(ctx, ctx->config->key_server_id, fwd_id, cpart->chg);
 		cpart->awaiting_skey = true;
@@ -917,7 +917,7 @@ bool macan_canid2ecuid(const struct macan_config *cfg, uint32_t can_id, macan_ec
 	macan_ecuid i;
 
 	for (i = 0; i < cfg->node_count; i++) {
-		if (cfg->canid->ecu[i] == can_id) {
+		if (cfg->canid->ecu[i].canid == can_id) {
 			if(ecu_id != NULL) {
 				*ecu_id = i;
 			}
@@ -1048,4 +1048,9 @@ macan_ev_canrx_setup(struct macan_ctx *ctx, macan_ev_can *ev,
 	macan_ev_can_init(ev, cb, ctx->sockfd, MACAN_EV_READ);
 	ev->data = ctx;
 	macan_ev_can_start (ctx->loop, ev);
+}
+
+const char *macan_ecu_name(struct macan_ctx *ctx, macan_ecuid id)
+{
+	return ctx->config->canid->ecu[id].name;
 }

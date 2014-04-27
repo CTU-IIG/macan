@@ -177,7 +177,7 @@ struct macan_ctx {
 	};
 };
 
-#define CANID(ctx, ecuid) ((ctx)->config->canid->ecu[ecuid])
+#define CANID(ctx, ecuid) ((ctx)->config->canid->ecu[ecuid].canid)
 
 bool macan_canid2ecuid(const struct macan_config *cfg, uint32_t canid, macan_ecuid *ecuid);
 bool is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id);
@@ -191,6 +191,7 @@ struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id);
 bool gen_rand_data(void *dest, size_t len);
 bool macan_read(struct macan_ctx *ctx, struct can_frame *cf);
 bool macan_send(struct macan_ctx *ctx,  const struct can_frame *cf);
+const char *macan_ecu_name(struct macan_ctx *ctx, macan_ecuid id);
 
 static inline macan_ecuid macan_crypt_dst(const struct can_frame *cf)
 {

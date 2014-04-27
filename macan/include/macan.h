@@ -56,9 +56,14 @@ struct macan_sig_spec {
 	uint8_t presc;      /**< prescaler */
 };
 
+struct macan_ecu {
+	uint32_t canid;
+	const char *name;
+};
+
 struct macan_can_ids {
-	uint32_t time;      /**< CAN-ID used to distribute time */
-	uint32_t *ecu;	    /**< Mapping from ECU-ID to crypt-frame CAN-ID */
+	uint32_t time;         /**< CAN-ID used to distribute time */
+	struct macan_ecu *ecu; /**< Mapping from ECU-ID to crypt-frame CAN-ID */
 };
 
 /**

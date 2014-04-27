@@ -74,13 +74,13 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 				switch (macan_crypt_flags(cf)) {
 				case FL_REQ_CHALLENGE: {
 					struct macan_req_challenge *chg = (struct macan_req_challenge*)cf->data;
-					sprintf(type, "req challenge fwd_id=%d%s", chg->fwd_id,
+					sprintf(type, "req challenge fwd_id=%s%s", cfg->canid->ecu[chg->fwd_id].name,
 						cf->can_dlc == 2 ? "" : " wrong length");
 					break;
 				}
 				case FL_CHALLENGE: {
 					struct macan_challenge *chg = (struct macan_challenge*)cf->data;
-					sprintf(type, "challenge fwd_id=%d", chg->fwd_id);
+					sprintf(type, "challenge fwd_id=%s", cfg->canid->ecu[chg->fwd_id].name);
 					color = ANSI_COLOR_DCYAN;
 					break;
 				}
@@ -124,14 +124,17 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 					strcpy(type, "???");
 				}
 				char srcstr[5], dststr[5];
+
 				if (src == cfg->key_server_id)       strcpy(srcstr, "KS");
 				else if (src == cfg->time_server_id) strcpy(srcstr, "TS");
+				else if (cfg->canid->ecu[src].name) sprintf(srcstr, "%2s", cfg->canid->ecu[src].name);
 				else sprintf(srcstr, "%02d", src);
 				if (src == cfg->node_id) strcat(srcstr, "me");
 
 				macan_ecuid dst = macan_crypt_dst(cf);
 				if (dst == cfg->key_server_id)       strcpy(dststr, "KS");
 				else if (dst == cfg->time_server_id) strcpy(dststr, "TS");
+				else if (cfg->canid->ecu[dst].name) sprintf(dststr, "%-2s", cfg->canid->ecu[dst].name);
 				else sprintf(dststr, "%02d", dst);
 				if (dst == cfg->node_id) strcat(dststr, "me");
 

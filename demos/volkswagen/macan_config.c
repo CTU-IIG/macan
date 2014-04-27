@@ -47,11 +47,11 @@ struct macan_sig_spec demo_sig_spec[] = {
 
 const struct macan_can_ids demo_can_ids = {
 	.time = 0x000,
-	.ecu = (uint32_t[]){
-		[KEY_SERVER] = 0x101,
-		[TIME_SERVER] = 0x102,
-		[NODE_VW] = 0x103,
-		[NODE_CTU] = 0x104,
+	.ecu = (struct macan_ecu[]){
+		[KEY_SERVER] = {0x101,"KS"},
+		[TIME_SERVER] = {0x102,"TS"},
+		[NODE_VW] = {0x103,"VW"},
+		[NODE_CTU] = {0x104,"CT"},
 	},
 };
 

@@ -90,8 +90,13 @@ void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...) {
 		[MSG_SIGNAL]  = ANSI_COLOR_MAGENTA "SIG " ANSI_COLOR_RESET,
 
 	};
-	if (ctx && ctx->config)
-		snprintf(nodestr, sizeof(nodestr), "#%d", ctx->config->node_id);
+	if (ctx && ctx->config) {
+		const char *name = macan_ecu_name(ctx, ctx->config->node_id);
+		if (name)
+			snprintf(nodestr, sizeof(nodestr), "%-3s", name);
+		else
+			snprintf(nodestr, sizeof(nodestr), "#%d", ctx->config->node_id);
+	}
 
 	va_start(ap, format);
 	printf("%s %3s: ", msg_type_strings[type], nodestr);
