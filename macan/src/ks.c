@@ -63,6 +63,7 @@ uint8_t lookup_skey(struct macan_ctx *ctx, macan_ecuid src_id, macan_ecuid dst_i
 	key = &skey_map[src_id][dst_id];
 	*key_ret = &key->key;
 
+	/* TODO: regenerate key when it expires */
 	if (!key->valid) {
 		generate_skey(ctx, key);
 		return 1;
