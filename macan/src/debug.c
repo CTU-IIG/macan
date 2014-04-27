@@ -51,7 +51,7 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);
 	if (cfg) {
-		if (cf->can_id == cfg->time_canid) {
+		if (cf->can_id == cfg->canid->time) {
 			uint32_t time;
 			memcpy(&time, cf->data, 4); /* FIXME: Handle endian */
 			switch (cf->can_dlc) {

@@ -71,7 +71,6 @@ struct macan_config {
 	const struct macan_sig_spec *sigspec; /**< Signal specification */
 	uint8_t node_count;                   /**< Number of nodes (ECUs) in our network */
 	const struct macan_can_ids *canid;    /**< CAN-IDs used by MaCAN */
-	uint32_t time_canid;
 	macan_ecuid key_server_id;            /**< ECU-ID of the key server */
 	macan_ecuid time_server_id;           /**< ECU-ID of the time server */
 	uint32_t time_div;                    /**< Number of microseconds in one MaCAN time unit */
