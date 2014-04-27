@@ -565,6 +565,9 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 		append(plain, &plain_length, &t, 4);
 		append(plain, &plain_length, &(ctx->config->node_id), 1);
 		append(plain, &plain_length, &dst_id, 1);
+#ifndef VW_COMPATIBLE
+		append(plain, &plain_length, &sig_num, 1);
+#endif
 		append(plain, &plain_length, &sig_val, 2);
 
 		struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
@@ -689,7 +692,7 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint8_t plain[10];
 	uint8_t *fill_time;
-	uint32_t sig_num;
+	uint8_t sig_num;
 	uint32_t sig_val = 0;
 	uint8_t *cmac_ptr;
 	unsigned plain_length = 0;
@@ -717,6 +720,9 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 	append(plain, &plain_length, &dummy_time, 4);
 	append(plain, &plain_length, &sigspec->src_id, 1);
 	append(plain, &plain_length, &ctx->config->node_id, 1);
+#ifndef VW_COMPATIBLE
+	append(plain, &plain_length, &sig_num, 1);
+#endif
 	append(plain, &plain_length, &sig16->sig_val, 2);
 
 	__receive_sig(ctx, sig_num, sig_val, cmac_ptr, plain, fill_time, plain_length);
