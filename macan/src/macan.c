@@ -346,6 +346,8 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 			// initialize group field - this will work only for ecu_id <= 23
 			cpart->group_field = 1U << ctx->config->node_id;
 
+			print_msg(ctx, MSG_OK,"new session key for %s\n", macan_ecu_name(ctx, fwd_id));
+
 			send_ack(ctx, fwd_id);
 		}
 
