@@ -333,6 +333,9 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 			return RECEIVE_SKEY_ERR;
 		}
 
+		if (!cpart->awaiting_skey)
+			return RECEIVE_SKEY_ERR;
+
 		cpart->awaiting_skey = false;
 		cpart->valid_until = read_time() + ctx->config->skey_validity;
 
