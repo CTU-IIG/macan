@@ -203,7 +203,7 @@ int main()
 
 	config.ltk = &macan_ltk_node4;
 
-	s = helper_init();
+	s = helper_init("can0");
 	io_init();
 	macan_init(&macan_ctx, &config, loop, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);

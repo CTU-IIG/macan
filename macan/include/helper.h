@@ -26,6 +26,6 @@
 
 #include <macan.h>
 
-int helper_init(void);
+int helper_init(const char *ifname);
 
 #endif

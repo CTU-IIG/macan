@@ -111,12 +111,11 @@ bool macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 	return true;
 }
 
-int helper_init()
+int helper_init(const char *ifname)
 {
 	int s;
 	int r;
 	struct ifreq ifr;
-	char *ifname = "can0";
 	struct sockaddr_can addr;
 
 	if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {

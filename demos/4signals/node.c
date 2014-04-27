@@ -87,7 +87,7 @@ int main()
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 	ev_timer sig_send;
 
-	s = helper_init();
+	s = helper_init("can0");
 
 	// put node id to config struct
 	config.node_id = NODE_ID;
