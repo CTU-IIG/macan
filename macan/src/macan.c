@@ -103,6 +103,13 @@ bool is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
 	return (cp->group_field & both) == both;
 }
 
+static void
+append(void *dst, unsigned *dstlen, const void *src, unsigned srclen)
+{
+	memcpy(dst + *dstlen, src, srclen);
+	*dstlen += srclen;
+}
+
 static
 void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, uint8_t prescaler)
 {
@@ -170,6 +177,7 @@ static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
 
 	struct macan_ack ack = { .flags_and_dst_id = (uint8_t)(FL_ACK << 6 | (dst_id & 0x3f)), .group = {0}, .cmac = {0}};
 	uint8_t plain[8] = {0};
+	unsigned pl = 0;
 	struct can_frame cf = {0};
 	struct com_part *cpart = get_cpart(ctx, dst_id);
 
@@ -182,14 +190,16 @@ static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
 	memcpy(&ack.group, &group_field, 3);
 	uint32_t time = htole32((uint32_t)macan_get_time(ctx));
 
-	memcpy(plain, &time, 4);
-	plain[4] = dst_id;
-	memcpy(plain + 5, &group_field, 3);
+	append(plain, &pl, &time, 4);
+	append(plain, &pl, &dst_id, 1);
+	append(plain, &pl, &group_field, 3);
+
+	assert(pl <= sizeof(plain));
 
 #ifdef DEBUG_TS
 	memcpy(ack.cmac, &time, 4);
 #else
-	macan_sign(&cpart->skey, ack.cmac, plain, sizeof(plain));
+	macan_sign(&cpart->skey, ack.cmac, plain, pl);
 #endif
 	cf.can_id = CANID(ctx, ctx->config->node_id);
 	cf.can_dlc = 8;
@@ -512,13 +522,6 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 		sighand[sig_num]->presc_cnt = (uint8_t)(areq->prescaler - 1);
 	}
 
-}
-
-static void
-append(void *dst, unsigned *dstlen, const void *src, unsigned srclen)
-{
-	memcpy(dst + *dstlen, src, srclen);
-	*dstlen += srclen;
 }
 
 /**
