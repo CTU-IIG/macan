@@ -134,7 +134,10 @@ int helper_init(const char *ifname)
 	setsockopt(s, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &loopback, sizeof(loopback));
 #endif
 	strcpy(ifr.ifr_name, ifname);
-	ioctl(s, SIOCGIFINDEX, &ifr);
+	if (ioctl(s, SIOCGIFINDEX, &ifr) == -1) {
+		perror(ifname);
+		return -1;
+	}
 
 	memset(&addr, 0, sizeof(addr));
 	addr.can_family  = AF_CAN;
