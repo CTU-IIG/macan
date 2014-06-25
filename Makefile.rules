@@ -4,7 +4,7 @@
 #  (C) Copyright 2006, 2007, 2008, 2009, 2010, 2011, 2013 by Michal Sojka - Czech Technical University, FEE, DCE
 #
 #  Homepage: http://rtime.felk.cvut.cz/omk/
-#  Version:  0.2-157-gc07f762
+#  Version:  0.2-158-g90ea1a7
 #
 # The OMK build system is distributed under the GNU General Public
 # License.  See file COPYING for details.
@@ -629,7 +629,7 @@ TARGET_IDLS = $($(1)_SERVER_IDL) $($(1)_CLIENT_IDL) $($(1)_IDL)
 TARGET_CFLAGS   = $(if $($(1)_CFLAGS),$($(1)_CFLAGS),$(OMK_CFLAGS))
 TARGET_CXXFLAGS = $(if $($(1)_CXXFLAGS),$($(1)_CXXFLAGS),$(OMK_CXXFLAGS))
 TARGET_CPPFLAGS = $(if $($(1)_CPPFLAGS),$($(1)_CPPFLAGS),$(OMK_CPPFLAGS))
-LINK_WITH_CXX = $(filter %.cc,$(TARGET_SOURCES))$(filter %.cxx,$(TARGET_SOURCES))$$(filter %.cpp,$(TARGET_SOURCES))
+LINK_WITH_CXX = $(filter %.cc,$(TARGET_SOURCES))$(filter %.cxx,$(TARGET_SOURCES))$(filter %.cpp,$(TARGET_SOURCES))
 
 # Syntax: $(call PROGRAM_template,<executable-name>,<dir>,<executable-suffix>,<linker-sript>)
 define PROGRAM_template
