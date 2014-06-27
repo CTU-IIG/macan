@@ -1,1 +1,4 @@
-SUBDIRS = 4signals volkswagen
+SUBDIRS = 4signals
+ifeq ($(CONFIG_TARGET),linux)
+	SUBDIRS += volkswagen
+endif

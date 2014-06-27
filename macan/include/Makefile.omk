@@ -1,2 +1,5 @@
 include_HEADERS = can_frame.h common.h debug.h helper.h macan.h	\
                   macan_private.h cryptlib.h
+ifeq ($(CONFIG_TARGET),stm32)
+	include_HEADERS += endian.h
+endif

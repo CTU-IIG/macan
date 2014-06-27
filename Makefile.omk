@@ -1,1 +1,4 @@
-SUBDIRS=macan demos test
+SUBDIRS=macan demos
+ifeq ($(CONFIG_TARGET),linux)
+	SUBDIRS += test
+endif

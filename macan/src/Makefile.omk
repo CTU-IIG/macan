@@ -1,21 +1,103 @@
 lib_LIBRARIES = macan macanvw
 
-macan_SOURCES = common.c debug.c macan.c cryptlib.c ts.c ks.c
-macan_SOURCES += target/linux/linux_macan.c target/linux/lib.c target/linux/linux_cryptlib.c
+default_CONFIG = CONFIG_TARGET=linux
+TARGET = $(CONFIG_TARGET)
+
+macan_SOURCES = common.c debug.c macan.c cryptlib.c
+
+ifeq ($(TARGET),linux)
+
+	macan_SOURCES += ts.c ks.c
+	macan_SOURCES += target/$(TARGET)/linux_macan.c target/$(TARGET)/lib.c target/$(TARGET)/linux_cryptlib.c
+
+else ifeq ($(TARGET),stm32)
+
+	# target specific files
+	macan_SOURCES += target/$(TARGET)/macan_ev.c 
+	macan_SOURCES += target/$(TARGET)/stm32_macan.c
+	macan_SOURCES += target/$(TARGET)/stm32_cryptlib.c
+
+	# STM32 library files
+	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c
+	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_rcc.c
+	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_can.c
+	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_tim.c
+	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_spi.c
+	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/misc.c
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/stm32f10x.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/CMSIS/CM3/CoreSupport/core_cm3.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/system_stm32f10x.h
+	include_HEADERS += ../../macan/src/target/stm32/stm32f10x_conf.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_adc.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_bkp.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_can.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_cec.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_crc.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dac.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dbgmcu.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dma.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_exti.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_flash.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_fsmc.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_gpio.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_i2c.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_iwdg.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_pwr.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_rcc.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_rtc.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_sdio.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_spi.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_tim.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_usart.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_wwdg.h
+	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/STM32F10x_StdPeriph_Driver/inc/misc.h
+
+	# STM32 EVAL kit files
+	macan_SOURCES += target/$(TARGET)/lib/Utilities/STM32_EVAL/stm3210c_eval/stm3210c_eval.c
+	macan_SOURCES += target/$(TARGET)/lib/Utilities/STM32_EVAL/stm3210c_eval/stm3210c_eval_lcd.c
+	macan_SOURCES += target/$(TARGET)/lib/Utilities/STM32_EVAL/Common/fonts.c
+	include_HEADERS += target/$(TARGET)/lib/Utilities/STM32_EVAL/stm32_eval.h
+	include_HEADERS += target/$(TARGET)/lib/Utilities/STM32_EVAL/stm3210c_eval/stm3210c_eval.h
+	include_HEADERS += target/$(TARGET)/lib/Utilities/STM32_EVAL/stm3210c_eval/stm3210c_eval_lcd.h
+	include_HEADERS += target/$(TARGET)/lib/Utilities/STM32_EVAL/Common/fonts.h
+
+	# nettle files 
+	macan_SOURCES += target/$(TARGET)/nettle/memxor.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-set-key-internal.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-encrypt-internal.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-decrypt-internal.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-invert-internal.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-set-encrypt-key.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-set-decrypt-key.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-encrypt.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-decrypt.c
+	macan_SOURCES += target/$(TARGET)/nettle/aes-encrypt-table.c
+	include_HEADERS += target/$(TARGET)/nettle/aes.h
+	include_HEADERS += target/$(TARGET)/nettle/macros.h
+	include_HEADERS += target/$(TARGET)/nettle/memxor.h
+	include_HEADERS += target/$(TARGET)/nettle/nettle-types.h
+	include_HEADERS += target/$(TARGET)/nettle/nettle-stdint.h
+endif
 
 macanvw_SOURCES = ${macan_SOURCES}
 macanvw_CPPFLAGS = -DVW_COMPATIBLE
 
-bin_PROGRAMS = keysvr timesvr macanmon
-keysvr_SOURCES = keysvr.c
-keysvr_LIBS = macan
+ifeq ($(TARGET),linux)
 
-timesvr_SOURCES = timesvr.c
-timesvr_LIBS = macan
+	bin_PROGRAMS = keysvr timesvr macanmon
+	keysvr_SOURCES = keysvr.c
+	keysvr_LIBS = macan
 
-macanmon_SOURCES = macanmon.c
-macanmon_LIBS = macan
+	timesvr_SOURCES = timesvr.c
+	timesvr_LIBS = macan
 
-lib_LOADLIBES = nettle rt dl ev
+	macanmon_SOURCES = macanmon.c
+	macanmon_LIBS = macan
 
-include_HEADERS = target/linux/macan_ev.h
+	lib_LOADLIBES = nettle rt dl ev
+
+else ifeq ($(TARGET),stm32)
+
+endif
+
+include_HEADERS += target/$(TARGET)/macan_ev.h
