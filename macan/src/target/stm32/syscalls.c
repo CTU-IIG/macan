@@ -99,7 +99,8 @@ int _read(int file, char *ptr, int len) {
 int _write(int file, char *ptr, int len) {
     int i;
     for (i = 0; i < len; i++) {
-        //fdputc(file, ptr[i]);
+        //fputc(file, ptr[i]);
+		fputc(ptr[i],file);
     }
     return len;
 }
