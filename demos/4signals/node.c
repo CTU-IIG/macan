@@ -31,7 +31,8 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "common.h"
-#ifdef __CPU_TC1798__
+
+#if defined(__CPU_TC1798__)
 #include "can_frame.h"
 #include "Std_Types.h"
 #include "Mcu.h"
@@ -41,9 +42,9 @@
 #include "Test_Print.h"
 #include "Os.h"
 #include "she.h"
-#endif /* __CPU_TC1798__ */
+#elif defined(__CPU_STM32F107__)
 
-#ifdef __linux__
+#elif defined(__linux__)
 #include <unistd.h>
 #include <net/if.h>
 #include <sys/types.h>
