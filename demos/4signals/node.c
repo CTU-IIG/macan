@@ -58,7 +58,7 @@
 #include <macan_private.h> 	/* FIXME: Needed for read_time - replace with macan_get_time */
 #include "macan_config.h"
 
-#include <ev.h>
+#include "macan_ev.h"
 
 #define TIME_EMIT_SIG 1000000
 
@@ -67,7 +67,7 @@ extern const struct macan_key MACAN_CONFIG_LTK(NODE_ID);
 
 
 static void
-send_cb (macan_ev_loop *loop, ev_timer *w, int revents)
+send_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 {
 	(void)loop; (void)revents;
 	struct macan_ctx *ctx = w->data;
@@ -90,10 +90,11 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 int main()
 {
 	int s;
-	macan_ev_loop *loop = MACAN_EV_DEFAULT;
-	ev_timer sig_send;
-
 	s = helper_init("can0");
+
+	macan_ev_loop *loop = MACAN_EV_DEFAULT;
+	macan_ev_timer sig_send;
+
 
 	// put node id to config struct
 	config.node_id = NODE_ID;
