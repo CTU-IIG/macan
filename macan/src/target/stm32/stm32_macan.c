@@ -117,14 +117,14 @@ static void can_config(void)
 }
 
 /*
- * Configure timer to interrupt every second.
+ * Configure timer to interrupt every 1/100 second.
  */
 static void timer_config() {
 
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
 
 	TIM_TimeBaseInitTypeDef timerInitStructure; 
-	timerInitStructure.TIM_Prescaler = 30000;
+	timerInitStructure.TIM_Prescaler = 300;
 	timerInitStructure.TIM_CounterMode = TIM_CounterMode_Up;
 	timerInitStructure.TIM_Period = 2400;
 	timerInitStructure.TIM_ClockDivision = TIM_CKD_DIV1;
