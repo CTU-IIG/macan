@@ -22,6 +22,7 @@ else ifeq ($(TARGET),stm32)
 	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_can.c
 	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_tim.c
 	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_spi.c
+	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c
 	macan_SOURCES += target/$(TARGET)/lib/Libraries/STM32F10x_StdPeriph_Driver/src/misc.c
 	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/stm32f10x.h
 	include_HEADERS += ../../macan/src/target/stm32/lib/Libraries/CMSIS/CM3/CoreSupport/core_cm3.h
