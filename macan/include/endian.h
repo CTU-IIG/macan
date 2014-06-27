@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-#ifdef __CPU_TC1798__
+#if defined(__CPU_TC1798__) || defined(__CPU_STM32F107__)
 
 static inline uint32_t bswap_32(uint32_t x)
 {

@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-#ifdef __CPU_TC1798__
+#if defined(__CPU_TC1798__) || defined(__CPU_STM32F107__)
 struct can_frame {
 	uint32_t can_id;  /* 32 bit CAN_ID + EFF/RTR/ERR flags */
 	uint8_t can_dlc; /* data length code: 0 .. 8 */

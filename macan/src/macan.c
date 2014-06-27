@@ -41,6 +41,8 @@
 #include "Test_Print.h"
 #include "Os.h"
 #include "she.h"
+#elif defined(__CPU_STM32F107__)
+
 #else
 #include <unistd.h>
 #include <net/if.h>
