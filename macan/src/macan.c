@@ -52,7 +52,7 @@
 #endif /* __CPU_TC1798__ */
 #include <macan.h>
 #include "macan_private.h"
-#include "debug.h"
+#include "macan_debug.h"
 #include "cryptlib.h"
 #include "endian.h"
 

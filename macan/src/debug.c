@@ -21,7 +21,7 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <debug.h>
+#include <macan_debug.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include "macan_private.h"
