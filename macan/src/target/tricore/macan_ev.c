@@ -94,7 +94,7 @@ macan_ev_run(macan_ev_loop *loop)
 		poll_can_fifo(macan_ev_recv_cb, loop);
 
 		for (macan_ev_timer *t = loop->timers; t; t = t->next) {
-			if (t->expire_us >= now) {
+			if (now >= t->expire_us) {
 				t->cb(loop, t, MACAN_EV_TIMER);
 				t->expire_us = now + t->repeat_us;
 				// TODO: one shot timers
