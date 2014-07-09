@@ -41,7 +41,9 @@
 #include "Test_Print.h"
 #include "Os.h"
 #include "she.h"
-#else
+#endif /* __CPU_TC1798__ */
+
+#ifdef __linux__
 #include <unistd.h>
 #include <net/if.h>
 #include <sys/types.h>
@@ -49,7 +51,8 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#endif /* __CPU_TC1798__ */
+#endif /* __linux__ */
+
 #include "helper.h"
 #include "macan.h"
 #include <macan_private.h> 	/* FIXME: Needed for read_time - replace with macan_get_time */
@@ -80,6 +83,8 @@ send_cb (macan_ev_loop *loop, ev_timer *w, int revents)
 void sig_callback(uint8_t sig_num, uint32_t sig_val)
 {
 	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
+	if (getenv("MACAN_TEST"))
+		exit(0);
 }
 
 int main()
