@@ -106,7 +106,7 @@ bool is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
 static void
 append(void *dst, unsigned *dstlen, const void *src, unsigned srclen)
 {
-	memcpy(dst + *dstlen, src, srclen);
+	memcpy((char*)dst + *dstlen, src, srclen);
 	*dstlen += srclen;
 }
 

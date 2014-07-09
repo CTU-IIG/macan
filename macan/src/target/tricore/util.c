@@ -69,7 +69,7 @@ void set_endinit(void)
   WDT_CON0.U = u32WdtCon0;
 }
 
-int helper_init()
+int helper_init(const char *ifname)
 {
 	Can_SetControllerMode(CAN_CONTROLLER0, CAN_T_START);
 
