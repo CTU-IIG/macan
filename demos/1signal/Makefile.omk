@@ -1,0 +1,38 @@
+test_PROGRAMS = demo_1signal_node2 demo_1signal_node3
+
+demo_1signal_node2_SOURCES = node.c macan_config.c ltk2.c
+demo_1signal_node2_CPPFLAGS = -DNODE_ID=2
+demo_1signal_node2_LIBS = macan
+
+demo_1signal_node3_SOURCES = node.c macan_config.c ltk3.c
+demo_1signal_node3_CPPFLAGS = -DNODE_ID=3
+demo_1signal_node3_LIBS = macan
+
+ifeq ($(CONFIG_TARGET),linux)
+	demo_1signal_node2_LIBS += nettle rt
+	demo_1signal_node3_LIBS += nettle rt
+else ifeq ($(CONFIG_TARGET),stm32)
+
+	demo_1signal_node2_SOURCES += ../../macan/src/target/stm32/startup_stm32f10x_cl.S
+	demo_1signal_node2_SOURCES += ../../macan/src/target/stm32/system_stm32f10x.c
+	demo_1signal_node2_SOURCES += ../../macan/src/target/stm32/syscalls.c
+
+	demo_1signal_node3_SOURCES += ../../macan/src/target/stm32/startup_stm32f10x_cl.S
+	demo_1signal_node3_SOURCES += ../../macan/src/target/stm32/system_stm32f10x.c
+	demo_1signal_node3_SOURCES += ../../macan/src/target/stm32/syscalls.c
+
+	include_HEADERS = ../../macan/src/target/stm32/syscalls.h
+endif
+
+shared_LIBRARIES = demo_1signal_cfg
+demo_1signal_cfg_SOURCES = macan_config.c
+
+shared_LIBRARIES += demo_1signal_keys
+demo_1signal_keys_SOURCES = ltk2.c ltk3.c ltk1.c
+
+shared_LIBRARIES += demo_1signal_tskey
+demo_1signal_tskey_SOURCES = ltk1.c
+
+ifeq ($(CONFIG_TARGET),linux)
+	lib_LOADLIBES = ev
+endif

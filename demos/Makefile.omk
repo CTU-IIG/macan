@@ -1,4 +1,5 @@
 SUBDIRS = 4signals
 ifeq ($(CONFIG_TARGET),linux)
 	SUBDIRS += volkswagen
+	SUBDIRS += 1signal
 endif
