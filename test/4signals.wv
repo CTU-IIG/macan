@@ -14,4 +14,8 @@ timesvr -c libdemo_4signals_cfg.so -k libdemo_4signals_keys.so &
 TSPID=$!
 demo_4signals_node2 &
 N2PID=$!
+
+# Tell node3 to exit after successfull reception of a signal
+export MACAN_TEST=1
+
 WVPASS demo_4signals_node3

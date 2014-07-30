@@ -21,7 +21,7 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <debug.h>
+#include <macan_debug.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include "macan_private.h"
@@ -42,6 +42,27 @@ void debug_printf(const char* format, ...)
 
 #define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
 #define GET_LEN(byte) ((byte) & 0x0F)
+
+static void get_ecuid_str(const struct macan_config *cfg, char *str, size_t size, macan_ecuid id)
+{
+	if (id < cfg->node_count) {
+		if (cfg->canid->ecu[id].name) {
+			snprintf(str, size, "%s", cfg->canid->ecu[id].name);
+		} else {
+			if (id == cfg->key_server_id)
+				snprintf(str, size, "KS");
+			else if (id == cfg->time_server_id)
+				snprintf(str, size, "TS");
+			else
+				snprintf(str, size, "%02u", id);
+		}
+		if (id == cfg->node_id) {
+			size_t l = strlen(str);
+			snprintf(str + l, size-l, "(me)");
+		}
+	} else
+		snprintf(str, size, "%02u (bad!)", id);
+}
 
 void print_frame(const struct macan_config *cfg, struct can_frame *cf, const char *prefix)
 {
@@ -74,13 +95,17 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 				switch (macan_crypt_flags(cf)) {
 				case FL_REQ_CHALLENGE: {
 					struct macan_req_challenge *chg = (struct macan_req_challenge*)cf->data;
-					sprintf(type, "req challenge fwd_id=%s%s", cfg->canid->ecu[chg->fwd_id].name,
+					char fwdstr[20];
+					get_ecuid_str(cfg, fwdstr, sizeof(fwdstr), chg->fwd_id);
+					sprintf(type, "req challenge fwd_id=%s%s", fwdstr,
 						cf->can_dlc == 2 ? "" : " wrong length");
 					break;
 				}
 				case FL_CHALLENGE: {
 					struct macan_challenge *chg = (struct macan_challenge*)cf->data;
-					sprintf(type, "challenge fwd_id=%s", cfg->canid->ecu[chg->fwd_id].name);
+					char fwdstr[20];
+					get_ecuid_str(cfg, fwdstr, sizeof(fwdstr), chg->fwd_id);
+					sprintf(type, "challenge fwd_id=%s", fwdstr);
 					color = ANSI_COLOR_DCYAN;
 					break;
 				}
@@ -123,21 +148,11 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 				default:
 					strcpy(type, "???");
 				}
-				char srcstr[5], dststr[5];
-
-				if (src == cfg->key_server_id)       strcpy(srcstr, "KS");
-				else if (src == cfg->time_server_id) strcpy(srcstr, "TS");
-				else if (cfg->canid->ecu[src].name) sprintf(srcstr, "%2s", cfg->canid->ecu[src].name);
-				else sprintf(srcstr, "%02d", src);
-				if (src == cfg->node_id) strcat(srcstr, "me");
-
+				char srcstr[8], dststr[8];
 				macan_ecuid dst = macan_crypt_dst(cf);
-				if (dst == cfg->key_server_id)       strcpy(dststr, "KS");
-				else if (dst == cfg->time_server_id) strcpy(dststr, "TS");
-				else if (cfg->canid->ecu[dst].name) sprintf(dststr, "%-2s", cfg->canid->ecu[dst].name);
-				else sprintf(dststr, "%02d", dst);
-				if (dst == cfg->node_id) strcat(dststr, "me");
 
+				get_ecuid_str(cfg, srcstr, sizeof(srcstr), src);
+				get_ecuid_str(cfg, dststr, sizeof(dststr), dst);
 
 				sprintf(comment, "crypt %s->%s (%d->%d): %s", srcstr, dststr, src, dst, type);
 			}

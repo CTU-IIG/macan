@@ -41,7 +41,9 @@
 #include "Test_Print.h"
 #include "Os.h"
 #include "she.h"
-#else
+#endif /* __CPU_TC1798__ */
+
+#ifdef __linux__
 #include <unistd.h>
 #include <net/if.h>
 #include <sys/types.h>
@@ -49,13 +51,14 @@
 #include <sys/ioctl.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#endif /* __CPU_TC1798__ */
+#endif /* __linux__ */
+
 #include "helper.h"
 #include "macan.h"
 #include <macan_private.h> 	/* FIXME: Needed for read_time - replace with macan_get_time */
 #include "macan_config.h"
 
-#include <ev.h>
+#include "macan_ev.h"
 
 #define TIME_EMIT_SIG 1000000
 
@@ -64,7 +67,7 @@ extern const struct macan_key MACAN_CONFIG_LTK(NODE_ID);
 
 
 static void
-send_cb (macan_ev_loop *loop, ev_timer *w, int revents)
+send_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 {
 	(void)loop; (void)revents;
 	struct macan_ctx *ctx = w->data;
@@ -80,15 +83,18 @@ send_cb (macan_ev_loop *loop, ev_timer *w, int revents)
 void sig_callback(uint8_t sig_num, uint32_t sig_val)
 {
 	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
+	if (getenv("MACAN_TEST"))
+		exit(0);
 }
 
 int main()
 {
 	int s;
-	macan_ev_loop *loop = MACAN_EV_DEFAULT;
-	ev_timer sig_send;
-
 	s = helper_init("can0");
+
+	macan_ev_loop *loop = MACAN_EV_DEFAULT;
+	macan_ev_timer sig_send;
+
 
 	// put node id to config struct
 	config.node_id = NODE_ID;

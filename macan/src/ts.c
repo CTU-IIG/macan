@@ -23,7 +23,7 @@
 
 #include <macan.h>
 #include "macan_private.h"
-#include "debug.h"
+#include "macan_debug.h"
 #include "cryptlib.h"
 #include <assert.h>
 #include <unistd.h> /* FIXME: get rid of this */
