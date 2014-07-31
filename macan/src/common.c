@@ -102,3 +102,11 @@ void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...) {
 	printf("%s %3s: ", msg_type_strings[type], nodestr);
 	vprintf(format,ap);
 }
+void print_can_frame(struct can_frame *cf) {
+	printf("0x%x # ",cf->can_id);
+	int i;
+	for(i = 0; i < 8; i++) {
+		printf("%x ",cf->data[i]);
+	}
+	printf("\n");
+}
