@@ -31,6 +31,7 @@
 
 enum sig_id {
 	SIGNAL_A,
+	SIGNAL_B,
 	SIG_COUNT
 };
 
