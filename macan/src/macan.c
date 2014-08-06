@@ -658,6 +658,7 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 	unsigned plain_length = 0;
 	uint32_t dummy_time = 0;
 	uint32_t can_sid = htole32(cf->can_id);
+	const struct macan_sig_spec *sigspec;
 
 	if (cf->can_dlc != 8)
 		return;
@@ -668,7 +669,8 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 	if (sig_num >= ctx->config->sig_count)
 		return;
 
-	if (ctx->config->sigspec->dst_id != ctx->config->node_id)
+	sigspec = &ctx->config->sigspec[sig_num];
+	if (sigspec->dst_id != ctx->config->node_id)
 		return; /* Ignore signals for other nodes. We don't
 			 * have a session key to check its CMAC. */
 
