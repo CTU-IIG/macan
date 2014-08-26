@@ -121,6 +121,7 @@ void macan_ev_timer_setup(struct macan_ctx *ctx, macan_ev_timer *ev,
 			  unsigned after_ms, unsigned repeat_ms);
 void macan_ev_canrx_setup(struct macan_ctx *ctx, macan_ev_can *ev,
 			  void (*cb) (macan_ev_loop *loop,  macan_ev_can *w, int revents));
+void macan_request_expired_keys(struct macan_ctx *ctx);
 
 
 #endif /* MACAN_H */
