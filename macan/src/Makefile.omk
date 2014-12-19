@@ -3,11 +3,19 @@ lib_LIBRARIES = macan macanvw
 TARGET = $(CONFIG_TARGET)
 
 macan_SOURCES = common.c debug.c macan.c cryptlib.c
+include_HEADERS += target/$(TARGET)/macan_ev.h
 
 ifeq ($(TARGET),linux)
 
 	macan_SOURCES += ts.c ks.c
 	macan_SOURCES += target/$(TARGET)/linux_macan.c target/$(TARGET)/lib.c target/$(TARGET)/linux_cryptlib.c
+
+	bin_PROGRAMS = keysvr timesvr macanmon
+	keysvr_SOURCES = keysvr.c
+	timesvr_SOURCES = timesvr.c
+	macanmon_SOURCES = macanmon.c
+
+	lib_LOADLIBES = macan nettle rt dl ev
 
 else ifeq ($(TARGET),stm32)
 
@@ -81,23 +89,3 @@ endif
 
 macanvw_SOURCES = $(macan_SOURCES)
 macanvw_CPPFLAGS = -DVW_COMPATIBLE
-
-ifeq ($(TARGET),linux)
-
-	bin_PROGRAMS = keysvr timesvr macanmon
-	keysvr_SOURCES = keysvr.c
-	keysvr_LIBS = macan
-
-	timesvr_SOURCES = timesvr.c
-	timesvr_LIBS = macan
-
-	macanmon_SOURCES = macanmon.c
-	macanmon_LIBS = macan
-
-	lib_LOADLIBES = nettle rt dl ev
-
-else ifeq ($(TARGET),stm32)
-
-endif
-
-include_HEADERS += target/$(TARGET)/macan_ev.h
