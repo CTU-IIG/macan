@@ -1,5 +1,8 @@
 CONFIG_TARGET=stm32
 
+# The compiler mentioned below is supposed to be
+# https://launchpad.net/gcc-arm-embedded/4.9/4.9-2014-q4-major/+download/gcc-arm-none-eabi-4_9-2014q4-20141203-linux.tar.bz2
+# or newer.
 CC=arm-none-eabi-gcc
 AR=arm-none-eabi-ar
 
