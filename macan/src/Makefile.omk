@@ -79,7 +79,7 @@ else ifeq ($(TARGET),stm32)
 	include_HEADERS += target/$(TARGET)/nettle/nettle-stdint.h
 endif
 
-macanvw_SOURCES = ${macan_SOURCES}
+macanvw_SOURCES = $(macan_SOURCES)
 macanvw_CPPFLAGS = -DVW_COMPATIBLE
 
 ifeq ($(TARGET),linux)
