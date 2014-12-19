@@ -1,6 +1,5 @@
 lib_LIBRARIES = macan macanvw
 
-default_CONFIG = CONFIG_TARGET=linux
 TARGET = $(CONFIG_TARGET)
 
 macan_SOURCES = common.c debug.c macan.c cryptlib.c

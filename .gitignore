@@ -6,6 +6,7 @@ cscope.*
 caninit.sh
 tags
 /config.omk-default
+/config.target
 /Debug/
 *.swp
 .ycm_extra_conf.py

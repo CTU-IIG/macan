@@ -1,3 +1,7 @@
+ifeq ($(CONFIG_TARGET),)
+$(error CONFIG_TARGET variable not set. Please copy or symlink the appropriate config.target.* file to config.target)
+endif
+
 SUBDIRS=macan demos
 ifeq ($(CONFIG_TARGET),linux)
 	SUBDIRS += test
