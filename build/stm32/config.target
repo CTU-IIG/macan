@@ -17,3 +17,5 @@ LDFLAGS = -T$(MAKERULES_DIR)/stm32rt/stm32_flash.ld -Wl,-Map=$(@F).map -Wl,--gc-
 
 # MaCAN applications need to be linked with these libraries
 MACAN_TARGET_LIBS = nettle  stm32
+
+LN_HEADERS=y
