@@ -14,9 +14,9 @@ macanvw_CPPFLAGS = -DVW_COMPATIBLE
 ifeq ($(CONFIG_TARGET),linux)
 	bin_PROGRAMS = keysvr timesvr macanmon
 
-	keysvr_SOURCES = target/linux/keysvr.c
-	timesvr_SOURCES = target/linux/timesvr.c
-	macanmon_SOURCES = target/linux/macanmon.c
+	keysvr_SOURCES = linux/keysvr.c
+	timesvr_SOURCES = linux/timesvr.c
+	macanmon_SOURCES = linux/macanmon.c
 
 	lib_LOADLIBES = macan dl $(MACAN_TARGET_LIBS)
 endif
