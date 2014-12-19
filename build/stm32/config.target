@@ -14,3 +14,6 @@ CFLAGS += -D__CPU_STM32F107__
 CFLAGS += -DMALLOC_HEAP_SIZE=0x4000
 
 LDFLAGS = -T$(MAKERULES_DIR)/stm32rt/stm32_flash.ld -Wl,-Map=$(@F).map -Wl,--gc-sections --specs=nosys.specs $(CFLAGS)
+
+# MaCAN applications need to be linked with these libraries
+MACAN_TARGET_LIBS = nettle  stm32
