@@ -1,0 +1,48 @@
+# smt32 runtime library
+lib_LIBRARIES = stm32rt
+
+# STM32 library files
+stm32rt_SOURCES += lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_gpio.c
+stm32rt_SOURCES += lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_rcc.c
+stm32rt_SOURCES += lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_can.c
+stm32rt_SOURCES += lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_tim.c
+stm32rt_SOURCES += lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_spi.c
+stm32rt_SOURCES += lib/Libraries/STM32F10x_StdPeriph_Driver/src/stm32f10x_usart.c
+stm32rt_SOURCES += lib/Libraries/STM32F10x_StdPeriph_Driver/src/misc.c
+
+include_HEADERS += lib/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/stm32f10x.h
+include_HEADERS += lib/Libraries/CMSIS/CM3/CoreSupport/core_cm3.h
+include_HEADERS += lib/Libraries/CMSIS/CM3/DeviceSupport/ST/STM32F10x/system_stm32f10x.h
+include_HEADERS += stm32f10x_conf.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_adc.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_bkp.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_can.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_cec.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_crc.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dac.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dbgmcu.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_dma.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_exti.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_flash.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_fsmc.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_gpio.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_i2c.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_iwdg.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_pwr.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_rcc.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_rtc.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_sdio.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_spi.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_tim.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_usart.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/stm32f10x_wwdg.h
+include_HEADERS += lib/Libraries/STM32F10x_StdPeriph_Driver/inc/misc.h
+
+# STM32 EVAL kit files
+stm32rt_SOURCES += lib/Utilities/STM32_EVAL/stm3210c_eval/stm3210c_eval.c
+stm32rt_SOURCES += lib/Utilities/STM32_EVAL/stm3210c_eval/stm3210c_eval_lcd.c
+stm32rt_SOURCES += lib/Utilities/STM32_EVAL/Common/fonts.c
+include_HEADERS += lib/Utilities/STM32_EVAL/stm32_eval.h
+include_HEADERS += lib/Utilities/STM32_EVAL/stm3210c_eval/stm3210c_eval.h
+include_HEADERS += lib/Utilities/STM32_EVAL/stm3210c_eval/stm3210c_eval_lcd.h
+include_HEADERS += lib/Utilities/STM32_EVAL/Common/fonts.h

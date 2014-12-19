@@ -1,1 +1,1 @@
-SUBDIRS=macan demos
+SUBDIRS=macan demos nettle stm32rt

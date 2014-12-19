@@ -1,12 +1,10 @@
 *~
-/build/
-/_build/
-/_compiled/
+_build/
+_compiled/
 cscope.*
 caninit.sh
 tags
-/config.omk-default
-/config.target
+config.omk-default
 /Debug/
 *.swp
 .ycm_extra_conf.py

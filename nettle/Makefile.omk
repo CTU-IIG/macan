@@ -1,0 +1,8 @@
+lib_LIBRARIES = nettle
+
+nettle_SOURCES = memxor.c aes-set-key-internal.c			\
+aes-encrypt-internal.c aes-decrypt-internal.c aes-invert-internal.c	\
+aes-set-encrypt-key.c aes-set-decrypt-key.c aes-encrypt.c		\
+aes-decrypt.c aes-encrypt-table.c
+
+include_HEADERS = aes.h macros.h memxor.h nettle-types.h nettle-stdint.h
