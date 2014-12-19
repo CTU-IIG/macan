@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include "macan_private.h"
-#include "target/linux/lib.h"
+#include "linux/lib.h"		/* FIXME: target specific file should not be here */
 #include <string.h>
 #include <inttypes.h>
 

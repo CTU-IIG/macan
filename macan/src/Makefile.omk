@@ -1,19 +1,17 @@
 lib_LIBRARIES = macan macanvw
 
-TARGET = target/$(CONFIG_TARGET)
-
 macan_SOURCES = common.c debug.c macan.c cryptlib.c ts.c ks.c
 macan_SOURCES += $(macan_SOURCES-$(CONFIG_TARGET))
 
-include_HEADERS += $(TARGET)/macan_ev.h
+include_HEADERS += $(CONFIG_TARGET)/macan_ev.h
 
-macan_SOURCES-linux = $(TARGET)/linux_macan.c $(TARGET)/lib.c $(TARGET)/linux_cryptlib.c
-macan_SOURCES-stm32 = $(TARGET)/macan_ev.c $(TARGET)/stm32_macan.c $(TARGET)/stm32_cryptlib.c
+macan_SOURCES-linux = linux/linux_macan.c linux/lib.c linux/linux_cryptlib.c
+macan_SOURCES-stm32 = stm32/macan_ev.c stm32/stm32_macan.c stm32/stm32_cryptlib.c
 
 macanvw_SOURCES = $(macan_SOURCES)
 macanvw_CPPFLAGS = -DVW_COMPATIBLE
 
-ifeq ($(TARGET),linux)
+ifeq ($(CONFIG_TARGET),linux)
 	bin_PROGRAMS = keysvr timesvr macanmon
 
 	keysvr_SOURCES = target/linux/keysvr.c
