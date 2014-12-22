@@ -119,14 +119,14 @@ int helper_init(const char *ifname)
 	struct sockaddr_can addr;
 
 	if ((s = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-		perror("Error while opening socket");
-		return -1;
+		perror("socket(PF_CAN, SOCK_RAW, CAN_RAW)");
+		exit(1);
 	}
 
 	r = fcntl(s, F_SETFL, O_NONBLOCK);
 	if (r != 0) {
-		perror("ioctl fail");
-		return -1;
+		perror("fcntl(s, F_SETFL, O_NONBLOCK)");
+		exit(1);
 	}
 
 #if 0
@@ -136,7 +136,7 @@ int helper_init(const char *ifname)
 	strcpy(ifr.ifr_name, ifname);
 	if (ioctl(s, SIOCGIFINDEX, &ifr) == -1) {
 		perror(ifname);
-		return -1;
+		exit(1);
 	}
 
 	memset(&addr, 0, sizeof(addr));
@@ -145,7 +145,7 @@ int helper_init(const char *ifname)
 
 	if (bind(s, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 		perror("Error in socket bind");
-		return -2;
+		exit(1);
 	}
 
 	return s;
