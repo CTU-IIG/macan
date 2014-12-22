@@ -143,12 +143,16 @@ WVSTART()
 	rm -rf "$dir"
 	mkdir -p "$dir"
 	WVPASS cd "$WV_BASE_DIR/$dir"
-	export PATH=$WV_BASE_DIR/../_compiled/bin:$WV_BASE_DIR/../_compiled/bin-tests:$PATH
+	export PATH=$(realpath -L $WV_BASE_DIR/../_compiled/bin):$(realpath -L $WV_BASE_DIR/../_compiled/bin-tests):$PATH
 	if [ -z "$LD_LIBRARY_PATH" ]; then
-	    export LD_LIBRARY_PATH=$WV_BASE_DIR/../_compiled/lib
+	    export LD_LIBRARY_PATH=$(realpath -L $WV_BASE_DIR/../_compiled/lib)
 	else
-	    export LD_LIBRARY_PATH=$WV_BASE_DIR/../_compiled/lib:$LD_LIBRARY_PATH
+	    export LD_LIBRARY_PATH=$(realpath -L $WV_BASE_DIR/../_compiled/lib):$LD_LIBRARY_PATH
 	fi
 }
 
-WV_BASE_DIR="$(readlink -f $(dirname ${BASH_SOURCE[0]}))" # Directory where this file is stored
+case ${BASH_SOURCE[0]} in
+  /*) bs_abs=${BASH_SOURCE[0]};;
+  *)  bs_abs=$PWD/${BASH_SOURCE[0]};;
+esac
+WV_BASE_DIR="$(dirname $(realpath -s  $bs_abs))" # Directory where this file is stored
