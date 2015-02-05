@@ -4,7 +4,7 @@ MaCAN
 Message Authenticated CAN library & tools written in C.  
 
 This library implements MaCAN protocol [1], which improves [Controller
-Area Network][CAN] (CAN) security. MaCAN network consists from a
+Area Network](CAN) security. MaCAN network consists from a
 keyserver, a timeserver and one or more nodes (a.k.a. ECUs). Supported
 platforms currently include **GNU/Linux** and **Infineon Tricore
 TC1798** and STM32.
