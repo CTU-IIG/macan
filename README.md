@@ -7,7 +7,7 @@ This library implements MaCAN protocol [1], which improves [Controller
 Area Network][CAN] (CAN) security. MaCAN network consists from a
 keyserver, a timeserver and one or more nodes (a.k.a. ECUs). Supported
 platforms currently include **GNU/Linux** and **Infineon Tricore
-TC1798** (for nodes only).
+TC1798** and STM32.
 
 The project is divided into several, relatively independent parts:
 
@@ -23,8 +23,8 @@ code examples on how to use this library, see Demos section below.
 
 ### Keyserver
 
-Provides session keys to other nodes (runs on GNU/Linux only). The
-following command line parameters are supported:
+Provides session keys to other nodes. When run on Linux, the following
+command line parameters are supported:
 
 * -c *configuration.so*  
 
@@ -36,8 +36,8 @@ following command line parameters are supported:
 
 ### Timeserver
 
-Provides plain and authenticated time signals to nodes (runs on
-GNU/Linux only). The following command line parameters are supported:
+Provides plain and authenticated time signals to nodes. When run on
+Linux, the following command line parameters are supported:
 
 * -c *configuration.so*  
 
@@ -86,7 +86,7 @@ Demos
 Several example projects are located in the `demos/` directory. Each demo
 contains helper shell scripts, which wrap commands and their
 options, so you don't need to type them by hand. Scripts are located
-in `demos/demoXX/test` directory. Each demo typically includes
+in `demos/XYZ/test` directory. Each demo typically includes
 following scripts:
 
 * `init-vcan.sh` - initialize virtual CAN interfaces (should be
@@ -101,12 +101,14 @@ Compiling on GNU/Linux
 ----------------------
 
 MaCAN library requires a low level cryptographic library
-[Nettle](http://www.lysator.liu.se/~nisse/nettle/). To compile entire
-project (incl. library, keyserver, timeserver and demos), invoke:
+[Nettle](http://www.lysator.liu.se/~nisse/nettle/). To compile the
+entire project (incl. library, keyserver, timeserver and demos),
+invoke:
 
     make
 
-Compiled binaries are located in `_compiled` directory.
+in `build/linux`. Compiled binaries are located in the `_compiled`
+subdirectory.
 
 Compiling for Infineon TriCore TC1798
 -------------------------------------
@@ -122,3 +124,4 @@ References
 
 [1] Oliver Hartkopp, Cornel Reuber and Roland Schilling, *MaCAN -
     Message Authenticated CAN*, [ESCAR 2012](https://www.escar.info/index.php?id=208).
+[2] *[[Ondřej Kulatý, Message authentication for CAN bus and AUTOSAR software architecture|http://rtime.felk.cvut.cz/~sojka/students/Dp_2015_kulaty_ondrej.pdf]]*, master's thesis.
