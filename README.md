@@ -3,15 +3,12 @@ MaCAN
 
 Message Authenticated CAN library & tools written in C.  
 
-This library implements MaCAN protocol [1], which improves [Controller
-Area Network](CAN) security. MaCAN network consists from a
+This library implements MaCAN protocol [1], which improves [Controller Area Network](https://en.wikipedia.org/wiki/CAN_bus) security. MaCAN network consists from a
 keyserver, a timeserver and one or more nodes (a.k.a. ECUs). Supported
 platforms currently include **GNU/Linux** and **Infineon Tricore
 TC1798** and STM32.
 
 The project is divided into several, relatively independent parts:
-
-CAN: https://en.wikipedia.org/wiki/CAN_bus
 
 ### MaCAN library
 
@@ -122,7 +119,5 @@ excluded from build.
 References
 ----------
 
-[1] Oliver Hartkopp, Cornel Reuber and Roland Schilling, *MaCAN -
-    Message Authenticated CAN*,
-    [ESCAR 2012](https://www.escar.info/index.php?id=208).  
-[2] [Ondřej Kulatý, Message authentication for CAN bus and AUTOSAR software architecture](http://rtime.felk.cvut.cz/~sojka/students/Dp_2015_kulaty_ondrej.pdf), master's thesis.
+[1] Oliver Hartkopp, Cornel Reuber and Roland Schilling, *MaCAN - Message Authenticated CAN*, [ESCAR 2012](https://www.escar.info/index.php?id=208).  
+[2] [Ondřej Kulatý, *Message authentication for CAN bus and AUTOSAR software architecture*](http://rtime.felk.cvut.cz/~sojka/students/Dp_2015_kulaty_ondrej.pdf), master's thesis.
