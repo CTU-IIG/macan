@@ -123,5 +123,6 @@ References
 ----------
 
 [1] Oliver Hartkopp, Cornel Reuber and Roland Schilling, *MaCAN -
-    Message Authenticated CAN*, [ESCAR 2012](https://www.escar.info/index.php?id=208).
-[2] *[[Ondřej Kulatý, Message authentication for CAN bus and AUTOSAR software architecture|http://rtime.felk.cvut.cz/~sojka/students/Dp_2015_kulaty_ondrej.pdf]]*, master's thesis.
+    Message Authenticated CAN*,
+    [ESCAR 2012](https://www.escar.info/index.php?id=208).  
+[2] [Ondřej Kulatý, Message authentication for CAN bus and AUTOSAR software architecture](http://rtime.felk.cvut.cz/~sojka/students/Dp_2015_kulaty_ondrej.pdf), master's thesis.
