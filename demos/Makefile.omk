@@ -1,4 +1,4 @@
 SUBDIRS = 4signals
 SUBDIRS += $(SUBDIRS-$(CONFIG_TARGET))
 
-SUBDIRS-linux = volkswagen 1signal
+SUBDIRS-linux = volkswagen 1signal cosummit
