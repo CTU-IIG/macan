@@ -323,8 +323,11 @@ static void receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 		return;
 
 	memcpy(ctx->keywrap + 6 * seq, sk->data, len);
+	ctx->rcvd_skey_seq |= 1U << seq;
 
-	if (seq == 5) {
+	if (ctx->rcvd_skey_seq == 0x3f) {
+		/* The whole key was received */
+		ctx->rcvd_skey_seq = 0;
 		macan_unwrap_key(ctx->config->ltk, sizeof(ctx->keywrap), unwrapped, ctx->keywrap);
 		macan_ecuid fwd_id = unwrapped[17];
 		struct com_part *cpart = get_cpart(ctx, fwd_id);
@@ -784,6 +787,7 @@ void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 		gen_challenge(ctx, cpart->chg);
 		macan_send_challenge(ctx, ctx->config->key_server_id, fwd_id, cpart->chg);
 		cpart->awaiting_skey = true;
+		ctx->rcvd_skey_seq = 0;
 
 		/* Timeout for receiving a new session key */
 		cpart->valid_until = read_time() + ctx->config->skey_chg_timeout;

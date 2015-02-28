@@ -152,6 +152,7 @@ struct macan_ctx {
 	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
 	struct macan_timekeeping time; 	       /* used to manage time of the protocol */
 	uint8_t keywrap[32];		       /* Temporary storage for wrapped session key */
+	unsigned rcvd_skey_seq;		       /* bitmap indicating which sess_key messages were received */
 	int sockfd;			       /* Socket (or CAN interface id) used for CAN communication */
 	macan_ev_loop *loop;
 	macan_ev_can can_watcher;
