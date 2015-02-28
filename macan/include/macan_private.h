@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014-2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -121,7 +121,7 @@ struct com_part {
 	uint8_t chg[6];		/* Challenge for communication with key server */
 	uint8_t flags;
 	uint32_t group_field;	/* Bitmask of known key sharing */
-	macan_ecuid ecu_id; /* ECU-ID of communication partner */
+	macan_ecuid ecu_id;	/* ECU-ID of communication partner */
 	void (*skey_callback)(struct macan_ctx *ctx, macan_ecuid dst_id);
 };
 
