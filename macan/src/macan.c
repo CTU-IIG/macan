@@ -500,10 +500,10 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	printf("sig_num: 0x%X\n",areq->sig_num);
 #endif
 	sig_num = areq->sig_num;
-    
+
 	can_sid = ctx->config->sigspec[sig_num].can_sid;
 	can_nsid = ctx->config->sigspec[sig_num].can_nsid;
-    
+
 	if((can_nsid == 0 && can_sid == 0) ||
 	   (can_nsid == 0 && can_sid != 0)) {
 		// ignore prescaler
@@ -841,7 +841,7 @@ bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
  * and operates the MaCAN library.
  *
  * @param *ctx pointer to MaCAN context
- * @param s socket file descriptor 
+ * @param s socket file descriptor
  * @param *cf pointer to can frame with received contents
  *
  * @returns One when the frame was a MaCAN frame, zero otherwise.
@@ -917,7 +917,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 	return MACAN_FRAME_UNKNOWN;
 }
 
-/* 
+/*
  * Check if signal with given sig_num is 32bit or not
  *
  * @param[in] ctx     Macan context.
@@ -947,7 +947,7 @@ bool macan_canid2ecuid(const struct macan_config *cfg, uint32_t can_id, macan_ec
 			if(ecu_id != NULL) {
 				*ecu_id = i;
 			}
-			return SUCCESS; 
+			return SUCCESS;
 		}
 	}
 	return ERROR;
