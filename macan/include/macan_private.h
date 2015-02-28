@@ -45,10 +45,6 @@
 #define FL_AUTH_REQ	      3U
 #define FL_SIGNAL_OR_AUTH_REQ 3U
 
-/* return values for receive_skey */
-#define RECEIVE_SKEY_ERR -1
-#define RECEIVE_SKEY_IN_PROGRESS -2
-
 struct macan_req_challenge {
 	uint8_t flags_and_dst_id;
 	macan_ecuid fwd_id;

@@ -296,19 +296,15 @@ static void request_time_auth(struct macan_ctx *ctx)
  *
  * Processes one frame of the session key transmission protocol.
  * Returns node id if a complete key was sucessfully received.
- *
- * @return RECEIVE_SKEY_ERR (-1) if key receive failed OR
- *         ID of the node the key is shared with OR
- *         RECEIVE_SKEY_IN_PROGRESS (-2) if the reception process is in progress.
  */
-static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
+static void receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	struct macan_sess_key *sk;
 	uint8_t unwrapped[24];
 	uint8_t seq, len;
 
 	if (cf->can_dlc < 2)
-		return RECEIVE_SKEY_ERR;
+		return;
 
 	sk = (struct macan_sess_key *)cf->data;
 
@@ -318,7 +314,7 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	len = (cf->data[1] & 0x0F);
 
 	if (cf->can_dlc < 2 + len || seq > 5)
-		return RECEIVE_SKEY_ERR;
+		return;
 
 	/* this is because of VW macan sends len 6 in last key packet */
 	if(seq == 5) len = 2;
@@ -326,7 +322,7 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	if ((seq <  5 && len != 6) ||
 	    (seq == 5 && len != 2) ||
 	    (cf->can_dlc < 2 + len))
-		return RECEIVE_SKEY_ERR;
+		return;
 
 	memcpy(ctx->keywrap + 6 * seq, sk->data, len);
 
@@ -337,16 +333,16 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 		if (cpart == NULL) {
 			fail_printf(ctx, "unexpected fwd_id %#x\n", fwd_id);
-			return RECEIVE_SKEY_ERR;
+			return;
 		}
 
 		if (!memchk(unwrapped + 18, cpart->chg, 6)) {
 			fail_printf(ctx, "wrong challenge for %d\n", fwd_id);
-			return RECEIVE_SKEY_ERR;
+			return;
 		}
 
 		if (!cpart->awaiting_skey)
-			return RECEIVE_SKEY_ERR;
+			return;
 
 		cpart->awaiting_skey = false;
 		cpart->valid_until = read_time() + ctx->config->skey_validity;
@@ -368,11 +364,7 @@ static bool receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 		if (cpart->skey_callback)
 			cpart->skey_callback(ctx, fwd_id);
-
-		return fwd_id;
 	}
-
-	return RECEIVE_SKEY_IN_PROGRESS;
 }
 
 /**
