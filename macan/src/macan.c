@@ -1043,7 +1043,7 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_e
 		if (config->sigspec[i].dst_id == config->node_id)
 			__macan_init_cpart(ctx, config->sigspec[i].src_id);
 
-		ctx->sighand[i] = malloc(sizeof(struct sig_handle));
+		ctx->sighand[i] = calloc(1, sizeof(struct sig_handle));
 		ctx->sighand[i]->presc = config->sigspec[i].presc;
 		ctx->sighand[i]->presc_cnt = 1;
 		ctx->sighand[i]->flags = 0;
