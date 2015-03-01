@@ -144,10 +144,9 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
 
-	if (fwd_id == dst_id)
-		return;
-
-	if (fwd_id >= ctx->config->node_count)
+	if (fwd_id == dst_id ||
+	    fwd_id >= ctx->config->node_count ||
+	    dst_id == ctx->config->key_server_id)
 		return;
 
 	const struct macan_key *ltk = ctx->ks.ltk[dst_id];
