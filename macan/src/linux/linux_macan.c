@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -74,8 +74,9 @@ uint64_t read_time()
  */
 bool gen_rand_data(void *dest, size_t len)
 {
-	FILE *fp;
 	bool return_val = SUCCESS;
+#ifndef WITH_AFL
+	FILE *fp;
 
 	if(!(fp = fopen("/dev/urandom","r"))) {
 		return ERROR;
@@ -85,6 +86,9 @@ bool gen_rand_data(void *dest, size_t len)
 		return_val = ERROR;
 	}
 	fclose(fp);
+#else
+	memset(dest, 0, len);
+#endif
 	return return_val;
 }
 

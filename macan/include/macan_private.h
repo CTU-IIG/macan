@@ -158,6 +158,9 @@ struct macan_ctx {
 	macan_ev_loop *loop;
 	macan_ev_can can_watcher;
 	macan_ev_timer housekeeping;
+#ifdef WITH_AFL
+	ev_io stdin_watcher;	/* For afl-fuzz testing */
+#endif
 	union {
 		struct { /* time server */
 			macan_ev_timer time_bcast;

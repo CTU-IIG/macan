@@ -1004,6 +1004,32 @@ can_rx_cb(macan_ev_loop *loop, macan_ev_can *w, int revents)
 		macan_process_frame(ctx, &cf);
 }
 
+#ifdef WITH_AFL
+static void
+stdin_cb(macan_ev_loop *loop, ev_io *w, int revents)
+{
+	(void)loop; (void)revents; /* suppress warnings */
+	struct macan_ctx *ctx = w->data;
+	struct can_frame cf;
+	ssize_t size;
+
+	size = read(w->fd, &cf.can_id, sizeof(cf.can_id));
+	if (size <= 0) exit(0);
+	read(w->fd, &cf.can_dlc, sizeof(cf.can_dlc));
+	if (size <= 0) exit(0);
+	read(w->fd, cf.data, sizeof(cf.data));
+	if (size <= 0) exit(0);
+
+	if (getenv("MACAN_DUMP")) {
+		static char prefix[20];
+		if (!prefix[0])
+			snprintf(prefix, sizeof(prefix), "macan%05d", getpid());
+		print_frame(ctx->config, &cf, prefix);
+	}
+	macan_process_frame(ctx, &cf);
+}
+#endif
+
 void __macan_init_cpart(struct macan_ctx *ctx, macan_ecuid i)
 {
 	if (ctx->cpart[i] == NULL) {
@@ -1061,6 +1087,12 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_e
 	macan_ev_canrx_setup (ctx, &ctx->can_watcher, can_rx_cb);
 	macan_ev_timer_setup (ctx, &ctx->housekeeping, macan_housekeeping_cb, 0, 1000);
 
+#ifdef WITH_AFL
+	ev_io_init(&ctx->stdin_watcher, stdin_cb, 0, EV_READ);
+	ev_set_priority(&ctx->stdin_watcher, -1);
+	ctx->stdin_watcher.data = ctx;
+	ev_io_start(ctx->loop, &ctx->stdin_watcher);
+#endif
 	return 0;
 }
 
