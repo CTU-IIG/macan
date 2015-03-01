@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -44,7 +44,7 @@ void generate_skey(struct macan_ctx *ctx, struct sess_key *skey)
 	}
 }
 
-uint8_t lookup_skey(struct macan_ctx *ctx, macan_ecuid src_id, macan_ecuid dst_id, struct macan_key **key_ret)
+uint8_t lookup_or_generate_skey(struct macan_ctx *ctx, macan_ecuid src_id, macan_ecuid dst_id, struct macan_key **key_ret)
 {
 	static struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {{{0}}};
 
@@ -147,7 +147,7 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 
 	const struct macan_key *ltk = ctx->ks.ltk[dst_id];
 	struct macan_key *skey;
-	bool new_key = lookup_skey(ctx, dst_id, fwd_id, &skey);
+	bool new_key = lookup_or_generate_skey(ctx, dst_id, fwd_id, &skey);
 	send_skey(ctx, ltk, skey, dst_id, fwd_id, chg);
 	if (new_key)
 		send_req_challenge(ctx, fwd_id, dst_id);
