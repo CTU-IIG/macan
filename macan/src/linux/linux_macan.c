@@ -94,6 +94,7 @@ bool gen_rand_data(void *dest, size_t len)
 
 bool macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 {
+#ifndef WITH_AFL
 	ssize_t rbyte;
 
 	rbyte = read(ctx->sockfd, cf, sizeof(struct can_frame));
@@ -105,6 +106,11 @@ bool macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 		print_msg(ctx, MSG_FAIL, "ERROR recv not 16 bytes but %ld\n", rbyte);
 		abort();
 	}
+#else
+	if (read(0, &cf->can_id, sizeof(cf->can_id)) <= 0) exit(0);
+	if (read(0, &cf->can_dlc, sizeof(cf->can_dlc)) <= 0) exit(0);
+	if (read(0, cf->data, sizeof(cf->data)) <= 0) exit(0);
+#endif
 
 	if (getenv("MACAN_DUMP")) {
 		static char prefix[20];
