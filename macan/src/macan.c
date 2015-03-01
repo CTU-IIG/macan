@@ -802,7 +802,7 @@ void macan_request_expired_keys(struct macan_ctx *ctx)
 	struct com_part **cpart = ctx->cpart;
 
 	for (i = 0; i < ctx->config->node_count; i++)
-		if (cpart[i] && cpart[i]->valid_until < read_time())
+		if (cpart[i] && cpart[i]->valid_until <= read_time())
 			macan_request_key(ctx, i);
 }
 
