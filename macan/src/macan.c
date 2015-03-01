@@ -554,7 +554,8 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 	struct macan_key skey;
 	uint8_t *cmac_ptr;
 
-	if (!is_skey_ready(ctx, dst_id))
+	if (!is_skey_ready(ctx, dst_id) ||
+	    !ctx->time.ready)
 		return -1;
 
 	skey = get_cpart(ctx, dst_id)->skey;
