@@ -319,7 +319,8 @@ static void receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	if ((seq <  5 && len != 6) ||
 	    (seq == 5 && len != 2) ||
-	    (cf->can_dlc < 2 + len))
+	    (cf->can_dlc < 2 + len) ||
+	    sizeof(ctx->keywrap) < 6U * seq + len)
 		return;
 
 	memcpy(ctx->keywrap + 6 * seq, sk->data, len);
