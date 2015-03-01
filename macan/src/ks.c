@@ -35,7 +35,7 @@ struct sess_key {
 	struct macan_key key;
 };
 
-void generate_skey(struct macan_ctx *ctx, struct sess_key *skey)
+static void generate_skey(struct macan_ctx *ctx, struct sess_key *skey)
 {
 	skey->valid = true;
 	if(!gen_rand_data(skey->key.data, sizeof(skey->key.data))) {
@@ -44,18 +44,14 @@ void generate_skey(struct macan_ctx *ctx, struct sess_key *skey)
 	}
 }
 
-uint8_t lookup_or_generate_skey(struct macan_ctx *ctx, macan_ecuid src_id, macan_ecuid dst_id, struct macan_key **key_ret)
+static bool lookup_or_generate_skey(struct macan_ctx *ctx, macan_ecuid src_id, macan_ecuid dst_id, struct macan_key **key_ret)
 {
 	static struct sess_key skey_map[NODE_COUNT - 1][NODE_COUNT] = {{{0}}};
 
-	macan_ecuid tmp;
 	struct sess_key *key;
 
-	if (src_id == dst_id)
-		return 0;
-
 	if (src_id > dst_id) {
-		tmp = src_id;
+		macan_ecuid tmp = src_id;
 		src_id = dst_id;
 		dst_id = tmp;
 	}
@@ -141,6 +137,9 @@ void ks_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 
 	fwd_id = chal->fwd_id;
 	chg = chal->chg;
+
+	if (fwd_id == dst_id)
+		return;
 
 	if (fwd_id >= ctx->config->node_count)
 		return;
