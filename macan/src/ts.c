@@ -34,7 +34,7 @@ void send_time_auth(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t challenge
 {
 	struct com_part *cp = ctx->cpart[dst_id];
 	uint8_t plain[12];
-	struct can_frame canf;
+	struct can_frame canf = {0};
 
 	memcpy(plain, &ctx->ts.bcast_time, 4);
 	memcpy(plain + 4, challenge, 6);
