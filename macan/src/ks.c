@@ -70,7 +70,7 @@ static bool lookup_or_generate_skey(struct macan_ctx *ctx, macan_ecuid src_id, m
 static
 void send_req_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid fwd_id)
 {
-	struct can_frame cf;
+	struct can_frame cf = {0};
 	struct macan_req_challenge *rch = (struct macan_req_challenge*)&cf.data;
 
 	rch->flags_and_dst_id = FL_REQ_CHALLENGE << 6 | (dst_id & 0x3f);
