@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -110,8 +110,7 @@ int main(int argc, char *argv[])
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 
 	macan_init_ks(&macan_ctx, config, loop, s, ltks);
-
-
+	macan_ctx.print_msg_enabled = true;
 
 	macan_ev_run(loop);
 
