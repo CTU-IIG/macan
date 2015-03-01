@@ -468,12 +468,10 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	int can_sid,can_nsid;
 	struct macan_sig_auth_req *areq;
 	struct com_part *cp;
-	struct sig_handle **sighand;
+	struct sig_handle *sighand;
 
 	if(!(cp = canid2cpart(ctx, cf->can_id)))
 		return;
-
-	sighand = ctx->sighand;
 
 	areq = (struct macan_sig_auth_req *)cf->data;
 
@@ -504,19 +502,19 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 #endif
 	sig_num = areq->sig_num;
 
+	sighand = ctx->sighand[sig_num];
 	can_sid = ctx->config->sigspec[sig_num].can_sid;
 	can_nsid = ctx->config->sigspec[sig_num].can_nsid;
 
 	if((can_nsid == 0 && can_sid == 0) ||
 	   (can_nsid == 0 && can_sid != 0)) {
 		// ignore prescaler
-		sighand[sig_num]->presc = 1;
-		sighand[sig_num]->presc_cnt = 0;
+		sighand->presc = 1;
+		sighand->presc_cnt = 0;
 	} else {
-		sighand[sig_num]->presc = areq->prescaler;
-		sighand[sig_num]->presc_cnt = (uint8_t)(areq->prescaler - 1);
+		sighand->presc = areq->prescaler;
+		sighand->presc_cnt = (uint8_t)(areq->prescaler - 1);
 	}
-
 }
 
 /**
