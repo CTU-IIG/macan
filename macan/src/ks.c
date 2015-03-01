@@ -82,13 +82,18 @@ void send_req_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid f
 }
 
 static
-void send_skey(struct macan_ctx *ctx, const struct macan_key *ltk, const struct macan_key *skey, macan_ecuid dst_id, macan_ecuid fwd_id, uint8_t *chal)
+void send_skey(struct macan_ctx *ctx,
+	       const struct macan_key *ltk,
+	       const struct macan_key *skey,
+	       macan_ecuid dst_id,
+	       macan_ecuid fwd_id,
+	       uint8_t *chal)
 {
 	uint8_t wrap[32];
 	uint8_t plain[24];
 	struct can_frame cf = {0};
 	struct macan_sess_key skey_frame;
-	int i;
+	unsigned i;
 
 	memcpy(plain, skey->data, sizeof(skey->data));
 	plain[16] = dst_id;
@@ -106,8 +111,9 @@ void send_skey(struct macan_ctx *ctx, const struct macan_key *ltk, const struct 
 	cf.can_dlc = sizeof(skey_frame);
 
 	for (i = 0; i < 6; i++) {
-		skey_frame.seq_and_len = (uint8_t)((i << 4) /* seq */ | ((i == 5) ? 2 : 6) /* len */);
-		memcpy(skey_frame.data, wrap + (6 * i), 6);
+		unsigned len = (i == 5) ? 2 : 6;
+		skey_frame.seq_and_len = (uint8_t)((i << 4) /* seq */ | len);
+		memcpy(skey_frame.data, wrap + (6 * i), len);
 		memcpy(cf.data, &skey_frame, sizeof(skey_frame));
 
 		/* ToDo: check all writes for success */
