@@ -520,6 +520,22 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 }
 
 /**
+ * Check if we have a the session key for communication with dst_id
+ *
+ * @param dst_id  id of a node to whom check if has the key
+ * @return        True if has the key, false otherwise
+ */
+bool is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
+{
+	struct com_part *cpart = get_cpart(ctx, dst_id);
+
+	if (cpart == NULL)
+		return false;
+
+	return !!(cpart->group_field & (1U << ctx->config->node_id));
+}
+
+/**
  * Send MaCAN signal frame.
  *
  * Signs signal using CMAC and transmits it.
@@ -534,7 +550,7 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 	struct macan_key skey;
 	uint8_t *cmac_ptr;
 
-	if (!is_channel_ready(ctx, dst_id))
+	if (!is_skey_ready(ctx, dst_id))
 		return -1;
 
 	skey = get_cpart(ctx, dst_id)->skey;
@@ -611,7 +627,7 @@ void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
 	sigspec = ctx->config->sigspec;
 
 	dst_id = sigspec[sig_num].dst_id;
-	if (!is_channel_ready(ctx, dst_id)) {
+	if (!is_skey_ready(ctx, dst_id)) {
 		//printf("Channel not ready\n"); /* FIXME: return error instead of printing this */
 		return;
 	}
@@ -760,22 +776,6 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 
 	if (sighand && sighand->cback)
 		sighand->cback((uint8_t)sig_num, sig_val);
-}
-
-/**
- * Check if we have a the session key for communication with dst_id
- *
- * @param dst_id  id of a node to whom check if has the key
- * @return        True if has the key, false otherwise
- */
-bool is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
-{
-	struct com_part *cpart = get_cpart(ctx, dst_id);
-
-	if (cpart == NULL)
-		return false;
-
-	return !!(cpart->group_field & (1U << ctx->config->node_id));
 }
 
 void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
