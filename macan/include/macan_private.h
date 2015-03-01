@@ -111,6 +111,7 @@ struct macan_timekeeping {
  * @param stat  comunication channel status
  */
 struct com_part {
+	bool key_received;	/* True iff any key was ever received from the key server */
 	struct macan_key skey;	/* Session key (from key server) */
 	uint64_t valid_until;	/* Local time of key expiration */
 	bool awaiting_skey;	/* True iff challenge was sent and we wait for the session key */

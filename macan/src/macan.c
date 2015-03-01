@@ -349,8 +349,10 @@ static void receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 		cpart->awaiting_skey = false;
 		cpart->valid_until = read_time() + ctx->config->skey_validity;
 
-		if (memcmp(cpart->skey.data, unwrapped, 16) != 0) {
+		if (memcmp(cpart->skey.data, unwrapped, 16) != 0 ||
+		    !cpart->key_received) {
 			/* Session key has changed */
+			cpart->key_received = true;
 			memcpy(cpart->skey.data, unwrapped, 16);
 
 			// initialize group field - this will work only for ecu_id <= 23
