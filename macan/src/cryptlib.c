@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -119,11 +119,13 @@ int macan_aes_unwrap(const struct macan_key *key, size_t length, uint8_t *dst, u
 		}
 	}
 
-	if (!memchk(tmp, iv, 8))
+	if (!memchk(tmp, iv, 8)) {
+		memset(dst, 0, length - 8);
 		return 1;
-	memcpy(dst, tmp + 8, length - 8);
-
-	return 0;
+	} else {
+		memcpy(dst, tmp + 8, length - 8);
+		return 0;
+	}
 }
 
 /**
