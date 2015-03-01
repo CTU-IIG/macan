@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -72,7 +72,7 @@ void ts_receive_challenge(struct macan_ctx *ctx, struct can_frame *cf)
 
 	if (is_skey_ready(ctx, dst_id))
 		send_time_auth(ctx, dst_id, ch->chg);
-	else {
+	else if (ctx->cpart[dst_id]) {
 		ctx->cpart[dst_id]->skey_callback = skey_received;
 		ctx->ts.auth_req[dst_id].pending = true;
 		memcpy(ctx->ts.auth_req[dst_id].chg, ch->chg, sizeof(ch->chg));
