@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -25,8 +25,8 @@
 
 /* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
-	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0x200, .src_id = NODE1, .dst_id = NODE2, .presc = 0},
-	[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 0x201, .src_id = NODE2, .dst_id = NODE1, .presc = 0}
+	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0x200, .src_id = NODE1, .dst_id = NODE2, .presc = 1},
+	[SIGNAL_B]    = {.can_nsid = 0,   .can_sid = 0x201, .src_id = NODE2, .dst_id = NODE1, .presc = 1}
 };
 
 const struct macan_can_ids demo_can_ids = {

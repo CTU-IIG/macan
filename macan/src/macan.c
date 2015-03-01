@@ -506,6 +506,9 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	can_sid = ctx->config->sigspec[sig_num].can_sid;
 	can_nsid = ctx->config->sigspec[sig_num].can_nsid;
 
+	if (ctx->config->sigspec[sig_num].presc > 0)
+		return; /* Ignore requests for non-on-demand signals */
+
 	if((can_nsid == 0 && can_sid == 0) ||
 	   (can_nsid == 0 && can_sid != 0)) {
 		// ignore prescaler
@@ -513,7 +516,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 		sighand->presc_cnt = 0;
 	} else {
 		sighand->presc = areq->prescaler;
-		sighand->presc_cnt = (uint8_t)(areq->prescaler - 1);
+		sighand->presc_cnt = (uint8_t)areq->prescaler;
 	}
 }
 
@@ -638,11 +641,9 @@ void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
 		sighand[sig_num]->presc = SIG_DONTSIGN;
 		break;
 	default:
-		if (sighand[sig_num]->presc_cnt > 0) {
-			sighand[sig_num]->presc_cnt--;
-		} else {
+		if (--sighand[sig_num]->presc_cnt == 0) {
 			__macan_send_sig(ctx, dst_id, sig_num, sig_val);
-			sighand[sig_num]->presc_cnt = (uint8_t)(sighand[sig_num]->presc - 1);
+			sighand[sig_num]->presc_cnt = (uint8_t)sighand[sig_num]->presc;
 		}
 		break;
 	}
@@ -1043,8 +1044,8 @@ int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_e
 			__macan_init_cpart(ctx, config->sigspec[i].src_id);
 
 		ctx->sighand[i] = malloc(sizeof(struct sig_handle));
-		ctx->sighand[i]->presc = SIG_DONTSIGN; //SIG_DONTSIGN;
-		ctx->sighand[i]->presc_cnt = 0;
+		ctx->sighand[i]->presc = config->sigspec[i].presc;
+		ctx->sighand[i]->presc_cnt = 1;
 		ctx->sighand[i]->flags = 0;
 		ctx->sighand[i]->cback = NULL;
 	}

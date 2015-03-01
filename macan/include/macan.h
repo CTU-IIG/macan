@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -49,11 +49,11 @@ typedef uint8_t macan_ecuid;
  * - can_nsid && can_sid => std. frame wo. sign + std. frame w. sign (depending on presc value)
  */
 struct macan_sig_spec {
-	uint16_t can_nsid;  /**< can non-secured id */
-	uint16_t can_sid;   /**< can secured id */
+	uint16_t can_nsid;  /**< CAN non-secured ID */
+	uint16_t can_sid;   /**< CAN secured ID */
 	uint8_t src_id;     /**< ECU-ID of node dispatching this signal */
 	uint8_t dst_id;     /**< ECU-ID of node receiving this signal */
-	uint8_t presc;      /**< prescaler */
+	uint8_t presc;      /**< Prescaler if > 0, zero means on-demand signal (see sig_auth_req frame) */
 };
 
 struct macan_ecu {

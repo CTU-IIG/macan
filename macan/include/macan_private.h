@@ -136,8 +136,8 @@ struct sig_handle {
 	void (*invalid_cback)(uint8_t sig_num, uint32_t sig_val);
 };
 
-#define SIG_DONTSIGN -1
-#define SIG_SIGNONCE 0
+#define SIG_DONTSIGN 0
+#define SIG_SIGNONCE -1
 
 #define AUTHREQ_SENT 1
 
