@@ -271,3 +271,6 @@ void poll_can_fifo(void (*cback)(struct can_frame *cf, void *data), void *data)
 		cback(&cf, data);
 	}	  
 }
+
+void macan_target_init(struct macan_ctx *ctx)
+{}

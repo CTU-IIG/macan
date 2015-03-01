@@ -1020,6 +1020,8 @@ void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, maca
 	ctx->sighand = calloc(config->sig_count, sizeof(struct sig_handle *));
 	ctx->sockfd = sockfd;
 	ctx->loop = loop;
+
+	macan_target_init(ctx);
 }
 
 /**

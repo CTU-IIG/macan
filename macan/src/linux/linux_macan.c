@@ -166,3 +166,9 @@ bool macan_send(struct macan_ctx *ctx,  const struct can_frame *cf)
 	ssize_t ret = write(ctx->sockfd, cf, sizeof(*cf));
 	return (ret == sizeof(*cf));
 }
+
+void macan_target_init(struct macan_ctx *ctx)
+{
+	if (getenv("MACAN_DEBUG"))
+		ctx->print_msg_enabled = true;
+}

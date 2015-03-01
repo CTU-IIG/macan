@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -123,3 +123,6 @@ void bench_tack(char *s)
 
 	printf("%s: %.2f us\n",s,(stop - bench_time) / 100.0);
 }
+
+void macan_target_init(struct macan_ctx *ctx)
+{}

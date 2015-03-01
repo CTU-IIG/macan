@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -77,11 +77,11 @@ void memcpy_bw(void *dst, const void *src, size_t len) {
                 dst8[i] = src8[i];
 }
 
-void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...) {
-
+void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...)
+{
 	va_list ap;
 	char nodestr[4] = "#??";
-	char *msg_type_strings[] = {
+	const char *msg_type_strings[] = {
 		[MSG_OK]      = ANSI_COLOR_GREEN   "OK  " ANSI_COLOR_RESET,
 		[MSG_WARN]    = ANSI_COLOR_YELLOW  "WARN" ANSI_COLOR_RESET,
 		[MSG_FAIL]    = ANSI_COLOR_RED     "FAIL" ANSI_COLOR_RESET,
@@ -90,6 +90,8 @@ void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...) {
 		[MSG_SIGNAL]  = ANSI_COLOR_MAGENTA "SIG " ANSI_COLOR_RESET,
 
 	};
+	if (ctx && !ctx->print_msg_enabled)
+		return;
 	if (ctx && ctx->config) {
 		const char *name = macan_ecu_name(ctx, ctx->config->node_id);
 		if (name)
@@ -102,6 +104,7 @@ void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...) {
 	printf("%s %3s: ", msg_type_strings[type], nodestr);
 	vprintf(format,ap);
 }
+
 void print_can_frame(struct can_frame *cf) {
 	printf("0x%x # ",cf->can_id);
 	int i;

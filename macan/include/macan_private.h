@@ -158,6 +158,7 @@ struct macan_ctx {
 	macan_ev_loop *loop;
 	macan_ev_can can_watcher;
 	macan_ev_timer housekeeping;
+	bool print_msg_enabled;
 	union {
 		struct { /* time server */
 			macan_ev_timer time_bcast;
@@ -204,6 +205,7 @@ static inline unsigned macan_crypt_flags(const struct can_frame *cf)
 void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
 void __macan_init_cpart(struct macan_ctx *ctx, macan_ecuid i);
 void macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents);
+void macan_target_init(struct macan_ctx *ctx);
 
 
 #endif /* MACAN_PRIVATE_H */
