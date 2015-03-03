@@ -29,6 +29,8 @@
 
 int main(int argc, char *argv[])
 {
+	(void)argc; (void)argv;
+
 	int s = helper_init("can0");
 	fcntl(s, F_SETFL, 0); // Unset O_NONBLOCK flag
 
