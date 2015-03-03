@@ -39,7 +39,7 @@ static struct macan_ctx macan_ctx;
 
 void print_help(char *argv0)
 {
-	fprintf(stderr, "Usage: %s -c <config_shlib> -k <key_shlib>\n", argv0);
+	fprintf(stderr, "Usage: %s -c <config_shlib> -k <key_shlib> [-d <CAN interface>]\n", argv0);
 }
 
 int main(int argc, char *argv[])
@@ -47,15 +47,19 @@ int main(int argc, char *argv[])
 	int s;
 	struct macan_config *config = NULL;
 	struct macan_node_config node;
+	char *device = "can0";
 
 	int opt;
-	while ((opt = getopt(argc, argv, "c:k:")) != -1) {
+	while ((opt = getopt(argc, argv, "c:d:k:")) != -1) {
 		switch (opt) {
 		case 'c': {
 			void *handle = dlopen(optarg, RTLD_LAZY);
 			config = dlsym(handle, "config");
 			break;
 		}
+		case 'd':
+			device = optarg;
+			break;
 		case 'k': {
 			void *handle = dlopen(optarg, RTLD_LAZY);
 			if(!handle) {
@@ -84,7 +88,7 @@ int main(int argc, char *argv[])
 	}
         node.node_id = config->time_server_id;
 
-	s = helper_init("can0");
+	s = helper_init(device);
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 	macan_init_ts(&macan_ctx, config, &node, loop, s);
 	macan_ctx.print_msg_enabled = true;

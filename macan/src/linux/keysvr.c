@@ -42,7 +42,7 @@ static struct macan_ctx macan_ctx;
 
 void print_help(char *argv0)
 {
-	fprintf(stderr, "Usage: %s -c <config_shlib> -k <ltk_lib>\n", argv0);
+	fprintf(stderr, "Usage: %s -c <config_shlib> -k <ltk_lib> [-d <CAN interface>]\n", argv0);
 }
 
 int main(int argc, char *argv[])
@@ -52,9 +52,10 @@ int main(int argc, char *argv[])
 	char *error;
 	static void *ltk_handle;
 	int i;
+	char *device = "can0";
 
 	int opt;
-	while ((opt = getopt(argc, argv, "c:k:")) != -1) {
+	while ((opt = getopt(argc, argv, "c:d:k:")) != -1) {
 		switch (opt) {
 		case 'c': {
 			void *handle = dlopen(optarg, RTLD_LAZY);
@@ -70,6 +71,9 @@ int main(int argc, char *argv[])
 			}
 			break;
 		}
+		case 'd':
+			device = optarg;
+			break;
 		case 'k':
 			ltk_handle = dlopen(optarg, RTLD_LAZY);
 			if(!ltk_handle) {
@@ -107,7 +111,7 @@ int main(int argc, char *argv[])
 	struct macan_node_config node = {
 		.node_id = config->key_server_id
 	};
-	s = helper_init("can0");
+	s = helper_init(device);
 
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 
