@@ -1,9 +1,9 @@
-test_PROGRAMS = demo_cosummit_node btnvis
+test_PROGRAMS = demo_cosummit_node demo_cosummit_vis
 lib_LOADLIBES = macan nettle rt ev
 demo_cosummit_node_SOURCES = d3node.c macan_config.c ltk_tc.c
 
-btnvis_SOURCES = btnvis.c
-btnvis_LIBS = curses
+demo_cosummit_vis_SOURCES = vis.c macan_config.c ltk_pc.c
+demo_cosummit_vis_LIBS = curses
 
 shared_LIBRARIES = demo_cosummit_cfg
 demo_cosummit_cfg_SOURCES = macan_config.c
