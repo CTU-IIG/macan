@@ -61,6 +61,26 @@
 
 #define TIME_EMIT_SIG 1000000
 
+#define LED_EXP_BOARD_1_4_CFG	(P2_IOCR8.U)
+#define LED_EXP_BOARD_4_8_CFG	(P2_IOCR12.U)
+#define LED_EXP_BOARD_VAL	(P2_OUT.U)
+#define LED_BLINKING_CFG	(P2_IOCR12.B.PC14)
+#define LED_BLINKING_VAL	(P2_OUT.B.P14)
+#define LED_ERROR_CFG		(P2_IOCR12.B.PC15)
+#define LED_ERROR_VAL		(P2_OUT.B.P15)
+#define LED_BUTTONS_CFG		(P2_IOCR8.U)
+#define LED_BUTTONS_VAL		(P2_OUT.U)
+#define LED_BUTTON1_CFG		(P2_ICR12.B.PC13)
+#define LED_BUTTON1_VAL		(P2_OUT.B.P13)
+
+#define LED_ONBOARD1_4_CFG		(P4_IOCR0.U)
+#define LED_ONBOARD4_8_CFG		(P4_IOCR4.U)
+#define LED_ONBOARD_VAL			(P4_OUT.U)
+
+#define BTN_EXP_BOARD_CFG	(P4_IOCR4.U)
+#define BTN_BUTTON1_CFG		(P4_IOCR4.B.PC4)
+#define BTN_BUTTON1_VAL		(P4_IN.B.P4)
+
 struct macan_ctx macan_ctx;
 extern const struct macan_key macan_ltk_node3;
 
@@ -110,34 +130,45 @@ void SetEndinit(void)
   WDT_CON0.U = u32WdtCon0;
 }
 
-/* will light up onboard LEDs according to bits in "value" argument*/
-void led_set(uint8_t value) {
-	P4_OUT.U = ~value;
-}
-
 void handle_io(void)
 {
 	static uint64_t last_blink = 0;
 
-	button_pressed = !P7_IN.B.P5;
-	P4_OUT.B.P7 = !button_pressed; // One blue LED shows the button state
+	button_pressed = !BTN_BUTTON1_VAL;
+	LED_BUTTON1_VAL = button_pressed; // One blue LED shows the button state
 	if ((int)read_time() - last_blink > 500000) {
 		static int blink = 0;
 		last_blink = read_time();
-		P4_OUT.B.P6 = (blink = !blink);
+		LED_BLINKING_VAL = (blink = !blink);
 	}
 	//Adc_ReadGroup(0, 0);
 }
 
 void io_init(void)
 {
-	// Blue LEDs on P4
-	P4_IOCR0.U = 0x80808080;
-	P4_IOCR4.U = 0x80808080;
-	led_set(0);
+	/* Initialize all onboard LEDs to be outputs and log. 0
+	 * Some of the GPIOS (P4.4 - P4.7) are shared with Buttons on
+	 * the expansion board, so they will be reinitialized later and
+	 * will by lightning when the button is pressed.
+	 */
+	LED_ONBOARD1_4_CFG = 0x80808080;
+	LED_ONBOARD4_8_CFG = 0x80808080;
+	LED_ONBOARD_VAL = 0xFFFFFFFF;
 
-	P7_IOCR4.B.PC5 = 0x2; // P7.5 is input with pull-up switch
-	P7_IOCR0.B.PC0 = 0x8; // P7.0 is output (red LED)
+	/*
+	 * Initialize all LEDs on the Expansion board as output with
+	 * log. 0 value.
+	 */
+	LED_EXP_BOARD_1_4_CFG = 0x80808080;
+	LED_EXP_BOARD_4_8_CFG = 0x80808080;
+	LED_EXP_BOARD_VAL = 0x0;
+	LED_BUTTONS_CFG = 0x80808080;
+
+	/*
+	 * Initialize Button 1 on the expansion board as input,
+	 * pull-up.
+	 */
+	BTN_BUTTON1_CFG = 0x2;
   //Adc_Init(Adc_ConfigRoot);
 }
 
@@ -183,8 +214,8 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 {
 	printf("received authentic signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
 #ifdef __CPU_TC1798__
-	P4_OUT.U = ~(~P4_OUT.U & 0xf0 | sig_val & 0xf); // Blue LEDs
-	P7_OUT.B.P0 = 0; // Red LED off
+	LED_BUTTONS_VAL = (LED_BUTTONS_VAL & 0xfffff0ff) | (sig_val & 0xf) << 8; // Blue LEDs
+	LED_ERROR_VAL = 0; // Red LED off
 #endif
 }
 
@@ -192,7 +223,7 @@ void sig_invalid(uint8_t sig_num, uint32_t sig_val)
 {
 	printf("received invalid signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
 #ifdef __CPU_TC1798__
-	P7_OUT.B.P0 = 1; // Red LED on
+	LED_ERROR_VAL = 1; // Red LED on
 
 #endif
 }
