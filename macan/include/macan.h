@@ -86,6 +86,13 @@ struct macan_config {
 };
 
 /**
+/**
+ * Evaluates to symbol of the long-term key of node id. Using this
+ * macro makes sense if id is in symbolic form.
+ */
+#define MACAN_LTK_SYM(id) macan_ltk_node#id
+
+/**
  * Structure for keeping session and long-term keys
  */
 struct macan_key {
