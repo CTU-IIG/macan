@@ -160,6 +160,9 @@ struct macan_ctx {
 	macan_ev_can can_watcher;
 	macan_ev_timer housekeeping;
 	bool print_msg_enabled;
+#ifdef __linux__
+	bool dump_disabled;	/* Disable dumping frames even if MACAN_DUMP is defined */
+#endif
 	union {
 		struct { /* time server */
 			macan_ev_timer time_bcast;

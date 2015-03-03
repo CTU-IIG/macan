@@ -112,7 +112,7 @@ bool macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 	if (read(0, cf->data, sizeof(cf->data)) <= 0) exit(0);
 #endif
 
-	if (getenv("MACAN_DUMP")) {
+	if (getenv("MACAN_DUMP") && !ctx->dump_disabled) {
 		static char prefix[20];
 		if (!prefix[0])
 			snprintf(prefix, sizeof(prefix), "macan%05d", getpid());
