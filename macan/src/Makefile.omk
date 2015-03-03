@@ -12,6 +12,7 @@ macanvw_SOURCES = $(macan_SOURCES)
 macanvw_CPPFLAGS = -DVW_COMPATIBLE
 
 ifeq ($(CONFIG_TARGET),linux)
+# TODO: Move this to linux subdirectory
 	bin_PROGRAMS = keysvr timesvr macanmon candumpbin
 
 	keysvr_SOURCES = linux/keysvr.c
