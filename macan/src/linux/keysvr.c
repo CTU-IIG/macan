@@ -104,12 +104,14 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	config->node_id = config->key_server_id;
+	struct macan_node_config node = {
+		.node_id = config->key_server_id
+	};
 	s = helper_init("can0");
 
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 
-	macan_init_ks(&macan_ctx, config, loop, s, ltks);
+	macan_init_ks(&macan_ctx, config, &node, loop, s, ltks);
 	macan_ctx.print_msg_enabled = true;
 
 	macan_ev_run(loop);

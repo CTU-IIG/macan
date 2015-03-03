@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -95,14 +95,12 @@ int main()
 
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 	macan_ev_timer sig_send;
+	struct macan_node_config node = {
+		.node_id = NODE_ID,
+		.ltk = &MACAN_CONFIG_LTK(NODE_ID),
+	};
 
-
-	// put node id to config struct
-	config.node_id = NODE_ID;
-
-	config.ltk = &MACAN_CONFIG_LTK(NODE_ID);
-
-	macan_init(&macan_ctx, &config, loop, s);
+	macan_init(&macan_ctx, &config, &node, loop, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_A, sig_callback, NULL);
 	macan_reg_callback(&macan_ctx, SIGNAL_B, sig_callback, NULL);
 	macan_reg_callback(&macan_ctx, SIGNAL_C, sig_callback, NULL);

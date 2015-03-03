@@ -101,7 +101,7 @@ bool is_channel_ready(struct macan_ctx *ctx, macan_ecuid dst)
 	if (cp == NULL)
 		return false;
 
-	uint32_t both = 1U << dst | 1U << ctx->config->node_id;
+	uint32_t both = 1U << dst | 1U << ctx->node->node_id;
 	return (cp->group_field & both) == both;
 }
 
@@ -125,7 +125,7 @@ void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, u
 	skey = get_cpart(ctx, dst_id)->skey;
 
 	memcpy(plain, &htole32(t), 4);
-	plain[4] = ctx->config->node_id;
+	plain[4] = ctx->node->node_id;
 	plain[5] = dst_id;
 	plain[6] = sig_num;
 	plain[7] = prescaler;
@@ -135,7 +135,7 @@ void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, u
 	areq.prescaler = prescaler;
 	macan_sign(&skey, areq.cmac, plain, sizeof(plain));
 
-	cf.can_id = CANID(ctx, ctx->config->node_id);
+	cf.can_id = CANID(ctx, ctx->node->node_id);
 	cf.can_dlc = 7;
 	memcpy(&cf.data, &areq, 7);
 
@@ -155,7 +155,7 @@ void request_signals(struct macan_ctx *ctx)
 		const struct macan_sig_spec *sigspec = &ctx->config->sigspec[i];
 		struct sig_handle *sighand = ctx->sighand[i];
 
-		if (sigspec->dst_id != ctx->config->node_id ||
+		if (sigspec->dst_id != ctx->node->node_id ||
 		    !is_channel_ready(ctx, sigspec->src_id))
 			continue;
 
@@ -203,7 +203,7 @@ static void send_ack(struct macan_ctx *ctx, macan_ecuid dst_id)
 #else
 	macan_sign(&cpart->skey, ack.cmac, plain, pl);
 #endif
-	cf.can_id = CANID(ctx, ctx->config->node_id);
+	cf.can_id = CANID(ctx, ctx->node->node_id);
 	cf.can_dlc = 8;
 	memcpy(cf.data, &ack, 8);
 
@@ -238,7 +238,7 @@ static void receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	cp->group_field |= ack_group;
 
-	if ((ack_group & (1U << ctx->config->node_id)) == 0)
+	if ((ack_group & (1U << ctx->node->node_id)) == 0)
 		send_ack(ctx, cp->ecu_id);
 
 	request_signals(ctx);
@@ -266,7 +266,7 @@ void macan_send_challenge(struct macan_ctx *ctx, macan_ecuid dst_id, macan_ecuid
 		cf.can_dlc = 2;
 	}
 
-	cf.can_id = CANID(ctx, ctx->config->node_id);
+	cf.can_id = CANID(ctx, ctx->node->node_id);
 	memcpy(cf.data, &chal, sizeof(struct macan_challenge));
 
 	macan_send(ctx, &cf);
@@ -276,7 +276,7 @@ static void request_time_auth(struct macan_ctx *ctx)
 {
 	macan_ecuid ts_id = ctx->config->time_server_id;
 
-	if (ctx->config->node_id == ts_id ||
+	if (ctx->node->node_id == ts_id ||
 	    !is_skey_ready(ctx, ts_id) ||
 	    ctx->time.nonauth_loc == 0)
 		return;
@@ -329,7 +329,7 @@ static void receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 	if (ctx->rcvd_skey_seq == 0x3f) {
 		/* The whole key was received */
 		ctx->rcvd_skey_seq = 0;
-		macan_unwrap_key(ctx->config->ltk, sizeof(ctx->keywrap), unwrapped, ctx->keywrap);
+		macan_unwrap_key(ctx->node->ltk, sizeof(ctx->keywrap), unwrapped, ctx->keywrap);
 		macan_ecuid fwd_id = unwrapped[17];
 		struct com_part *cpart = get_cpart(ctx, fwd_id);
 
@@ -356,7 +356,7 @@ static void receive_skey(struct macan_ctx *ctx, const struct can_frame *cf)
 			memcpy(cpart->skey.data, unwrapped, 16);
 
 			// initialize group field - this will work only for ecu_id <= 23
-			cpart->group_field = 1U << ctx->config->node_id;
+			cpart->group_field = 1U << ctx->node->node_id;
 
 			print_msg(ctx, MSG_OK,"new session key for %s\n", macan_ecu_name(ctx, fwd_id));
 
@@ -488,7 +488,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	skey = cp->skey;
 	plain[4] = (macan_ecuid)cp->ecu_id;
-	plain[5] = ctx->config->node_id;
+	plain[5] = ctx->node->node_id;
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
 
@@ -536,7 +536,7 @@ bool is_skey_ready(struct macan_ctx *ctx, macan_ecuid dst_id)
 	if (cpart == NULL)
 		return false;
 
-	return !!(cpart->group_field & (1U << ctx->config->node_id));
+	return !!(cpart->group_field & (1U << ctx->node->node_id));
 }
 
 /**
@@ -582,7 +582,7 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 		cmac_ptr = sig32->cmac;
 	} else {
 		append(plain, &plain_length, &t, 4);
-		append(plain, &plain_length, &(ctx->config->node_id), 1);
+		append(plain, &plain_length, &(ctx->node->node_id), 1);
 		append(plain, &plain_length, &dst_id, 1);
 #ifndef VW_COMPATIBLE
 		append(plain, &plain_length, &sig_num, 1);
@@ -590,7 +590,7 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 		append(plain, &plain_length, &sig_val, 2);
 
 		struct macan_signal_ex *sig16 = (struct macan_signal_ex *) sig;
-		cf.can_id = CANID(ctx, ctx->config->node_id);
+		cf.can_id = CANID(ctx, ctx->node->node_id);
 		sig16->flags_and_dst_id = FL_SIGNAL << 6 | (dst_id & 0x3f);
 		sig16->sig_num = sig_num;
 		memcpy(&sig16->sig_val, &sig_val, 2);
@@ -684,7 +684,7 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 		return;
 
 	sigspec = &ctx->config->sigspec[sig_num];
-	if (sigspec->dst_id != ctx->config->node_id)
+	if (sigspec->dst_id != ctx->node->node_id)
 		return; /* Ignore signals for other nodes. We don't
 			 * have a session key to check its CMAC. */
 
@@ -726,7 +726,7 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	sigspec = &ctx->config->sigspec[sig_num];
 
-	if (sigspec->dst_id != ctx->config->node_id)
+	if (sigspec->dst_id != ctx->node->node_id)
 		return; /* Ignore signals for other nodes. We don't
 			 * have a session key to check its CMAC. */
 
@@ -738,7 +738,7 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 	fill_time = plain;
 	append(plain, &plain_length, &dummy_time, 4);
 	append(plain, &plain_length, &sigspec->src_id, 1);
-	append(plain, &plain_length, &ctx->config->node_id, 1);
+	append(plain, &plain_length, &ctx->node->node_id, 1);
 #ifndef VW_COMPATIBLE
 	append(plain, &plain_length, &sig_num, 1);
 #endif
@@ -858,7 +858,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 	uint32_t sig32_num;
 	macan_ecuid src;
 
-	if(cf->can_id == CANID(ctx, ctx->config->node_id))
+	if(cf->can_id == CANID(ctx, ctx->node->node_id))
 		return MACAN_FRAME_PROCESSED; /* Frame sent by us */
 
 	if (cf->can_id == ctx->config->canid->time) {
@@ -885,7 +885,7 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 	if (macan_canid2ecuid(ctx->config, cf->can_id, &src) == ERROR)
 		return MACAN_FRAME_UNKNOWN;
 
-	if (macan_crypt_dst(cf) != ctx->config->node_id)
+	if (macan_crypt_dst(cf) != ctx->node->node_id)
 		return MACAN_FRAME_PROCESSED;
 
 	switch (macan_crypt_flags(cf)) {
@@ -1012,10 +1012,11 @@ void __macan_init_cpart(struct macan_ctx *ctx, macan_ecuid i)
 	}
 }
 
-void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd)
+void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd)
 {
 	memset(ctx, 0, sizeof(struct macan_ctx));
 	ctx->config = config;
+	ctx->node = node;
 	ctx->cpart = calloc(config->node_count, sizeof(struct com_part *));
 	ctx->sighand = calloc(config->sig_count, sizeof(struct sig_handle *));
 	ctx->sockfd = sockfd;
@@ -1033,20 +1034,20 @@ void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, maca
  * @param *ctx pointer to MaCAN context
  * @param *config pointer to configuration
  */
-int macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd)
+int macan_init(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd)
 {
-	assert(config->node_id != config->key_server_id);
-	assert(config->node_id != config->time_server_id);
+	assert(node->node_id != config->key_server_id);
+	assert(node->node_id != config->time_server_id);
 
-	__macan_init(ctx, config, loop, sockfd);
+	__macan_init(ctx, config, node, loop, sockfd);
 	unsigned i;
 
 	/* Initialzize all possible communication partners based on configured signals */
 	for (i = 0; i < config->sig_count; i++) {
-		if (config->sigspec[i].src_id == config->node_id) {
+		if (config->sigspec[i].src_id == node->node_id) {
 			__macan_init_cpart(ctx, config->sigspec[i].dst_id);
 		}
-		if (config->sigspec[i].dst_id == config->node_id)
+		if (config->sigspec[i].dst_id == node->node_id)
 			__macan_init_cpart(ctx, config->sigspec[i].src_id);
 
 		ctx->sighand[i] = calloc(1, sizeof(struct sig_handle));

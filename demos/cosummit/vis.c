@@ -100,10 +100,12 @@ int main(int argc, char *argv[])
 
 	s = helper_init("can0");
 
-	config.ltk = &macan_ltk_node2;
-	config.node_id = NODE_PC;
+	struct macan_node_config node = {
+		.node_id = NODE_PC,
+		.ltk = &macan_ltk_node2,
+	};
 
-	macan_init(&macan_ctx, &config, loop, s);
+	macan_init(&macan_ctx, &config, &node, loop, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_CTU, sig_callback, sig_invalid);
 
 	signal(SIGINT, sigint);

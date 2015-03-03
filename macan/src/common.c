@@ -93,11 +93,11 @@ void print_msg(struct macan_ctx *ctx, msg_type type, const char *format, ...)
 	if (ctx && !ctx->print_msg_enabled)
 		return;
 	if (ctx && ctx->config) {
-		const char *name = macan_ecu_name(ctx, ctx->config->node_id);
+		const char *name = macan_ecu_name(ctx, ctx->node->node_id);
 		if (name)
 			snprintf(nodestr, sizeof(nodestr), "%-3s", name);
 		else
-			snprintf(nodestr, sizeof(nodestr), "#%d", ctx->config->node_id);
+			snprintf(nodestr, sizeof(nodestr), "#%d", ctx->node->node_id);
 	}
 
 	va_start(ap, format);

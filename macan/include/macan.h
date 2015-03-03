@@ -67,11 +67,9 @@ struct macan_can_ids {
 };
 
 /**
- * Main configuration
+ * MaCAN network configuration
  */
 struct macan_config {
-	macan_ecuid node_id;                  /**< Our ECU-ID (0-63) */
-	const struct macan_key *ltk;          /**< Long-term key map (for communication with KS) */
 	uint32_t sig_count;                   /**< Number of signals in sig_spec */
 	const struct macan_sig_spec *sigspec; /**< Signal specification */
 	uint8_t node_count;                   /**< Number of nodes (ECUs) in our network */
@@ -86,11 +84,12 @@ struct macan_config {
 };
 
 /**
-/**
- * Evaluates to symbol of the long-term key of node id. Using this
- * macro makes sense if id is in symbolic form.
+ * MaCAN node-specific configuration
  */
-#define MACAN_LTK_SYM(id) macan_ltk_node#id
+struct macan_node_config {
+	macan_ecuid node_id;                  /**< Our ECU-ID (0-63) */
+	const struct macan_key *ltk;          /**< Long-term key map (for communication with KS) */
+};
 
 /**
  * Structure for keeping session and long-term keys
@@ -113,9 +112,9 @@ enum macan_process_status {
 /* MaCAN API functions */
 
 
-int  macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
-int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd, const struct macan_key * const *ltks);
-int  macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
+int  macan_init(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd);
+int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd, const struct macan_key * const *ltks);
+int  macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd);
 
 void macan_request_keys(struct macan_ctx *ctx);
 int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback fnc, macan_sig_cback invalid_cmac);

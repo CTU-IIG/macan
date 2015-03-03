@@ -176,12 +176,12 @@ can_cb_ks (macan_ev_loop *loop, macan_ev_can *w, int revents)
 	ks_receive_challenge(ctx, &cf);
 }
 
-int macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd,
+int macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd,
 	const struct macan_key * const *ltks)
 {
-	assert(config->node_id == config->key_server_id);
+	assert(node->node_id == config->key_server_id);
 
-	__macan_init(ctx, config, loop, sockfd);
+	__macan_init(ctx, config, node, loop, sockfd);
 
 	macan_ev_canrx_setup(ctx, &ctx->can_watcher, can_cb_ks);
 
