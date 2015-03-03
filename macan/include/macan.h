@@ -123,5 +123,7 @@ void macan_ev_canrx_setup(struct macan_ctx *ctx, macan_ev_can *ev,
 			  void (*cb) (macan_ev_loop *loop,  macan_ev_can *w, int revents));
 void macan_request_expired_keys(struct macan_ctx *ctx);
 
+bool macan_ev_run(macan_ev_loop *loop);
+
 
 #endif /* MACAN_H */
