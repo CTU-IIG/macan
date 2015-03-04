@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -43,20 +43,20 @@ void debug_printf(const char* format, ...)
 #define GET_SEQ(byte) (((byte) & 0xF0) >> 4)
 #define GET_LEN(byte) ((byte) & 0x0F)
 
-static void get_ecuid_str(const struct macan_config *cfg, char *str, size_t size, macan_ecuid id)
+static void get_ecuid_str(const struct macan_ctx *ctx, char *str, size_t size, macan_ecuid id)
 {
-	if (id < cfg->node_count) {
-		if (cfg->canid->ecu[id].name) {
-			snprintf(str, size, "%s", cfg->canid->ecu[id].name);
+	if (id < ctx->config->node_count) {
+		if (ctx->config->canid->ecu[id].name) {
+			snprintf(str, size, "%s", ctx->config->canid->ecu[id].name);
 		} else {
-			if (id == cfg->key_server_id)
+			if (id == ctx->config->key_server_id)
 				snprintf(str, size, "KS");
-			else if (id == cfg->time_server_id)
+			else if (id == ctx->config->time_server_id)
 				snprintf(str, size, "TS");
 			else
 				snprintf(str, size, "%02u", id);
 		}
-		if (id == cfg->node_id) {
+		if (id == ctx->node->node_id) {
 			size_t l = strlen(str);
 			snprintf(str + l, size-l, "(me)");
 		}
@@ -64,15 +64,15 @@ static void get_ecuid_str(const struct macan_config *cfg, char *str, size_t size
 		snprintf(str, size, "%02u (bad!)", id);
 }
 
-void print_frame(const struct macan_config *cfg, struct can_frame *cf, const char *prefix)
+void print_frame(const struct macan_ctx *ctx, struct can_frame *cf, const char *prefix)
 {
 	char frame[80], comment[80];
 	macan_ecuid src;
 	const char *color = "";
 	comment[0] = 0;
 	sprint_canframe(frame, cf, 0, 8);
-	if (cfg) {
-		if (cf->can_id == cfg->canid->time) {
+	if (ctx) {
+		if (cf->can_id == ctx->config->canid->time) {
 			uint32_t time;
 			memcpy(&time, cf->data, 4); /* FIXME: Handle endian */
 			switch (cf->can_dlc) {
@@ -86,7 +86,7 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 				sprintf(comment, "broken time!!!");
 			}
 		}
-		else if (macan_canid2ecuid(cfg, cf->can_id, &src)) {
+		else if (macan_canid2ecuid(ctx->config, cf->can_id, &src)) {
 			/* Crypt frame */
 			if (cf->can_dlc < 2) {
 				sprintf(comment, "broken crypt frame");
@@ -96,7 +96,7 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 				case FL_REQ_CHALLENGE: {
 					struct macan_req_challenge *chg = (struct macan_req_challenge*)cf->data;
 					char fwdstr[20];
-					get_ecuid_str(cfg, fwdstr, sizeof(fwdstr), chg->fwd_id);
+					get_ecuid_str(ctx, fwdstr, sizeof(fwdstr), chg->fwd_id);
 					sprintf(type, "req challenge fwd_id=%s%s", fwdstr,
 						cf->can_dlc == 2 ? "" : " wrong length");
 					break;
@@ -104,13 +104,13 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 				case FL_CHALLENGE: {
 					struct macan_challenge *chg = (struct macan_challenge*)cf->data;
 					char fwdstr[20];
-					get_ecuid_str(cfg, fwdstr, sizeof(fwdstr), chg->fwd_id);
+					get_ecuid_str(ctx, fwdstr, sizeof(fwdstr), chg->fwd_id);
 					sprintf(type, "challenge fwd_id=%s", fwdstr);
 					color = ANSI_COLOR_DCYAN;
 					break;
 				}
 				case FL_SESS_KEY_OR_ACK:
-					if (src == cfg->key_server_id) {
+					if (src == ctx->config->key_server_id) {
 						struct macan_sess_key *sk = (struct macan_sess_key*)cf->data;
 						color = ANSI_COLOR_DBLUE;
 						sprintf(type, "sess_key seq=%d len=%d", GET_SEQ(sk->seq_and_len), GET_LEN(sk->seq_and_len));
@@ -151,15 +151,15 @@ void print_frame(const struct macan_config *cfg, struct can_frame *cf, const cha
 				char srcstr[8], dststr[8];
 				macan_ecuid dst = macan_crypt_dst(cf);
 
-				get_ecuid_str(cfg, srcstr, sizeof(srcstr), src);
-				get_ecuid_str(cfg, dststr, sizeof(dststr), dst);
+				get_ecuid_str(ctx, srcstr, sizeof(srcstr), src);
+				get_ecuid_str(ctx, dststr, sizeof(dststr), dst);
 
 				sprintf(comment, "crypt %s->%s (%d->%d): %s", srcstr, dststr, src, dst, type);
 			}
 		} else {
 			unsigned i;
-			for (i = 0; i < cfg->sig_count; i++) {
-				const struct macan_sig_spec *ss = &cfg->sigspec[i];
+			for (i = 0; i < ctx->config->sig_count; i++) {
+				const struct macan_sig_spec *ss = &ctx->config->sigspec[i];
 				if (cf->can_id == ss->can_nsid)
 					sprintf(comment, "non-secure signal #%d", i);
 				else if (cf->can_id == ss->can_sid)

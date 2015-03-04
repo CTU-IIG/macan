@@ -4,7 +4,7 @@
 /* MaCAN onfiguration */
 /**********************/
 
-struct macan_sig_spec test_sig_spec[] = {
+const struct macan_sig_spec test_sig_spec[] = {
 	[SIGNAL_0]    = {.can_nsid = 0,   .can_sid = 0x516,   .src_id = ECU_I, .dst_id = ECU_J, .presc = 0},
 };
 
@@ -18,7 +18,7 @@ const struct macan_can_ids test_can_ids = {
 	},
 };
 
-struct macan_config config = {
+const struct macan_config config = {
 	.sig_count         = SIG_COUNT,
 	.sigspec           = test_sig_spec,
 	.node_count        = NODE_COUNT,
@@ -30,6 +30,4 @@ struct macan_config config = {
 	.skey_chg_timeout  = 5000000,
 	.time_timeout      = 1000000,
 	.time_delta        = 1000000,
-
-	.node_id	   = 0xff, /* Invalid ID - to be replaced before macan initialization */
 };

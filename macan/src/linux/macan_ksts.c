@@ -21,6 +21,8 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
+/* This file combines MaCAN key and time server in a single binary. */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -34,11 +36,11 @@
 #include <time.h>
 #include <dlfcn.h>
 #include "helper.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <linux/can/raw.h>
 
 #define NODE_COUNT 64
-static struct macan_ctx macan_ctx;
-
-
 
 void print_help(char *argv0)
 {
@@ -47,7 +49,6 @@ void print_help(char *argv0)
 
 int main(int argc, char *argv[])
 {
-	int s;
 	struct macan_config *config = NULL;
 	char *error;
 	static void *ltk_handle;
@@ -91,6 +92,18 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	macan_ev_loop *loop = MACAN_EV_DEFAULT;
+
+        /*************************/
+        /* Initialize key server */
+        /*************************/
+
+	struct macan_ctx ctx_ks;
+	struct macan_node_config nc_ks = {
+		.node_id = config->key_server_id
+	};
+
+	/* Import long-term keys from the supplied file (shared library) */
 	const struct macan_key *ltks[NODE_COUNT];
 
 	for (i = 0; i < config->node_count; i++) {
@@ -101,22 +114,37 @@ int main(int argc, char *argv[])
 		ltks[i] = dlsym(ltk_handle, node_id_str);
 		error = dlerror();
 		if(error != NULL) {
-			print_msg(&macan_ctx, MSG_FAIL,
-				  "Unable to load ltk key for node #%u from shared library\nReason: %s\n",
-				  i, error);
+			fprintf(stderr,
+				"Unable to load ltk key for node #%u from shared library\nReason: %s\n",
+				i, error);
 			return 1;
 		}
 	}
 
-	struct macan_node_config node = {
-		.node_id = config->key_server_id
+	macan_init_ks(&ctx_ks, config, &nc_ks, loop, helper_init(device), ltks);
+	ctx_ks.print_msg_enabled = true;
+	ctx_ks.dump_disabled = true;
+
+        /**************************/
+        /* Initialize time server */
+        /**************************/
+
+	struct macan_ctx ctx_ts;
+	struct macan_node_config nc_ts = {
+		.node_id = config->time_server_id,
+		.ltk = ltks[config->time_server_id],
 	};
-	s = helper_init(device);
+	int s = helper_init(device);
+	int recv_own_msgs = 1; /* 0 = disabled (default), 1 = enabled */
+	setsockopt(s, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, &recv_own_msgs, sizeof(recv_own_msgs));
 
-	macan_ev_loop *loop = MACAN_EV_DEFAULT;
+	macan_init_ts(&ctx_ts, config, &nc_ts, loop, s);
+	ctx_ts.print_msg_enabled = true;
 
-	macan_init_ks(&macan_ctx, config, &node, loop, s, ltks);
-	macan_ctx.print_msg_enabled = true;
+
+	/**********************/
+        /* Run the event loop */
+        /**********************/
 
 	macan_ev_run(loop);
 

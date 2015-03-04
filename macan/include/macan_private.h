@@ -149,6 +149,7 @@ struct sig_handle {
  */
 struct macan_ctx {
 	const struct macan_config *config;     /* MaCAN configuration passed to macan_init() */
+	const struct macan_node_config *node;  /* Node configuration */
 	struct com_part **cpart;               /* vector of communication partners, e.g. stores keys */
 	struct sig_handle **sighand;           /* stores signals settings, e.g prescaler, callback */
 	struct macan_timekeeping time; 	       /* used to manage time of the protocol */
@@ -159,6 +160,9 @@ struct macan_ctx {
 	macan_ev_can can_watcher;
 	macan_ev_timer housekeeping;
 	bool print_msg_enabled;
+#ifdef __linux__
+	bool dump_disabled;	/* Disable dumping frames even if MACAN_DUMP is defined */
+#endif
 	union {
 		struct { /* time server */
 			macan_ev_timer time_bcast;
@@ -184,7 +188,7 @@ void receive_challenge(struct macan_ctx *ctx, const struct can_frame *cf);
 uint64_t read_time(void);
 uint64_t macan_get_time(struct macan_ctx *ctx);
 bool is_32bit_signal(struct macan_ctx *ctx, uint8_t sig_num);
-void print_frame(const struct macan_config *cfg, struct can_frame *cf, const char *prefix);
+void print_frame(const struct macan_ctx *ctx, struct can_frame *cf, const char *prefix);
 bool is_time_ready(struct macan_ctx *ctx);
 struct com_part *canid2cpart(struct macan_ctx *ctx, uint32_t can_id);
 bool gen_rand_data(void *dest, size_t len);
@@ -202,7 +206,7 @@ static inline unsigned macan_crypt_flags(const struct can_frame *cf)
 	return (cf->data[0] & 0xc0) >> 6;
 }
 
-void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
+void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd);
 void __macan_init_cpart(struct macan_ctx *ctx, macan_ecuid i);
 void macan_housekeeping_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents);
 void macan_target_init(struct macan_ctx *ctx);

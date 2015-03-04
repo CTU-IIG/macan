@@ -67,11 +67,9 @@ struct macan_can_ids {
 };
 
 /**
- * Main configuration
+ * MaCAN network configuration
  */
 struct macan_config {
-	macan_ecuid node_id;                  /**< Our ECU-ID (0-63) */
-	const struct macan_key *ltk;          /**< Long-term key map (for communication with KS) */
 	uint32_t sig_count;                   /**< Number of signals in sig_spec */
 	const struct macan_sig_spec *sigspec; /**< Signal specification */
 	uint8_t node_count;                   /**< Number of nodes (ECUs) in our network */
@@ -83,6 +81,14 @@ struct macan_config {
 	uint32_t skey_chg_timeout;            /**< Timeout for waiting for session key (microseconds) */
 	uint32_t time_timeout;                /**< Timeout for authenticated time (microseconds) */
 	uint32_t time_delta;                  /**< Maximum time difference between our clock and TS (microseconds) */
+};
+
+/**
+ * MaCAN node-specific configuration
+ */
+struct macan_node_config {
+	macan_ecuid node_id;                  /**< Our ECU-ID (0-63) */
+	const struct macan_key *ltk;          /**< Long-term key map (for communication with KS) */
 };
 
 /**
@@ -106,9 +112,9 @@ enum macan_process_status {
 /* MaCAN API functions */
 
 
-int  macan_init(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
-int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd, const struct macan_key * const *ltks);
-int  macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd);
+int  macan_init(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd);
+int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd, const struct macan_key * const *ltks);
+int  macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd);
 
 void macan_request_keys(struct macan_ctx *ctx);
 int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback fnc, macan_sig_cback invalid_cmac);

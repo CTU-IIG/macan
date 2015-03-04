@@ -39,22 +39,27 @@ static struct macan_ctx macan_ctx;
 
 void print_help(char *argv0)
 {
-	fprintf(stderr, "Usage: %s -c <config_shlib> -k <key_shlib>\n", argv0);
+	fprintf(stderr, "Usage: %s -c <config_shlib> -k <key_shlib> [-d <CAN interface>]\n", argv0);
 }
 
 int main(int argc, char *argv[])
 {
 	int s;
 	struct macan_config *config = NULL;
+	struct macan_node_config node;
+	char *device = "can0";
 
 	int opt;
-	while ((opt = getopt(argc, argv, "c:k:")) != -1) {
+	while ((opt = getopt(argc, argv, "c:d:k:")) != -1) {
 		switch (opt) {
 		case 'c': {
 			void *handle = dlopen(optarg, RTLD_LAZY);
 			config = dlsym(handle, "config");
 			break;
 		}
+		case 'd':
+			device = optarg;
+			break;
 		case 'k': {
 			void *handle = dlopen(optarg, RTLD_LAZY);
 			if(!handle) {
@@ -64,7 +69,7 @@ int main(int argc, char *argv[])
 			char str[100];
 			int cnt = sprintf(str,"%s","macan_ltk_node");
 			sprintf(str+cnt,"%u",config->time_server_id);
-			config->ltk = dlsym(handle,"macan_ltk_node1");
+			node.ltk = dlsym(handle,"macan_ltk_node1");
 			char *error = dlerror();
 			if(error != NULL) {
 				print_msg(NULL, MSG_FAIL,"Unable to load ltk key from shared library\nReason: %s\n",error);
@@ -81,11 +86,11 @@ int main(int argc, char *argv[])
 		print_help(argv[0]);
 		exit(1);
 	}
-        config->node_id = config->time_server_id;
+        node.node_id = config->time_server_id;
 
-	s = helper_init("can0");
+	s = helper_init(device);
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
-	macan_init_ts(&macan_ctx, config, loop, s);
+	macan_init_ts(&macan_ctx, config, &node, loop, s);
 	macan_ctx.print_msg_enabled = true;
 
 	macan_ev_run(loop);

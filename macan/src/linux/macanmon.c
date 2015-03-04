@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -52,7 +52,7 @@ print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
 	struct can_frame cf;
 
 	while (macan_read(&macan_ctx, &cf))
-		print_frame(macan_ctx.config, &cf, "");
+		print_frame(&macan_ctx, &cf, "");
 }
 
 
@@ -66,6 +66,9 @@ int main(int argc, char *argv[])
 {
 	int s;
 	struct macan_config *config = NULL;
+	struct macan_node_config node = {
+		.node_id = 0xff, /* Invalid node ID - passive apps do not need a valid id */
+	};
 
 	int opt;
 	while ((opt = getopt(argc, argv, "c:")) != -1) {
@@ -85,7 +88,6 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-        config->node_id = 0xff;	/* We do not send anything */
 	srand((unsigned)time(NULL));
 
 	macan_ev_can can_watcher;
@@ -95,6 +97,7 @@ int main(int argc, char *argv[])
 
 	macan_ctx.sockfd = s;
 	macan_ctx.config = config;
+	macan_ctx.node = &node;
 	macan_ctx.loop = loop;
 
 	macan_ev_canrx_setup (&macan_ctx, &can_watcher, print_frame_cb);

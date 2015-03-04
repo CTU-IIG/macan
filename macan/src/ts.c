@@ -115,15 +115,15 @@ time_broadcast_cb(macan_ev_loop *loop, macan_ev_timer *w, int revents)
 }
 
 
-int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, macan_ev_loop *loop, int sockfd)
+int macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd)
 {
-	assert(config->node_id == config->time_server_id);
+	assert(node->node_id == config->time_server_id);
 
 	macan_ecuid i;
 
 	read_time(); /* Ensure that MaCAN time starts before "event loop time" */
 
-	__macan_init(ctx, config, loop, sockfd);
+	__macan_init(ctx, config, node, loop, sockfd);
 
 	/* Timeserver needs to communication with every node */
 	for(i = 0; i < config->node_count; i++)

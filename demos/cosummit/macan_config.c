@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -56,7 +56,6 @@ const struct macan_can_ids demo_can_ids = {
 };
 
 struct macan_config config = {
-	.node_id = NODE_TC,
 	.sig_count = SIG_COUNT,
 	.sigspec = demo_sig_spec,
 	.node_count = NODE_COUNT,

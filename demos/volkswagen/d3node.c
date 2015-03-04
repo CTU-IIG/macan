@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -200,12 +200,15 @@ int main()
 {
 	int s; macan_ev_loop *loop = MACAN_EV_DEFAULT;
 	macan_ev_timer btn_chk;
+	struct macan_node_config node = {
+		.node_id = NODE_CTU,
+		.ltk = &macan_ltk_node4,
+	};
 
-	config.ltk = &macan_ltk_node4;
 
 	s = helper_init("can0");
 	io_init();
-	macan_init(&macan_ctx, &config, loop, s);
+	macan_init(&macan_ctx, &config, &node, loop, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);
 
 	macan_ev_timer_setup (&macan_ctx, &btn_chk, btn_chk_cb, 0, 10);

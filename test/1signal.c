@@ -19,7 +19,7 @@ enum node_id {
 	NODE_COUNT
 };
 
-struct macan_sig_spec test_sig_spec[] = {
+const struct macan_sig_spec test_sig_spec[] = {
 	[SIGNAL_0]    = {.can_nsid = 0,   .can_sid = 0x516,   .src_id = SENDER, .dst_id = RECEIVER, .presc = 0},
 };
 
@@ -33,7 +33,7 @@ const struct macan_can_ids test_can_ids = {
 	},
 };
 
-struct macan_config config = {
+const struct macan_config config = {
 	.sig_count         = SIG_COUNT,
 	.sigspec           = test_sig_spec,
 	.node_count        = NODE_COUNT,
@@ -45,8 +45,6 @@ struct macan_config config = {
 	.skey_chg_timeout  = 5000000,
 	.time_timeout      = 1000000,
 	.time_delta        = 1000000,
-
-	.node_id	   = 0xff, /* Invalid ID - to be replaced before macan initialization */
 };
 
 const struct macan_key *ltk[NODE_COUNT] = {
@@ -84,12 +82,12 @@ static void print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
 	struct macan_ctx ctx = { .sockfd = w->fd, .config = &config };
 
 	while (macan_read(&ctx, &cf))
-		print_frame(ctx.config, &cf, "       ");
+		print_frame(&ctx, &cf, "       ");
 }
 
 struct node {
 	struct macan_ctx ctx;
-	struct macan_config cfg;
+	struct macan_node_config nc;
 } node[NODE_COUNT];
 
 int main(int argc, char *argv[])
@@ -102,20 +100,19 @@ int main(int argc, char *argv[])
 
 	for (i = 0; i < NODE_COUNT; i++) {
 		int s = helper_init("can0");
-		node[i].cfg = config;
-		node[i].cfg.node_id = (macan_ecuid)i;
-		node[i].cfg.ltk = ltk[i];
+		node[i].nc.node_id = (macan_ecuid)i;
+		node[i].nc.ltk = ltk[i];
 		switch (i) {
 		case KEY_SERVER:
-			macan_init_ks(&node[i].ctx, &node[i].cfg, loop, s, ltk);
+			macan_init_ks(&node[i].ctx, &config, &node[i].nc, loop, s, ltk);
 			break;
 		case TIME_SERVER:
-			macan_init_ts(&node[i].ctx, &node[i].cfg, loop, s);
+			macan_init_ts(&node[i].ctx, &config, &node[i].nc, loop, s);
 			break;
 		case SENDER:
 		case RECEIVER:
 		default:
-			macan_init(&node[i].ctx, &node[i].cfg, loop, s);
+			macan_init(&node[i].ctx, &config, &node[i].nc, loop, s);
 		}
 	}
 
