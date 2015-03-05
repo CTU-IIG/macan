@@ -1,6 +1,6 @@
 test_PROGRAMS = demo_cosummit_node demo_cosummit_vis
 lib_LOADLIBES = macan nettle rt ev
-demo_cosummit_node_SOURCES = d3node.c macan_config.c ltk_tc.c
+demo_cosummit_node_SOURCES = tricore_node.c macan_config.c ltk_tc.c
 
 demo_cosummit_vis_SOURCES = vis.c macan_config.c ltk_pc.c
 demo_cosummit_vis_LIBS = curses
