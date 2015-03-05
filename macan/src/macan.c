@@ -613,6 +613,20 @@ int __macan_send_sig(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num,
 	return 0;
 }
 
+static void __send_non_secure_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
+{
+	const struct macan_sig_spec *sigspec = ctx->config->sigspec;
+
+	if (sigspec[sig_num].can_nsid) {
+		struct can_frame cf = {
+			.can_id = sigspec[sig_num].can_nsid,
+			.can_dlc = 4 };
+		memcpy(cf.data, &sig_val, sizeof(sig_val));
+		macan_send(ctx, &cf);
+	}
+	return;
+}
+
 /**
  * Dispatch a signal.
  *
@@ -639,6 +653,7 @@ void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
 
 	switch (sighand[sig_num]->presc) {
 	case SIG_DONTSIGN:
+		__send_non_secure_sig(ctx, sig_num, sig_val);
 		break;
 	case SIG_SIGNONCE:
 		__macan_send_sig(ctx, dst_id, sig_num, sig_val);
@@ -648,7 +663,9 @@ void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
 		if (--sighand[sig_num]->presc_cnt == 0) {
 			__macan_send_sig(ctx, dst_id, sig_num, sig_val);
 			sighand[sig_num]->presc_cnt = (uint8_t)sighand[sig_num]->presc;
-		}
+		} else
+			__send_non_secure_sig(ctx, sig_num, sig_val);
+
 		break;
 	}
 }
