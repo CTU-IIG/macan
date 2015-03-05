@@ -58,6 +58,7 @@
 #include "macan_private.h"
 #include "macan_config.h"
 #include "can_recv_cb.h"
+#include <math.h>
 
 #define TIME_EMIT_SIG 1000000
 
@@ -192,22 +193,15 @@ btn_chk_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 {
 	(void)loop; (void)revents;
 	struct macan_ctx *ctx = w->data;
-	static int last_pressed = 0;
-	handle_io();
-	if (last_pressed != button_pressed) {
-		last_pressed = button_pressed;
-		macan_send_sig(ctx, SIGNAL_SIN1, (uint32_t)button_pressed);
-		macan_ev_timer_again(loop, &timeout); /* Reset timeout */
-	}
-}
+	static int t = 0;
 
-static void
-timeout_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
-{
-	(void)loop; (void)revents;
-	struct macan_ctx *ctx = w->data;
-	macan_send_sig(ctx, SIGNAL_SIN1, (uint32_t)button_pressed);
-	printf("send\n");
+	int val = (int)((button_pressed ? -1 : +1) * 100*sin(2.0*M_PI*(t/20.0)));
+
+	macan_send_sig(ctx, SIGNAL_SIN1, (uint32_t)val);
+	macan_send_sig(ctx, SIGNAL_SIN2, (uint32_t)val);
+
+	t++;
+	macan_ev_timer_again(loop, &timeout); /* Reset timeout */
 }
 
 void sig_callback(uint8_t sig_num, uint32_t sig_val)
@@ -242,8 +236,7 @@ int main()
 	macan_init(&macan_ctx, &config, &node, loop, s);
 	macan_reg_callback(&macan_ctx, SIGNAL_LED, sig_callback, sig_invalid);
 
-	macan_ev_timer_setup (&macan_ctx, &btn_chk, btn_chk_cb, 0, 10);
-	macan_ev_timer_setup (&macan_ctx, &timeout, timeout_cb, 0, 1000);
+	macan_ev_timer_setup (&macan_ctx, &btn_chk, btn_chk_cb, 0, 50);
 
 	macan_ev_run(loop);
 
