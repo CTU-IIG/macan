@@ -26,6 +26,14 @@
 
 #include <macan.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int helper_init(const char *ifname);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

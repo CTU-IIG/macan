@@ -24,6 +24,10 @@
 
 #include <ev.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MACAN_EV_DEFAULT EV_DEFAULT
 #define MACAN_EV_READ	 EV_READ
 
@@ -71,5 +75,8 @@ macan_ev_run(macan_ev_loop *loop)
 	return ev_run(loop, 0);
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

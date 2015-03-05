@@ -28,6 +28,11 @@
 #include <stdbool.h>
 #include "macan_ev.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 struct macan_ctx;
 struct can_frame;
 
@@ -131,5 +136,8 @@ void macan_request_expired_keys(struct macan_ctx *ctx);
 
 bool macan_ev_run(macan_ev_loop *loop);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* MACAN_H */
