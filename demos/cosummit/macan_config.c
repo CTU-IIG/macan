@@ -34,8 +34,9 @@
 
 /* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
-	[SIGNAL_VW]    = {.can_nsid = 0,   .can_sid = 0x2C1,  .src_id = NODE_PC,     .dst_id = NODE_TC, .presc = 1},
-	[SIGNAL_CTU]    = {.can_nsid = 0,   .can_sid = 0x2D1,  .src_id = NODE_TC,    .dst_id = NODE_PC,  .presc = 1},
+	[SIGNAL_LED]    = {.can_nsid = 0,   .can_sid = 0x10,  .src_id = NODE_PC,     .dst_id = NODE_TC, .presc = 1},
+	[SIGNAL_SIN1]   = {.can_nsid = 0,   .can_sid = 0x20,  .src_id = NODE_TC,     .dst_id = NODE_PC,  .presc = 1},
+	[SIGNAL_SIN2]   = {.can_nsid = 0x21,.can_sid = 0x00,  .src_id = NODE_TC,     .dst_id = NODE_PC,  .presc = 1},
 };
 
 /* struct macan_node_spec demo_node_spec[] = { */

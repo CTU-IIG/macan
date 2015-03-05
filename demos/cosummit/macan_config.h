@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -27,8 +27,9 @@
 #include <macan.h>
 
 enum sig_id {
-	SIGNAL_VW,
-	SIGNAL_CTU,
+	SIGNAL_LED,
+	SIGNAL_SIN1,
+	SIGNAL_SIN2,
 	SIG_COUNT
 };
 

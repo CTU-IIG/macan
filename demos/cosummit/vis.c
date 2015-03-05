@@ -80,7 +80,7 @@ static void stdin_cb (macan_ev_loop *loop, ev_io *w, int revents)
 		//mvaddstr(15, 0, str);
 
 		if (ch >= '1' && ch <= '4')
-			macan_send_sig(ctx, SIGNAL_VW, 1U << (ch - '1'));
+			macan_send_sig(ctx, SIGNAL_LED, 1U << (ch - '1'));
 
 		//refresh();
 	}
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 	};
 
 	macan_init(&macan_ctx, &config, &node, loop, s);
-	macan_reg_callback(&macan_ctx, SIGNAL_CTU, sig_callback, sig_invalid);
+	macan_reg_callback(&macan_ctx, SIGNAL_SIN1, sig_callback, sig_invalid);
 
 	signal(SIGINT, sigint);
 	initscr(); cbreak(); noecho(); nodelay(stdscr, TRUE);

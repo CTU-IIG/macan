@@ -196,7 +196,7 @@ btn_chk_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 	handle_io();
 	if (last_pressed != button_pressed) {
 		last_pressed = button_pressed;
-		macan_send_sig(ctx, SIGNAL_CTU, (uint32_t)button_pressed);
+		macan_send_sig(ctx, SIGNAL_SIN1, (uint32_t)button_pressed);
 		macan_ev_timer_again(loop, &timeout); /* Reset timeout */
 	}
 }
@@ -206,7 +206,7 @@ timeout_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 {
 	(void)loop; (void)revents;
 	struct macan_ctx *ctx = w->data;
-	macan_send_sig(ctx, SIGNAL_CTU, (uint32_t)button_pressed);
+	macan_send_sig(ctx, SIGNAL_SIN1, (uint32_t)button_pressed);
 	printf("send\n");
 }
 
@@ -240,7 +240,7 @@ int main()
 	s = helper_init("can0");
 	io_init();
 	macan_init(&macan_ctx, &config, &node, loop, s);
-	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);
+	macan_reg_callback(&macan_ctx, SIGNAL_LED, sig_callback, sig_invalid);
 
 	macan_ev_timer_setup (&macan_ctx, &btn_chk, btn_chk_cb, 0, 10);
 	macan_ev_timer_setup (&macan_ctx, &timeout, timeout_cb, 0, 1000);
