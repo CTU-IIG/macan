@@ -3,7 +3,7 @@ MaCAN
 
 Message Authenticated CAN library & tools written in C.  
 
-This library implements MaCAN protocol [1], which improves [Controller Area Network](https://en.wikipedia.org/wiki/CAN_bus) security. MaCAN network consists from a
+This library implements MaCAN protocol [1, [2]], which improves [Controller Area Network](https://en.wikipedia.org/wiki/CAN_bus) security. MaCAN network consists from a
 keyserver, a timeserver and one or more nodes (a.k.a. ECUs). Supported
 platforms currently include **GNU/Linux** and **Infineon Tricore
 TC1798** and STM32.
@@ -70,10 +70,10 @@ This configuration is then compiled into shared object file (on Linux)
 or to a static library (on embedded platforms) and used by all
 participating nodes.
 
-For security reasons, Long Term Keys (LTK) are compiled separately
+For security reasons, long-term keys (LTK) are compiled separately
 into:
 
-1. shared object files (one per key) and linked to nodes at runtime.
+1. object files (one per key) and linked to appropriate nodes (statically or, in case of time server, dynamically).
 2. single shared object file (containing all keys), which is used by
    the keyserver only.
 
@@ -120,4 +120,5 @@ References
 ----------
 
 [1] Oliver Hartkopp, Cornel Reuber and Roland Schilling, *MaCAN - Message Authenticated CAN*, [ESCAR 2012](https://www.escar.info/index.php?id=208).  
-[2] [Ondřej Kulatý, *Message authentication for CAN bus and AUTOSAR software architecture*](http://rtime.felk.cvut.cz/~sojka/students/Dp_2015_kulaty_ondrej.pdf), master's thesis.
+[2] [Ondřej Kulatý, *Message authentication for CAN bus and AUTOSAR software architecture*][2], master's thesis.
+[2]: http://rtime.felk.cvut.cz/~sojka/students/Dp_2015_kulaty_ondrej.pdf
