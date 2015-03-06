@@ -1,11 +1,30 @@
+/*
+ *  Copyright 2014, 2015 Czech Technical University in Prague
+ *
+ *  Authors: Michal Horn <hornmich@fel.cvut.cz>
+ *
+ *  This file is part of MaCAN.
+ *
+ *  MaCAN is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  MaCAN is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with MaCAN.   If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "graph.h"
 
 Graph::Graph(QObject *parent) : QObject(parent)
 {
-    amplitude = 0;
-    period = 0;
     graphView = NULL;
-    lastPointKey = 0;
+    graphId = 0;
 }
 
 Graph::~Graph()
@@ -40,45 +59,7 @@ QCustomPlot *Graph::getGraphView() const
     return graphView;
 }
 
-double Graph::getAmplitude() const
-{
-    return amplitude;
-}
-
-double Graph::getPeriod() const
-{
-    return period;
-}
-
-void Graph::setAmplitude(double value)
-{
-    amplitude = value;
-}
-
-void Graph::setPeriod(double value)
-{
-    period = value;
-}
-
-void Graph::update()
-{
-    // calculate two new data points:
-    double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
-    double value0 = amplitude*qSin(period*key); //qSin(key*1.6+qCos(key*1.7)*2)*10 + qSin(key*1.2+0.56)*20 + 26;
-    // add data to lines:
-    graphView->graph(0)->addData(key, value0);
-    // set data of dots:
-    // remove data of lines that's outside visible range:
-    graphView->graph(0)->removeDataBefore(key-8);
-    // rescale value (vertical) axis to fit the current data:
-    graphView->graph(0)->rescaleValueAxis();
-    lastPointKey = key;
-    // make key axis range scroll with the data (at a constant range size of 8):
-    graphView->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
-    graphView->replot();
-}
-
-void Graph::setGraphvalue(int id, int value)
+void Graph::addGraphvalue(int id, int value)
 {
     if (graphId != id) {
         return;
@@ -92,7 +73,6 @@ void Graph::setGraphvalue(int id, int value)
     graphView->graph(0)->removeDataBefore(key-8);
     // rescale value (vertical) axis to fit the current data:
     graphView->graph(0)->rescaleValueAxis();
-    lastPointKey = key;
     // make key axis range scroll with the data (at a constant range size of 8):
     graphView->xAxis->setRange(key+0.25, 8, Qt::AlignRight);
     graphView->replot();

@@ -1,3 +1,23 @@
+/*
+ *  Copyright 2014, 2015 Czech Technical University in Prague
+ *
+ *  Authors: Michal Horn <hornmich@fel.cvut.cz>
+ *
+ *  This file is part of MaCAN.
+ *
+ *  MaCAN is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  MaCAN is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with MaCAN.   If not, see <http://www.gnu.org/licenses/>.
+ */
 #include "virtualleds.h"
 
 VirtualLED::VirtualLED(QObject *parent) : QObject(parent)
@@ -32,19 +52,19 @@ QGraphicsView *VirtualLED::getIndicatorView() const
     return indicatorView;
 }
 
-void VirtualLED::setLEDId(unsigned int id)
+void VirtualLED::setIndicatorId(unsigned int id)
 {
-    ledId = id;
+    IndicatorId = id;
 }
 
-unsigned int VirtualLED::getLEDId() const
+unsigned int VirtualLED::getIndicatorId() const
 {
-    return ledId;
+    return IndicatorId;
 }
 
-void VirtualLED::setLEDOn(unsigned int id)
+void VirtualLED::setIndicatorOn(unsigned int id)
 {
-    if (id == ledId) {
+    if (id == IndicatorId) {
        scene.removeItem(&ledOff);
        scene.addItem(&ledOn);
        indicatorView->setScene(&scene);
@@ -52,9 +72,9 @@ void VirtualLED::setLEDOn(unsigned int id)
     }
 }
 
-void VirtualLED::setLEDOff(unsigned int id)
+void VirtualLED::setIndicatorOff(unsigned int id)
 {
-    if (id == ledId) {
+    if (id == IndicatorId) {
         scene.removeItem(&ledOn);
         scene.addItem(&ledOff);
         indicatorView->setScene(&scene);
