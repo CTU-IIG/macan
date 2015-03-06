@@ -73,13 +73,12 @@ bool macan_send(struct macan_ctx *ctx,  const struct can_frame *cf)
 
 uint64_t read_time()
 {
-	uint64_t time;
+	uint64_t time = 0;
 	uint32_t *time32 = (uint32_t *)&time;
 	time32[0] = STM_TIM0.U;
-	time32[1] = STM_TIM6.U;
-	time /= TIME_USEC;
+	time32[1] = STM_CAP.U;
 
-	return time;
+	return time * 41 >> 12;	/* ≅ time/100; 100 = TIME_USEC */
 }
 
 /*
