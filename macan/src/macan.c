@@ -860,16 +860,23 @@ uint64_t macan_get_time(struct macan_ctx *ctx)
  * @return true if singal number was found, false otherwise.
  */
 static
-bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
+bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num, bool *secure)
 {
 	uint32_t i;
 
-	for(i = 0; i < ctx->config->sig_count; i++) {
-		if(ctx->config->sigspec[i].can_sid == can_id ||
-		   ctx->config->sigspec[i].can_nsid == can_id) {
-			if(sig_num != NULL) {
+	for (i = 0; i < ctx->config->sig_count; i++) {
+		if (ctx->config->sigspec[i].can_sid == can_id) {
+			if (sig_num != NULL)
 				*sig_num = i;
-			}
+			if (secure)
+				*secure = true;
+			return SUCCESS;
+		}
+		if (ctx->config->sigspec[i].can_nsid == can_id) {
+			if (sig_num != NULL)
+				*sig_num = i;
+			if (secure)
+				*secure = false;
 			return SUCCESS;
 		}
 	}
@@ -891,6 +898,7 @@ bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
 enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint32_t sig_num;
+	bool secure;
 	macan_ecuid src;
 
 	if(cf->can_id == CANID(ctx, ctx->node->node_id))
@@ -912,8 +920,8 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 	if (cf->can_dlc < 1)	/* MaCAN frames have at least 1 byte */
 		return MACAN_FRAME_UNKNOWN;
 
-	if(cansid2signum(ctx, cf->can_id,&sig_num)) {
-		if (cf->can_dlc == 8)
+	if (cansid2signum(ctx, cf->can_id, &sig_num, &secure)) {
+		if (secure)
 			receive_sig32(ctx, cf, sig_num);
 		else
 			receive_sig_noauth(ctx, cf, sig_num);
