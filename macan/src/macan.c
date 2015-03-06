@@ -623,6 +623,7 @@ static void __send_non_secure_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32
 			.can_dlc = 4 };
 		memcpy(cf.data, &sig_val, sizeof(sig_val));
 		macan_send(ctx, &cf);
+		/* TODO: receive_sig_noauth() expects little endian - ensure it here as well */
 	}
 	return;
 }
@@ -800,6 +801,20 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 		sighand->cback((uint8_t)sig_num, sig_val, MACAN_SIGNAL_AUTH);
 }
 
+static
+void receive_sig_noauth(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t sig_num)
+{
+	struct sig_handle *sighand = ctx->sighand[sig_num];
+
+	if (sighand && sighand->cback) {
+		uint32_t sig_val = 0, i;
+		for (i = 0; i < 4 && i < cf->can_dlc; i++)
+			sig_val |= (uint32_t)(cf->data[i]) << (i * 8);
+
+		sighand->cback((uint8_t)sig_num, sig_val, MACAN_SIGNAL_NOAUTH);
+	}
+}
+
 void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 {
 	struct com_part *cpart = ctx->cpart[fwd_id];
@@ -850,7 +865,8 @@ bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
 	uint32_t i;
 
 	for(i = 0; i < ctx->config->sig_count; i++) {
-		if(ctx->config->sigspec[i].can_sid == can_id) {
+		if(ctx->config->sigspec[i].can_sid == can_id ||
+		   ctx->config->sigspec[i].can_nsid == can_id) {
 			if(sig_num != NULL) {
 				*sig_num = i;
 			}
@@ -874,7 +890,7 @@ bool cansid2signum(struct macan_ctx *ctx, uint32_t can_id, uint32_t *sig_num)
  */
 enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struct can_frame *cf)
 {
-	uint32_t sig32_num;
+	uint32_t sig_num;
 	macan_ecuid src;
 
 	if(cf->can_id == CANID(ctx, ctx->node->node_id))
@@ -896,8 +912,11 @@ enum macan_process_status macan_process_frame(struct macan_ctx *ctx, const struc
 	if (cf->can_dlc < 1)	/* MaCAN frames have at least 1 byte */
 		return MACAN_FRAME_UNKNOWN;
 
-	if(cansid2signum(ctx, cf->can_id,&sig32_num)) {
-		receive_sig32(ctx, cf, sig32_num);
+	if(cansid2signum(ctx, cf->can_id,&sig_num)) {
+		if (cf->can_dlc == 8)
+			receive_sig32(ctx, cf, sig_num);
+		else
+			receive_sig_noauth(ctx, cf, sig_num);
 		return MACAN_FRAME_PROCESSED;
 	}
 
