@@ -31,6 +31,8 @@ command line parameters are supported:
 
   Path to the shared object with long term keys of every node.
 
+* -d *CAN interface*  
+
 ### Timeserver
 
 Provides plain and authenticated time signals to nodes. When run on
@@ -43,6 +45,8 @@ Linux, the following command line parameters are supported:
 * -k *key.so*  
 
   Path to the shared object with timeserver's long term key.
+
+* -d *CAN interface*  
 
 ### MaCAN Monitor
 
