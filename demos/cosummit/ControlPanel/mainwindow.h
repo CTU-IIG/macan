@@ -9,6 +9,7 @@
 #include <virtualleds.h>
 #include <macanconnection.h>
 #include <graph.h>
+#include <QShortcut>
 
 namespace Ui {
 class MainWindow;
@@ -24,7 +25,8 @@ public:
 
 private:
     Ui::MainWindow *ui;
-    QTimer dataTimer;
+    QShortcut *but1Shortcut;
+    QShortcut *but2Shortcut;
     VirtualButton button1;
     VirtualButton button2;
     VirtualLED led1;

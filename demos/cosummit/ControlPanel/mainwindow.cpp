@@ -26,18 +26,19 @@ MainWindow::MainWindow(QWidget *parent) :
     graphPlotter2.setPeriod(1);
     graphPlotter2.setGraphId(1);
 
+    /* Build shortcuts for the buttons */
+    but1Shortcut = new QShortcut(QKeySequence("Alt+1"), this);
+    but2Shortcut = new QShortcut(QKeySequence("Alt+2"), this);
+    connect(but1Shortcut, SIGNAL(activated()), ui->btn_toogleLed1, SLOT(click()));
+    connect(but2Shortcut, SIGNAL(activated()), ui->btn_toogleLed2, SLOT(click()));
 
     /* Connect Virtual buttons views with its class */
-    connect(ui->btn_toogleLed1, SIGNAL(pressed()), &button1, SLOT(pressed()));
-    connect(ui->btn_toogleLed1, SIGNAL(released()), &button1, SLOT(released()));
-    connect(ui->btn_toogleLed2, SIGNAL(pressed()), &button2, SLOT(pressed()));
-    connect(ui->btn_toogleLed2, SIGNAL(released()), &button2, SLOT(released()));
+    connect(ui->btn_toogleLed1, SIGNAL(clicked()), &button1, SLOT(clicked()));
+    connect(ui->btn_toogleLed2, SIGNAL(clicked()), &button2, SLOT(clicked()));
 
     /* Connect Virtual buttons objects with macan connection object */
-    connect(&button1, SIGNAL(buttonPressed(uint)), &macan, SLOT(virtualButtonPressed(uint)));
-    connect(&button1, SIGNAL(buttonReleased(uint)), &macan, SLOT(virtualButtonReleased(uint)));
-    connect(&button2, SIGNAL(buttonPressed(uint)), &macan, SLOT(virtualButtonPressed(uint)));
-    connect(&button2, SIGNAL(buttonReleased(uint)), &macan, SLOT(virtualButtonReleased(uint)));
+    connect(&button1, SIGNAL(buttonClicked(uint)), &macan, SLOT(virtualButtonClicked(uint)));
+    connect(&button2, SIGNAL(buttonClicked(uint)), &macan, SLOT(virtualButtonClicked(uint)));
 
     /* Connect virtual LEDs objects with macan connection object */
     /*
@@ -64,4 +65,6 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete but1Shortcut;
+    delete but2Shortcut;
 }
