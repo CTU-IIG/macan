@@ -387,6 +387,11 @@ void receive_time_nonauth(struct macan_ctx *ctx, const struct can_frame *cf)
 	uint64_t delta;
 	uint64_t now = read_time();
 
+	/* Store data that is needed for requesting of authenticated time */
+	t->nonauth_ts = time_ts;
+	t->nonauth_loc = now;
+
+	/* Calculate difference between our and TS time */
 	memcpy(&time_ts, cf->data, 4);
 	time_ts = le32toh(time_ts);
 	ts_us = (uint64_t)time_ts * ctx->config->time_div;
@@ -399,10 +404,6 @@ void receive_time_nonauth(struct macan_ctx *ctx, const struct can_frame *cf)
 				  delta, loc_us, ts_us);
 		request_time_auth(ctx);
 	}
-
-	/* Store data that is needed in authenticated time handler */
-	t->nonauth_ts = time_ts;
-	t->nonauth_loc = now;
 }
 
 static void send_acks(struct macan_ctx *ctx)
