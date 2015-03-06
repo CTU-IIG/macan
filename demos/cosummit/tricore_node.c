@@ -134,12 +134,13 @@ void SetEndinit(void)
 void handle_io(void)
 {
 	static uint64_t last_blink = 0;
+	uint64_t now = read_time();
 
 	button_pressed = !BTN_BUTTON1_VAL;
 	LED_BUTTON1_VAL = button_pressed; // One blue LED shows the button state
-	if ((int)read_time() - last_blink > 500000) {
+	if (now - last_blink > 500000) {
 		static int blink = 0;
-		last_blink = read_time();
+		last_blink = now;
 		LED_BLINKING_VAL = (blink = !blink);
 	}
 	//Adc_ReadGroup(0, 0);
