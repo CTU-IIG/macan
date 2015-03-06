@@ -24,14 +24,6 @@
 #include <macan.h>
 #include "macan_config.h"
 
-#define SIG_TIME 0x102 
-#define TIME_DELTA 1000000   /* tolerated time divergency from TS in usecs */
-#define TIME_DIV 1000000
-#define TIME_TIMEOUT 1000000	/* usec */
-#define SKEY_TIMEOUT 500000000u /* usec */
-#define SKEY_CHG_TIMEOUT 500000000u /* usec */
-#define ACK_TIMEOUT 1000000	  /* usec */
-
 /* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
 	[SIGNAL_LED]    = {.can_nsid = 0,   .can_sid = 0x10,  .src_id = NODE_PC,     .dst_id = NODE_TC, .presc = 1},
@@ -63,9 +55,9 @@ struct macan_config config = {
 	.canid = &demo_can_ids,
 	.key_server_id = KEY_SERVER,
 	.time_server_id = TIME_SERVER,
-	.time_div = TIME_DIV,
-	.skey_validity = SKEY_TIMEOUT,
-	.skey_chg_timeout = SKEY_CHG_TIMEOUT,
-	.time_timeout = ACK_TIMEOUT,
-	.time_delta = TIME_DELTA,
+	.time_div = 1000000,
+	.skey_validity = 500000000u,
+	.skey_chg_timeout = 500000000u,
+	.time_timeout = 1000000,
+	.time_delta = 1000000,   /* tolerated time divergency from TS in usecs */
 };
