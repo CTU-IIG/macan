@@ -33,6 +33,9 @@ MaCANConnection::MaCANConnection(QObject *parent) : QObject(parent)
 {
     instance = this;
     mIsConnected = false;
+    for (int i = 0; i < HW_BUTTONS_CNT; i++) {
+        mButtonOn[i] = false;
+    }
 }
 
 MaCANConnection::~MaCANConnection()
@@ -69,11 +72,34 @@ void MaCANConnection::virtualButtonReleased(unsigned int buttId)
         return;
     }
     uint8_t msgId = SIGNAL_LED;
-    uint32_t data = 0<<buttId;
+    uint32_t data = 0;
+    mButtonOn[buttId]=0;
+    for (int i = 0; i < HW_BUTTONS_CNT; i++) {
+        data |= mButtonOn[i] << i;
+    }
     std::cout << "Sending message [" << (int)msgId << "]:" << std::hex << data << std::endl;
     if (!macanWorker.sendSignal(msgId, data)) {
         std::cerr << "[ERR] Sending signal via MaCAN failed." << std::endl;
     }
+}
+
+void MaCANConnection::virtualButtonClicked(unsigned int buttId)
+{
+    if (!mIsConnected) {
+        std::cerr << "[ERR] CAN is not connected." << std::endl;
+        return;
+    }
+    uint8_t msgId = SIGNAL_LED;
+    uint32_t data = 0;
+    mButtonOn[buttId]=!mButtonOn[buttId];
+    for (int i = 0; i < HW_BUTTONS_CNT; i++) {
+        data |= mButtonOn[i] << i;
+    }
+    std::cout << "Sending message [" << (int)msgId << "]:" << std::hex << data << std::endl;
+    if (!macanWorker.sendSignal(msgId, data)) {
+        std::cerr << "[ERR] Sending signal via MaCAN failed." << std::endl;
+    }
+
 }
 
 void MaCANConnection::virtualButtonPressed(unsigned int buttId)
@@ -82,10 +108,12 @@ void MaCANConnection::virtualButtonPressed(unsigned int buttId)
         std::cerr << "[ERR] CAN is not connected./n" << std::endl;
         return;
     }
-
-
     uint8_t msgId = SIGNAL_LED;
-    uint32_t data = 1<<buttId;
+    uint32_t data = 0;
+    mButtonOn[buttId]=0;
+    for (int i = 0; i < HW_BUTTONS_CNT; i++) {
+        data |= mButtonOn[i] << i;
+    }
     std::cout << "Sending message [" << (int)msgId << "]:" << std::hex << data << std::endl;
     if (!macanWorker.sendSignal(msgId, data)) {
         std::cerr << "[ERR] Sending signal via MaCAN failed." << std::endl;

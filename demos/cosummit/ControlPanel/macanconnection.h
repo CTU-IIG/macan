@@ -16,7 +16,7 @@ class MaCANConnection : public QObject
 
 private:
     bool mIsConnected;
-    bool mButtonPressed[HW_BUTTONS_CNT];
+    bool mButtonOn[HW_BUTTONS_CNT];
     bool mIndicatorOn[SW_INDICATORS_CNT];
     MaCanWorker macanWorker;
     static void sig_callback(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status status);
@@ -34,6 +34,7 @@ public:
 public slots:
     void virtualButtonPressed(unsigned int buttId);
     void virtualButtonReleased(unsigned int buttId);
+    void virtualButtonClicked(unsigned int buttId);
 
 signals:
     void setLEDOn(unsigned int ledId);

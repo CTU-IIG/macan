@@ -18,10 +18,13 @@ public:
 signals:
     void buttonPressed(unsigned int buttonId);
     void buttonReleased(unsigned int buttonId);
+    void buttonClicked(unsigned int buttonId);
 
 public slots:
     void pressed();
     void released();
+    void clicked();
+
 };
 
 #endif // VIRTUALBUTTON_H

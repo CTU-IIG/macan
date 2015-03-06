@@ -30,3 +30,8 @@ void VirtualButton::released()
     emit buttonReleased(mButtonId);
 }
 
+void VirtualButton::clicked()
+{
+    emit buttonClicked(mButtonId);
+}
+
