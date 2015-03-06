@@ -820,7 +820,13 @@ void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 {
 	struct com_part *cpart = ctx->cpart[fwd_id];
 
-	if (cpart && !cpart->awaiting_skey) {
+	if (!cpart)
+		return;
+
+	if (cpart->awaiting_skey && read_time() >= cpart->valid_until)
+		cpart->awaiting_skey = false; /* Key request timed out */
+
+	if (!cpart->awaiting_skey) {
 		print_msg(ctx, MSG_REQUEST,"Requesting skey for node %s\n",macan_ecu_name(ctx, fwd_id));
 		gen_challenge(ctx, cpart->chg);
 		macan_send_challenge(ctx, ctx->config->key_server_id, fwd_id, cpart->chg);
@@ -830,8 +836,6 @@ void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)
 		/* Timeout for receiving a new session key */
 		cpart->valid_until = read_time() + ctx->config->skey_chg_timeout;
 	}
-
-	return;
 }
 
 void macan_request_expired_keys(struct macan_ctx *ctx)
