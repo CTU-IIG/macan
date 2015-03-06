@@ -133,8 +133,8 @@ struct sig_handle {
 	uint8_t presc_cnt;    /* prescaler counter counts the signal transmit attempts down and
 	                         allows the transmit to happen only if presc_cnt == 0 */
 	uint8_t flags;        /* mark AUTHREQ_SENT if signal request AUTH_REQ was sent */
-	void (*cback)(uint8_t sig_num, uint32_t sig_val);
-	void (*invalid_cback)(uint8_t sig_num, uint32_t sig_val);
+	macan_sig_cback cback;
+	macan_sig_cback invalid_cback;
 };
 
 #define SIG_DONTSIGN 0

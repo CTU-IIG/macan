@@ -103,10 +103,16 @@ struct macan_key {
 	uint8_t data[16];
 };
 
+enum macan_signal_status {
+	MACAN_SIGNAL_NOAUTH,	/* Non-authenticated signal */
+	MACAN_SIGNAL_AUTH,	/* Authenticity check succeeded */
+	MACAN_SIGNAL_INVALID,	/* Authenticity check failed */
+};
+
 /**
  * signal callback signature
  */
-typedef void (*macan_sig_cback)(uint8_t sig_num, uint32_t sig_val);
+typedef void (*macan_sig_cback)(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status status);
 
 enum macan_process_status {
 	MACAN_FRAME_UNKNOWN,

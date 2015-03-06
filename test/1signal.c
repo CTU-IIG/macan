@@ -60,9 +60,9 @@ const struct macan_key *ltk[NODE_COUNT] = {
 
 #include <stdlib.h>
 
-static void sig_callback(uint8_t sig_num, uint32_t sig_val)
+static void sig_callback(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status s)
 {
-	(void)sig_num, (void)sig_val;
+	(void)sig_num, (void)sig_val; (void)s;
 	exit(0);
 }
 

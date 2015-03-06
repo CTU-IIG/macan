@@ -178,18 +178,18 @@ timeout_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 	macan_send_sig(ctx, SIGNAL_CTU, (uint32_t)button_pressed);
 }
 
-void sig_callback(uint8_t sig_num, uint32_t sig_val)
+void sig_callback(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status s)
 {
-	printf("received authentic signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
+	printf("received authentic signal(%"PRIu8") = %#"PRIx32"  status: %d\n", sig_num, sig_val, s);
 #ifdef __CPU_TC1798__
 	P4_OUT.U = ~(~P4_OUT.U & 0xf0 | sig_val & 0xf); // Blue LEDs
 	P7_OUT.B.P0 = 0; // Red LED off
 #endif
 }
 
-void sig_invalid(uint8_t sig_num, uint32_t sig_val)
+void sig_invalid(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status s)
 {
-	printf("received invalid signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
+	printf("received invalid signal(%"PRIu8") = %#"PRIx32" status: %d\n", sig_num, sig_val, s);
 #ifdef __CPU_TC1798__
 	P7_OUT.B.P0 = 1; // Red LED on
 

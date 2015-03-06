@@ -28,9 +28,9 @@ static void request_key(macan_ev_loop *loop, ev_timer *w, int revents)
 	macan_request_key(ctx, ECU_J);
 }
 
-static void sig_callback(uint8_t sig_num, uint32_t sig_val)
+static void sig_callback(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status s)
 {
-	(void)sig_num, (void)sig_val;
+	(void)sig_num, (void)sig_val; (void)s;
 }
 
 

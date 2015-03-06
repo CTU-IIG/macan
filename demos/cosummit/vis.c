@@ -45,9 +45,9 @@ void sigint()
 	exit(0);
 }
 
-void sig_callback(uint8_t sig_num, uint32_t sig_val)
+void sig_callback(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status s)
 {
-	(void)sig_num;
+	(void)sig_num; (void)s;
 	int x, y, on = !!sig_val;
 	//printf("btn %s\n",  ? "on" : "off");
 	if (on)
@@ -61,9 +61,9 @@ void sig_callback(uint8_t sig_num, uint32_t sig_val)
 	refresh();
 }
 
-void sig_invalid(uint8_t sig_num, uint32_t sig_val)
+void sig_invalid(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status s)
 {
-	(void)sig_num; (void)sig_val;
+	(void)sig_num; (void)sig_val; (void)s;
 	//printf("received invalid signal(%"PRIu8") = %#"PRIx32"\n", sig_num, sig_val);
 }
 

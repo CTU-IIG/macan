@@ -786,7 +786,9 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 
 	if (!macan_check_cmac(ctx, &skey, cmac, plain, fill_time, plain_length)) {
 		if (sighand && sighand->invalid_cback)
-			sighand->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val);
+			sighand->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val, MACAN_SIGNAL_INVALID);
+		else if (sighand && sighand->cback)
+			sighand->cback((uint8_t)sig_num, (uint32_t)sig_val, MACAN_SIGNAL_INVALID);
 		else
 			fail_printf(ctx, "CMAC error for signal #%d\n", sig_num);
 		return;
@@ -795,7 +797,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 	print_msg(ctx, MSG_SIGNAL,"Received signal #%d, value: %d\n", sig_num, sig_val);
 
 	if (sighand && sighand->cback)
-		sighand->cback((uint8_t)sig_num, sig_val);
+		sighand->cback((uint8_t)sig_num, sig_val, MACAN_SIGNAL_AUTH);
 }
 
 void macan_request_key(struct macan_ctx *ctx, macan_ecuid fwd_id)

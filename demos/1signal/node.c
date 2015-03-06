@@ -76,9 +76,9 @@ send_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 }
 
 
-void sig_callback(uint8_t sig_num, uint32_t sig_val)
+void sig_callback(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status s)
 {
-	printf("received authorized signal(%"PRIu8") = %"PRIu32"\n", sig_num, sig_val);
+	printf("received signal(%"PRIu8") = %"PRIu32" status: %d\n", sig_num, sig_val, s);
 }
 
 int main()
