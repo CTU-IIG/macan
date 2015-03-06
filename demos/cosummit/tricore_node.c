@@ -195,6 +195,8 @@ btn_chk_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 	struct macan_ctx *ctx = w->data;
 	static int t = 0;
 
+	handle_io();
+
 	int val = (int)((button_pressed ? -1 : +1) * 100*sin(2.0*3.14159265*(t/20.0)));
 
 	macan_send_sig(ctx, SIGNAL_SIN1, (uint32_t)val);
