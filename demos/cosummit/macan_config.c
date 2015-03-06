@@ -24,19 +24,11 @@
 #include <macan.h>
 #include "macan_config.h"
 
-/* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
 	[SIGNAL_LED]    = {.can_nsid = 0,   .can_sid = 0x10,  .src_id = NODE_PC,     .dst_id = NODE_TC, .presc = 1},
 	[SIGNAL_SIN1]   = {.can_nsid = 0,   .can_sid = 0x20,  .src_id = NODE_TC,     .dst_id = NODE_PC,  .presc = 1},
 	[SIGNAL_SIN2]   = {.can_nsid = 0x21,.can_sid = 0x00,  .src_id = NODE_TC,     .dst_id = NODE_PC,  .presc = 0},
 };
-
-/* struct macan_node_spec demo_node_spec[] = { */
-/*     [KEY_SERVER]  = {.can_id = 0x101, .ecu_id = 0x1, .name = "ks"}, */
-/*     [TIME_SERVER] = {.can_id = 0x102, .ecu_id = 0x2, .name = "ts"},  */
-/*     [NODE_PC]     = {.can_id = 0x103, .ecu_id = 0x3, .name = "node_pc"}, */
-/*     [NODE_TC]    = {.can_id = 0x104, .ecu_id = 0x4, .name = "node_tc"}, */
-/* }; */
 
 const struct macan_can_ids demo_can_ids = {
 	.time = 0x000,
