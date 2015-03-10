@@ -394,9 +394,16 @@ void receive_time_nonauth(struct macan_ctx *ctx, const struct can_frame *cf)
 	loc_us = now + t->offs; /* Estimated time on TS (us) */
 	delta = (loc_us > ts_us) ? loc_us - ts_us : ts_us - loc_us;
 
-	/* Store data that is needed for requesting of authenticated time */
-	t->nonauth_ts = time_ts;
-	t->nonauth_loc = now;
+	/* Store data that is needed for requesting of authenticated
+	 * time. To prevent "reply attacks" on non-authenticated time
+	 * resulting in jitter in time synchronization, ignore time
+	 * messages with the same time stamp. Note that we need to
+	 * consider time going backwards, because the time server can
+	 * be restarted. */
+	if (t->nonauth_loc == 0 || time_ts != t->nonauth_ts) {
+		t->nonauth_ts = time_ts;
+		t->nonauth_loc = now;
+	}
 
 	if (delta > ctx->config->time_delta || !t->ready) {
 		if (t->ready)
