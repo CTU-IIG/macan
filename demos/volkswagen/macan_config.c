@@ -65,6 +65,6 @@ struct macan_config config = {
 	.time_div = TIME_DIV,
 	.skey_validity = SKEY_TIMEOUT,
 	.skey_chg_timeout = SKEY_CHG_TIMEOUT,
-	.time_timeout = ACK_TIMEOUT,
+	.time_req_sep = ACK_TIMEOUT,
 	.time_delta = TIME_DELTA,
 };

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -51,6 +51,6 @@ struct macan_config config = {
 	.time_div          = 1000000,
 	.skey_validity     = 60000000,
 	.skey_chg_timeout  = 5000000,
-	.time_timeout      = 1000000,
+	.time_req_sep      = 1000000,
 	.time_delta        = 1000000,
 };

@@ -282,7 +282,7 @@ static void request_time_auth(struct macan_ctx *ctx)
 		return;
 
 	/* Don't ask TS for authenticated time too often */
-	if (read_time() - ctx->time.chal_ts > ctx->config->time_timeout ||
+	if (read_time() - ctx->time.chal_ts > ctx->config->time_req_sep ||
 	    ctx->time.chal_ts == 0) {
 		print_msg(ctx, MSG_REQUEST,"Requesting time authentication\n");
 		ctx->time.chal_ts = read_time();

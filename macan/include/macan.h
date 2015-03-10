@@ -84,7 +84,7 @@ struct macan_config {
 	uint32_t time_div;                    /**< Number of microseconds in one MaCAN time unit */
 	uint64_t skey_validity;               /**< Session key expiration time (microseconds) */
 	uint32_t skey_chg_timeout;            /**< Timeout for waiting for session key (microseconds) */
-	uint32_t time_timeout;                /**< Timeout for authenticated time (microseconds) */
+	uint32_t time_req_sep;                /**< Minimum time between requests for authenticated time from one node (microseconds) */
 	uint32_t time_delta;                  /**< Maximum time difference between our clock and TS (microseconds) */
 };
 

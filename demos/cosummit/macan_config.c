@@ -50,6 +50,6 @@ struct macan_config config = {
 	.time_div = 1000000,
 	.skey_validity = 500000000u,
 	.skey_chg_timeout = 5000000u,
-	.time_timeout = 1000000,
+	.time_req_sep = 1000000,
 	.time_delta = 1000000,   /* tolerated time divergency from TS in usecs */
 };
