@@ -1,7 +1,7 @@
 CONFIG_TARGET=linux
 
 LN_HEADERS=y
-CFLAGS = -g -O0 -Wall -Wextra -Wconversion
+CFLAGS = -g -O2 -Wall -Wextra -Wconversion
 LDFLAGS = $(CFLAGS)
 lib_LDFLAGS = $(CFLAGS)
 
