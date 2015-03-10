@@ -5,6 +5,7 @@ demo_cosummit_node_LIBS = m
 
 demo_cosummit_vis_SOURCES = vis.c macan_config.c ltk_pc.c
 demo_cosummit_vis_LIBS = curses
+demo_cosummit_vis_CFLAGS = $(OMK_CFLAGS) -Wno-strict-aliasing
 
 shared_LIBRARIES = demo_cosummit_cfg
 demo_cosummit_cfg_SOURCES = macan_config.c
