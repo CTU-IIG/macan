@@ -102,8 +102,8 @@ bool macan_read(struct macan_ctx *ctx, struct can_frame *cf)
 		return false;
 	}
 
-	if (rbyte != 16) {
-		print_msg(ctx, MSG_FAIL, "ERROR recv not 16 bytes but %ld\n", rbyte);
+	if (rbyte != sizeof(*cf)) {
+		perror("macan_read");
 		abort();
 	}
 #else
@@ -164,6 +164,8 @@ int helper_init(const char *ifname)
 bool macan_send(struct macan_ctx *ctx,  const struct can_frame *cf)
 {
 	ssize_t ret = write(ctx->sockfd, cf, sizeof(*cf));
+	if (ret == -1)
+		perror("macan_send");
 	return (ret == sizeof(*cf));
 }
 
