@@ -448,9 +448,20 @@ void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 	time_ts_us = (uint64_t)time_ts * ctx->config->time_div;
 
 	if (time_ts == t->nonauth_ts) {
+		/* Non-authenticated time was correct. Update our
+		 * offset according to when the non-auth time was
+		 * received. */
 		t->offs = (time_ts_us - t->nonauth_loc);
 	} else {
-		t->offs = (time_ts_us - read_time());
+		/* Non-authenticated time was incorrect! Only update
+		 * our offset when it is greater than time_div. This
+		 * is because authenticated time message is always
+		 * sent some time after the time instant it
+		 * conveys. */
+		uint64_t now = read_time();
+		uint64_t diff = (now > time_ts_us) ? now - time_ts_us : time_ts_us - now;
+		if (diff > ctx->config->time_div)
+			t->offs = time_ts_us - now;
 		print_msg(ctx, MSG_FAIL, "auth. time %u differ from non-auth. time %u\n",
 			  time_ts, t->nonauth_ts);
 	}
