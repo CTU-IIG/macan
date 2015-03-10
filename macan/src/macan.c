@@ -445,7 +445,7 @@ void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 
 	/* cmac check ok, convert to our endianess */
 	time_ts = le32toh(time_ts);
-	time_ts_us = time_ts * ctx->config->time_div;
+	time_ts_us = (uint64_t)time_ts * ctx->config->time_div;
 
 	if (time_ts == t->nonauth_ts) {
 		t->offs = (time_ts_us - t->nonauth_loc);
