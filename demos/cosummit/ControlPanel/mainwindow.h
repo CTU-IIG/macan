@@ -96,10 +96,12 @@ private:
 
     long authMsgNum;
     long forgedMsgNum;
+    QTimer forgedHighlightTimer;
 
 private slots:
     void incAuthMsgNum(int graph);
     void incForgedMsgNum(int graph);
+    void forgedMsgNumDehighlight();
 
 };
 

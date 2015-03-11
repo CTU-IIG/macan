@@ -29,7 +29,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     authMsgNum(0),
-    forgedMsgNum(0)
+    forgedMsgNum(0),
+    forgedHighlightTimer()
 {
     ui->setupUi(this);
 
@@ -70,6 +71,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(macan, SIGNAL(invalidValueReceived(int)), this, SLOT(incForgedMsgNum(int)), Qt::QueuedConnection);
 
     connect(macan, SIGNAL(graphValueReceived(int,int)), &graphPlotter2, SLOT(addGraphvalue(int,int)), Qt::QueuedConnection);
+    connect(&forgedHighlightTimer, SIGNAL(timeout()), this, SLOT(forgedMsgNumDehighlight()));
 }
 
 MainWindow::~MainWindow()
@@ -88,6 +90,14 @@ void MainWindow::incAuthMsgNum(int graph)
 
 void MainWindow::incForgedMsgNum(int signal)
 {
-	if (signal == 1)
+	if (signal == 1) {
 		ui->forged_num->setText(QString("%0").arg(++forgedMsgNum));
+		ui->forged->setStyleSheet("QLabel { color: white } QWidget { background-color: red }");
+		forgedHighlightTimer.start(1000);
+	}
+}
+
+void MainWindow::forgedMsgNumDehighlight()
+{
+	ui->forged->setStyleSheet("");
 }
