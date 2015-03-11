@@ -46,6 +46,7 @@ void MaCANConnection::sig_invalid(uint8_t sig_num, uint32_t sig_val, enum macan_
 {
     (void) status;
     std::cout << "Received invalid message[" << (int)sig_num << "]: " << std::hex << sig_val << "." << std::endl;
+    emit instance->invalidValueReceived(sig_num);
 }
 
 bool MaCANConnection::send_buttons_states(const bool *butStates, unsigned int numButtons, uint8_t msgId){

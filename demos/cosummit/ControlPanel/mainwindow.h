@@ -94,6 +94,13 @@ private:
      */
     Graph graphPlotter2;
 
+    long authMsgNum;
+    long forgedMsgNum;
+
+private slots:
+    void incAuthMsgNum(int graph);
+    void incForgedMsgNum(int graph);
+
 };
 
 #endif // MAINWINDOW_H

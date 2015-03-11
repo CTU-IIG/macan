@@ -27,7 +27,9 @@ const unsigned int MainWindow::INDICATORS_CNT;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    authMsgNum(0),
+    forgedMsgNum(0)
 {
     ui->setupUi(this);
 
@@ -64,6 +66,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->graph->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->graph->yAxis2, SLOT(setRange(QCPRange)));
     /* Conect the graph plotter with the data source */
     connect(macan, SIGNAL(graphValueReceived(int,int)), &graphPlotter1, SLOT(addGraphvalue(int,int)), Qt::QueuedConnection);
+    connect(macan, SIGNAL(graphValueReceived(int,int)), this, SLOT(incAuthMsgNum(int)), Qt::QueuedConnection);
+    connect(macan, SIGNAL(invalidValueReceived(int)), this, SLOT(incForgedMsgNum(int)), Qt::QueuedConnection);
+
     connect(macan, SIGNAL(graphValueReceived(int,int)), &graphPlotter2, SLOT(addGraphvalue(int,int)), Qt::QueuedConnection);
 }
 
@@ -72,5 +77,17 @@ MainWindow::~MainWindow()
     delete ui;
     delete macan;
     delete but1Shortcut;
-    delete but2Shortcut;
+	delete but2Shortcut;
+}
+
+void MainWindow::incAuthMsgNum(int graph)
+{
+	if (graph == 0)
+		ui->auth_num->setText(QString("%0").arg(++authMsgNum));
+}
+
+void MainWindow::incForgedMsgNum(int signal)
+{
+	if (signal == 1)
+		ui->forged_num->setText(QString("%0").arg(++forgedMsgNum));
 }

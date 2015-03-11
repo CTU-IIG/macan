@@ -167,7 +167,7 @@ signals:
      * @param value Value to be addedd to the graph.
      */
     void graphValueReceived(int graphId, int value);
-
+    void invalidValueReceived(int signalNum);
 };
 
 #endif // MACANCONNECTION_H
