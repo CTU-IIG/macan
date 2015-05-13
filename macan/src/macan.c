@@ -226,7 +226,7 @@ static void receive_ack(struct macan_ctx *ctx, const struct can_frame *cf)
 	plain[4] = ack->flags_and_dst_id & 0x3f;
 	memcpy(plain + 5, ack->group, 3);
 
-	if (!macan_check_cmac(ctx, &cp->skey, ack->cmac, plain, plain, sizeof(plain))) {
+	if (!macan_check_cmac(ctx, &cp->skey, ack->cmac, plain, 0, sizeof(plain))) {
 		if (is_skey_ready(ctx, cp->ecu_id))
 			fail_printf(ctx, "%s\n","error: ACK CMAC failed");
 		return;
@@ -445,7 +445,7 @@ void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 	memcpy(plain + 4, t->chg, 6); // challenge
 	memcpy(plain + 10, &htole32(CANID(ctx, ctx->config->time_server_id)),2);
 
-	if (!macan_check_cmac(ctx, &skey, cf->data + 4, plain, NULL, sizeof(plain))) {
+	if (!macan_check_cmac(ctx, &skey, cf->data + 4, plain, -1, sizeof(plain))) {
 		/* not a fatal error, we possibly received signed time for different node */
 		return;
 	}
@@ -511,7 +511,7 @@ void receive_auth_req(struct macan_ctx *ctx, const struct can_frame *cf)
 	plain[6] = areq->sig_num;
 	plain[7] = areq->prescaler;
 
-	if (!macan_check_cmac(ctx, &skey, areq->cmac, plain, plain, sizeof(plain))) {
+	if (!macan_check_cmac(ctx, &skey, areq->cmac, plain, 0, sizeof(plain))) {
 		printf("error: sig_auth cmac is incorrect\n");
 		return;
 	}
@@ -687,7 +687,7 @@ void macan_send_sig(struct macan_ctx *ctx, uint8_t sig_num, uint32_t sig_val)
 }
 
 static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_val, uint8_t *cmac_ptr,
-			  uint8_t plain[10], uint8_t *fill_time, unsigned plain_length);
+			  uint8_t plain[10], int time_index, unsigned plain_length);
 
 /**
  * Receive signal.
@@ -699,7 +699,7 @@ static
 void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t sig_num)
 {
 	uint8_t plain[12];
-	uint8_t *fill_time;
+	int time_index;
 	uint32_t sig_val = 0;
 	uint8_t *cmac_ptr;
 	unsigned plain_length = 0;
@@ -727,7 +727,7 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 
 	/* Prepare plain text for CMAC */
 	append(plain, &plain_length, &sig32->sig, 4);
-	fill_time = plain + plain_length;
+	time_index = (int)plain_length;
 	append(plain, &plain_length, &dummy_time, 4); /* will be replaced in __receive_sig() */
 #ifdef VW_COMPATIBLE
 	append(plain, &plain_length, &can_sid, 2);
@@ -736,14 +736,14 @@ void receive_sig32(struct macan_ctx *ctx, const struct can_frame *cf, uint32_t s
 	 * the CAN_EFF_FLAG (0x80000000U) set */
 	append(plain, &plain_length, &can_sid, 4);
 #endif
-	__receive_sig(ctx, sig_num, sig_val, cmac_ptr, plain, fill_time, plain_length);
+	__receive_sig(ctx, sig_num, sig_val, cmac_ptr, plain, time_index, plain_length);
 }
 
 static
 void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 {
 	uint8_t plain[10];
-	uint8_t *fill_time;
+	int time_index;
 	uint8_t sig_num;
 	uint32_t sig_val = 0;
 	uint8_t *cmac_ptr;
@@ -768,7 +768,7 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 	sig_val = le32toh(sig_val);
 
 	/* Prepare plain text for CMAC */
-	fill_time = plain;
+	time_index = (int)plain_length;
 	append(plain, &plain_length, &dummy_time, 4);
 	append(plain, &plain_length, &sigspec->src_id, 1);
 	append(plain, &plain_length, &ctx->node->node_id, 1);
@@ -777,11 +777,11 @@ void receive_sig16(struct macan_ctx *ctx, const struct can_frame *cf)
 #endif
 	append(plain, &plain_length, &sig16->sig_val, 2);
 
-	__receive_sig(ctx, sig_num, sig_val, cmac_ptr, plain, fill_time, plain_length);
+	__receive_sig(ctx, sig_num, sig_val, cmac_ptr, plain, time_index, plain_length);
 }
 
 static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_val, uint8_t *cmac,
-			  uint8_t plain[10], uint8_t *fill_time, unsigned plain_length)
+			  uint8_t plain[10], int time_index, unsigned plain_length)
 {
 	struct macan_key skey;
 	struct com_part *cp;
@@ -800,7 +800,7 @@ static void __receive_sig(struct macan_ctx *ctx, uint32_t sig_num, uint32_t sig_
 		return;
 	skey = cp->skey;
 
-	if (!macan_check_cmac(ctx, &skey, cmac, plain, fill_time, plain_length)) {
+	if (!macan_check_cmac(ctx, &skey, cmac, plain, time_index, plain_length)) {
 		if (sighand && sighand->invalid_cback)
 			sighand->invalid_cback((uint8_t)sig_num, (uint32_t)sig_val, MACAN_SIGNAL_INVALID);
 		else if (sighand && sighand->cback)

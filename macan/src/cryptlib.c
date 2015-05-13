@@ -139,22 +139,24 @@ int macan_aes_unwrap(const struct macan_key *key, size_t length, uint8_t *dst, u
  * @param plain: plain text to be CMACked and checked against
  * @param len:   length of plain text in bytes
  */
-int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, unsigned len)
+int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_t *cmac4,
+		     uint8_t *plain, int time_index, unsigned len)
 {
 	uint8_t cmac[16];
-	uint32_t *ftime = (uint32_t *)fill_time;
-	int delta_t;
+	uint32_t *time_ptr;
 
-	if (!fill_time) {
+	if (time_index < 0 || (unsigned)time_index > len - sizeof(*time_ptr)) {
 		macan_aes_cmac(skey, len, cmac, plain);
 		/* add memcmp instead of memchk */
 		return memchk(cmac4, cmac, 4);
 	}
 
 	uint32_t time = (uint32_t)macan_get_time(ctx);
+	int delta_t;
+	time_ptr = (uint32_t *)&plain[time_index];
 
 	for (delta_t = -1; delta_t <= 1; delta_t++) {
-		*ftime = htole32(time + (uint32_t)delta_t);
+		*time_ptr = htole32(time + (uint32_t)delta_t);
 		macan_aes_cmac(skey, len, cmac, plain);
 
 		if (memcmp(cmac4, cmac, 4) == 0) {

@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014 Czech Technical University in Prague
+ *  Copyright 2014, 2015 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -32,7 +32,7 @@ void macan_aes_encrypt(const struct macan_key *key, size_t len, uint8_t *dst, co
 void macan_aes_decrypt(const struct macan_key *key, size_t len, uint8_t *dst, const uint8_t *src);
 void macan_aes_wrap(const struct macan_key *key, size_t length, uint8_t *dst, const uint8_t *src);
 int macan_aes_unwrap(const struct macan_key *key, size_t length, uint8_t *dst, uint8_t *src, uint8_t *tmp);
-int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, unsigned len);
+int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_t *cmac4, uint8_t *plain, int time_index, unsigned len);
 void macan_sign(struct macan_key *skey, uint8_t *cmac4, uint8_t *plain, unsigned len);
 void macan_unwrap_key(const struct macan_key *key, size_t srclen, uint8_t *dst, uint8_t *src);
 
