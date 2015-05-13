@@ -1,0 +1,7 @@
+#!/bin/bash
+
+. $(dirname $0)/wvtest.sh
+
+WVSTART Demo 1signal
+
+WVPASS 1signal
