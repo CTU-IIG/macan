@@ -142,8 +142,7 @@ int macan_aes_unwrap(const struct macan_key *key, size_t length, uint8_t *dst, u
 int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_t *cmac4, uint8_t *plain, uint8_t *fill_time, unsigned len)
 {
 	uint8_t cmac[16];
-	uint64_t time;
-	int32_t *ftime = (int32_t *)fill_time;
+	uint32_t *ftime = (uint32_t *)fill_time;
 	int delta_t;
 
 	if (!fill_time) {
@@ -152,10 +151,10 @@ int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_
 		return memchk(cmac4, cmac, 4);
 	}
 
-	time = macan_get_time(ctx);
+	uint32_t time = (uint32_t)macan_get_time(ctx);
 
 	for (delta_t = -1; delta_t <= 1; delta_t++) {
-		*ftime = htole32((int)time + delta_t);
+		*ftime = htole32(time + (uint32_t)delta_t);
 		macan_aes_cmac(skey, len, cmac, plain);
 
 		if (memcmp(cmac4, cmac, 4) == 0) {
