@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
 	macan_ev_can can_print;
 	int i;
 
+	/* All nodes run in a single process and share one event loop. */
 	for (i = 0; i < NODE_COUNT; i++) {
 		int s = helper_init("can0");
 		node[i].nc.node_id = (macan_ecuid)i;
