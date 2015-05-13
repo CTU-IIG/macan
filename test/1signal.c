@@ -20,7 +20,7 @@ enum node_id {
 };
 
 const struct macan_sig_spec test_sig_spec[] = {
-	[SIGNAL_0]    = {.can_nsid = 0,   .can_sid = 0x516,   .src_id = SENDER, .dst_id = RECEIVER, .presc = 0},
+	[SIGNAL_0]    = {.can_nsid = 0,   .can_sid = 0x516,   .src_id = SENDER, .dst_id = RECEIVER, .presc = 1},
 };
 
 const struct macan_can_ids test_can_ids = {
