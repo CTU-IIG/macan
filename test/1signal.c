@@ -75,20 +75,20 @@ static void send_cb(macan_ev_loop *loop, ev_timer *w, int revents)
 	macan_send_sig(ctx, SIGNAL_0, i++);
 }
 
-static void print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
-{
-	(void)loop; (void)revents; (void)w; /* suppress warnings */
-	struct can_frame cf;
-	struct macan_ctx ctx = { .sockfd = w->fd, .config = &config };
-
-	while (macan_read(&ctx, &cf))
-		print_frame(&ctx, &cf, "       ");
-}
-
 struct node {
 	struct macan_ctx ctx;
 	struct macan_node_config nc;
 } node[NODE_COUNT];
+
+static void print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
+{
+	(void)loop; (void)revents; (void)w; /* suppress warnings */
+	struct can_frame cf;
+	struct macan_ctx faked_ctx = { .sockfd = w->fd };
+
+	while (macan_read(&faked_ctx, &cf))
+		print_frame(&node[0].ctx, &cf, "       ");
+}
 
 int main(int argc, char *argv[])
 {
