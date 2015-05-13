@@ -144,7 +144,7 @@ int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_
 	uint8_t cmac[16];
 	uint64_t time;
 	int32_t *ftime = (int32_t *)fill_time;
-	int i;
+	int delta_t;
 
 	if (!fill_time) {
 		macan_aes_cmac(skey, len, cmac, plain);
@@ -154,8 +154,8 @@ int macan_check_cmac(struct macan_ctx *ctx, struct macan_key *skey, const uint8_
 
 	time = macan_get_time(ctx);
 
-	for (i = -1; i <= 1; i++) {
-		*ftime = htole32((int)time + i);
+	for (delta_t = -1; delta_t <= 1; delta_t++) {
+		*ftime = htole32((int)time + delta_t);
 		macan_aes_cmac(skey, len, cmac, plain);
 
 		if (memcmp(cmac4, cmac, 4) == 0) {
