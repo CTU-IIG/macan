@@ -75,10 +75,9 @@ static void send_cb(macan_ev_loop *loop, ev_timer *w, int revents)
 	macan_send_sig(ctx, SIGNAL_0, i++);
 }
 
-struct node {
-	struct macan_ctx ctx;
-	struct macan_node_config nc;
-} node[NODE_COUNT];
+struct macan_node_config node_config[NODE_COUNT];
+
+struct macan_ctx *ks_ctx;
 
 static void print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
 {
@@ -87,7 +86,7 @@ static void print_frame_cb (macan_ev_loop *loop, macan_ev_can *w, int revents)
 	struct macan_ctx faked_ctx = { .sockfd = w->fd };
 
 	while (macan_read(&faked_ctx, &cf))
-		print_frame(&node[0].ctx, &cf, "       ");
+		print_frame(ks_ctx, &cf, "       ");
 }
 
 int main(int argc, char *argv[])
@@ -101,25 +100,27 @@ int main(int argc, char *argv[])
 	/* All nodes run in a single process and share one event loop. */
 	for (i = 0; i < NODE_COUNT; i++) {
 		int s = helper_init("can0");
-		node[i].nc.node_id = (macan_ecuid)i;
-		node[i].nc.ltk = ltk[i];
+		node_config[i].node_id = (macan_ecuid)i;
+		node_config[i].ltk = ltk[i];
+		struct macan_ctx *ctx = macan_alloc_mem(&config, &node_config[i]);
 		switch (i) {
 		case KEY_SERVER:
-			macan_init_ks(&node[i].ctx, &config, &node[i].nc, loop, s, ltk);
+			ks_ctx = ctx;
+			macan_init_ks(ctx, loop, s, ltk);
 			break;
 		case TIME_SERVER:
-			macan_init_ts(&node[i].ctx, &config, &node[i].nc, loop, s);
+			macan_init_ts(ctx, loop, s);
 			break;
 		case SENDER:
+			macan_init(ctx, loop, s);
+			macan_ev_timer_setup(ctx, &sig_send, send_cb, 100, 100);
+			break;
 		case RECEIVER:
-		default:
-			macan_init(&node[i].ctx, &config, &node[i].nc, loop, s);
+			macan_init(ctx, loop, s);
+			macan_reg_callback(ctx, SIGNAL_0, sig_callback, NULL);
+			break;
 		}
 	}
-
-	macan_reg_callback(&node[RECEIVER].ctx, SIGNAL_0, sig_callback, NULL);
-
-	macan_ev_timer_setup(&node[SENDER].ctx, &sig_send, send_cb, 100, 100);
 
 	macan_ev_can_init (&can_print, print_frame_cb, helper_init("can0"), EV_READ);
 	macan_ev_can_start (loop, &can_print);

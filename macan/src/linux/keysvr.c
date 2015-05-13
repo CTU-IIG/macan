@@ -36,9 +36,6 @@
 #include "helper.h"
 
 #define NODE_COUNT 64
-static struct macan_ctx macan_ctx;
-
-
 
 void print_help(char *argv0)
 {
@@ -101,7 +98,7 @@ int main(int argc, char *argv[])
 		ltks[i] = dlsym(ltk_handle, node_id_str);
 		error = dlerror();
 		if(error != NULL) {
-			print_msg(&macan_ctx, MSG_FAIL,
+			fprintf(stderr,
 				  "Unable to load ltk key for node #%u from shared library\nReason: %s\n",
 				  i, error);
 			return 1;
@@ -111,12 +108,15 @@ int main(int argc, char *argv[])
 	struct macan_node_config node = {
 		.node_id = config->key_server_id
 	};
+	struct macan_ctx *macan_ctx;
+	macan_ctx = macan_alloc_mem(config, &node);
+
 	s = helper_init(device);
 
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
 
-	macan_init_ks(&macan_ctx, config, &node, loop, s, ltks);
-	macan_ctx.print_msg_enabled = true;
+	macan_init_ks(macan_ctx, loop, s, ltks);
+	macan_ctx->print_msg_enabled = true;
 
 	macan_ev_run(loop);
 

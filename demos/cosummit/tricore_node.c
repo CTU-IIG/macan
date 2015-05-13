@@ -238,10 +238,11 @@ int main()
 
 	s = helper_init("can0");
 	io_init();
-	macan_init(&macan_ctx, &config, &node, loop, s);
-	macan_reg_callback(&macan_ctx, SIGNAL_LED, sig_callback, sig_invalid);
+	struct macan_ctx *macan_ctx = macan_alloc_mem(&config, &node);
+	macan_init(macan_ctx, loop, s);
+	macan_reg_callback(macan_ctx, SIGNAL_LED, sig_callback, sig_invalid);
 
-	macan_ev_timer_setup (&macan_ctx, &btn_chk, btn_chk_cb, 0, 50);
+	macan_ev_timer_setup(macan_ctx, &btn_chk, btn_chk_cb, 0, 50);
 
 	macan_ev_run(loop);
 

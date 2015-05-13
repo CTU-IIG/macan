@@ -1069,25 +1069,72 @@ can_rx_cb(macan_ev_loop *loop, macan_ev_can *w, int revents)
 		macan_process_frame(ctx, &cf);
 }
 
-void __macan_init_cpart(struct macan_ctx *ctx, macan_ecuid i)
+/**
+ * This function allocates all memory needed by MaCAN and setup
+ * pointers between the data structures. No other function should
+ * allocate memory. The idea is that later this function will simply
+ * return a pointer to statically allocated memory from automatically
+ * generated code (similarly to configuration in AUTOSAR).
+ */
+struct macan_ctx *macan_alloc_mem(const struct macan_config *config,
+				  const struct macan_node_config *node)
 {
-	if (ctx->cpart[i] == NULL) {
-		ctx->cpart[i] = calloc(1, sizeof(struct com_part));
-		ctx->cpart[i]->ecu_id = i;
-	}
-}
+	/* TODO: error handling (failed allocation) */
+	unsigned i;
+	uint64_t cparts_bitmap = 0;
+	struct macan_ctx *ctx;
 
-void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd)
-{
-	memset(ctx, 0, sizeof(struct macan_ctx));
+	ctx = calloc(1, sizeof(struct macan_ctx));
+
 	ctx->config = config;
 	ctx->node = node;
+
+	if (node->node_id == config->key_server_id)
+		return ctx;
+
 	ctx->cpart = calloc(config->node_count, sizeof(struct com_part *));
-	ctx->sighand = calloc(config->sig_count, sizeof(struct sig_handle *));
+
+	/* Figure out how many communication partners is needed */
+	if (node->node_id == config->time_server_id) {
+		/* Time server */
+		for(i = 0; i < config->node_count; i++)
+			if (i != config->key_server_id && i != config->time_server_id)
+				cparts_bitmap |= (1ULL << i);
+		ctx->ts.auth_req = calloc(ctx->config->node_count, sizeof(*ctx->ts.auth_req));
+	} else {
+		/* Normal node */
+		ctx->sighand = calloc(config->sig_count, sizeof(struct sig_handle *));
+		cparts_bitmap |= (1ULL << config->time_server_id);
+		for (i = 0; i < config->sig_count; i++) {
+			const struct macan_sig_spec *ss = &config->sigspec[i];
+			if (ss->src_id == node->node_id)
+				cparts_bitmap |= (1ULL << ss->dst_id);
+			if (ss->dst_id == node->node_id)
+				cparts_bitmap |= (1ULL << ss->src_id);
+			ctx->sighand[i] = calloc(1, sizeof(struct sig_handle));
+		}
+	}
+	/* Allocate communication partners */
+	for(i = 0; i < config->node_count; i++)
+		if (cparts_bitmap & (1ULL << i))
+			ctx->cpart[i] = calloc(1, sizeof(struct com_part));
+
+	return ctx;
+}
+
+void __macan_init(struct macan_ctx *ctx, macan_ev_loop *loop, int sockfd)
+{
 	ctx->sockfd = sockfd;
 	ctx->loop = loop;
 
 	macan_target_init(ctx);
+
+	if (ctx->cpart) { /* All nodes but KS */
+		macan_ecuid e;
+		for (e = 0; e < ctx->config->node_count; e++)
+			if (ctx->cpart[e])
+				ctx->cpart[e]->ecu_id = e;
+	}
 }
 
 /**
@@ -1099,31 +1146,23 @@ void __macan_init(struct macan_ctx *ctx, const struct macan_config *config, cons
  * @param *ctx pointer to MaCAN context
  * @param *config pointer to configuration
  */
-int macan_init(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd)
+int macan_init(struct macan_ctx *ctx,
+	       macan_ev_loop *loop, int sockfd)
 {
-	assert(node->node_id != config->key_server_id);
-	assert(node->node_id != config->time_server_id);
-
-	__macan_init(ctx, config, node, loop, sockfd);
 	unsigned i;
 
-	/* Initialzize all possible communication partners based on configured signals */
-	for (i = 0; i < config->sig_count; i++) {
-		if (config->sigspec[i].src_id == node->node_id) {
-			__macan_init_cpart(ctx, config->sigspec[i].dst_id);
-		}
-		if (config->sigspec[i].dst_id == node->node_id)
-			__macan_init_cpart(ctx, config->sigspec[i].src_id);
+	assert(ctx->node->node_id != ctx->config->key_server_id);
+	assert(ctx->node->node_id != ctx->config->time_server_id);
 
-		ctx->sighand[i] = calloc(1, sizeof(struct sig_handle));
-		ctx->sighand[i]->presc = config->sigspec[i].presc;
+	__macan_init(ctx, loop, sockfd);
+
+	/* Initialize all possible communication partners based on configured signals */
+	for (i = 0; i < ctx->config->sig_count; i++) {
+		ctx->sighand[i]->presc = ctx->config->sigspec[i].presc;
 		ctx->sighand[i]->presc_cnt = 1;
 		ctx->sighand[i]->flags = 0;
 		ctx->sighand[i]->cback = NULL;
 	}
-
-	/* Also need to communicate with TS */
-	__macan_init_cpart(ctx,config->time_server_id);
 
 	/* Initialize event handlers */
 	macan_ev_canrx_setup (ctx, &ctx->can_watcher, can_rx_cb);

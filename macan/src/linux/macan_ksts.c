@@ -98,7 +98,6 @@ int main(int argc, char *argv[])
         /* Initialize key server */
         /*************************/
 
-	struct macan_ctx ctx_ks;
 	struct macan_node_config nc_ks = {
 		.node_id = config->key_server_id
 	};
@@ -121,25 +120,25 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	macan_init_ks(&ctx_ks, config, &nc_ks, loop, helper_init(device), ltks);
-	ctx_ks.print_msg_enabled = true;
-	ctx_ks.dump_disabled = true;
+	struct macan_ctx *ctx_ks = macan_alloc_mem(config, &nc_ks);
+	macan_init_ks(ctx_ks, loop, helper_init(device), ltks);
+	ctx_ks->print_msg_enabled = true;
+	ctx_ks->dump_disabled = true;
 
         /**************************/
         /* Initialize time server */
         /**************************/
 
-	struct macan_ctx ctx_ts;
 	struct macan_node_config nc_ts = {
 		.node_id = config->time_server_id,
 		.ltk = ltks[config->time_server_id],
 	};
+	struct macan_ctx *ctx_ts = macan_alloc_mem(config, &nc_ts);
 	int s = helper_init(device);
 	int recv_own_msgs = 1; /* 0 = disabled (default), 1 = enabled */
 	setsockopt(s, SOL_CAN_RAW, CAN_RAW_RECV_OWN_MSGS, &recv_own_msgs, sizeof(recv_own_msgs));
-
-	macan_init_ts(&ctx_ts, config, &nc_ts, loop, s);
-	ctx_ts.print_msg_enabled = true;
+	macan_init_ts(ctx_ts, loop, s);
+	ctx_ts->print_msg_enabled = true;
 
 
 	/**********************/

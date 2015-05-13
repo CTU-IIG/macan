@@ -34,10 +34,7 @@ static void sig_callback(uint8_t sig_num, uint32_t sig_val, enum macan_signal_st
 }
 
 
-struct node {
-	struct macan_ctx ctx;
-	struct macan_node_config node_config;
-} node[NODE_COUNT];
+struct macan_node_config node_config[NODE_COUNT];
 
 int main(int argc, char *argv[])
 {
@@ -48,23 +45,22 @@ int main(int argc, char *argv[])
 	macan_ecuid i, ecu_from = 0, ecu_to = NODE_COUNT - 1;
 
 	for (i = ecu_from; i <= ecu_to; i++) {
-		struct macan_ctx *ctx = &node[i].ctx;
-		struct macan_node_config *node_config = &node[i].node_config;
-		node_config->node_id = i;
-		node_config->ltk = ltk[i];
+		node_config[i].node_id = i;
+		node_config[i].ltk = ltk[i];
+		struct macan_ctx *ctx = macan_alloc_mem(&config, &node_config[i]);
 		switch (i) {
 		case KEY_SERVER:
-			macan_init_ks(ctx, &config, node_config, loop, helper_init("vcanj"), ltk);
+			macan_init_ks(ctx, loop, helper_init("vcanj"), ltk);
 			break;
 		case TIME_SERVER:
-			macan_init_ts(ctx, &config, node_config, loop, helper_init("vcanj"));
+			macan_init_ts(ctx, loop, helper_init("vcanj"));
 			break;
 		case ECU_I:
-			macan_init(ctx, &config, node_config, loop, helper_init("vcani"));
+			macan_init(ctx, loop, helper_init("vcani"));
 			macan_ev_timer_setup(ctx, &ev_request_key, request_key, 100, 0);
 			break;
 		case ECU_J:
-			macan_init(ctx, &config, node_config, loop, helper_init("vcanj"));
+			macan_init(ctx, loop, helper_init("vcanj"));
 			macan_reg_callback(ctx, SIGNAL_0, sig_callback, NULL);
 			break;
 		}

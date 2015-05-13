@@ -122,10 +122,11 @@ enum macan_process_status {
 
 /* MaCAN API functions */
 
-
-int  macan_init(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd);
-int  macan_init_ks(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd, const struct macan_key * const *ltks);
-int  macan_init_ts(struct macan_ctx *ctx, const struct macan_config *config, const struct macan_node_config *node, macan_ev_loop *loop, int sockfd);
+struct macan_ctx *macan_alloc_mem(const struct macan_config *config,
+				  const struct macan_node_config *node);
+int  macan_init(struct macan_ctx *ctx, macan_ev_loop *loop, int sockfd);
+int  macan_init_ks(struct macan_ctx *ctx, macan_ev_loop *loop, int sockfd, const struct macan_key * const *ltks);
+int  macan_init_ts(struct macan_ctx *ctx, macan_ev_loop *loop, int sockfd);
 
 void macan_request_keys(struct macan_ctx *ctx);
 int  macan_reg_callback(struct macan_ctx *ctx, uint8_t sig_num, macan_sig_cback fnc, macan_sig_cback invalid_cmac);

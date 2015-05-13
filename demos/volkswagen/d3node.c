@@ -61,7 +61,6 @@
 
 #define TIME_EMIT_SIG 1000000
 
-struct macan_ctx macan_ctx;
 extern const struct macan_key macan_ltk_node4;
 
 int button_pressed;
@@ -208,11 +207,12 @@ int main()
 
 	s = helper_init("can0");
 	io_init();
-	macan_init(&macan_ctx, &config, &node, loop, s);
-	macan_reg_callback(&macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);
+	struct macan_ctx *macan_ctx = macan_alloc_mem(&config, &node);
+	macan_init(macan_ctx, loop, s);
+	macan_reg_callback(macan_ctx, SIGNAL_VW, sig_callback, sig_invalid);
 
-	macan_ev_timer_setup (&macan_ctx, &btn_chk, btn_chk_cb, 0, 10);
-	macan_ev_timer_setup (&macan_ctx, &timeout, timeout_cb, 0, 1000);
+	macan_ev_timer_setup (macan_ctx, &btn_chk, btn_chk_cb, 0, 10);
+	macan_ev_timer_setup (macan_ctx, &timeout, timeout_cb, 0, 1000);
 
 	macan_ev_run(loop);
 

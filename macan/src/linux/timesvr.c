@@ -35,8 +35,6 @@
  *   some error processing
  */
 
-static struct macan_ctx macan_ctx;
-
 void print_help(char *argv0)
 {
 	fprintf(stderr, "Usage: %s -c <config_shlib> -k <key_shlib> [-d <CAN interface>]\n", argv0);
@@ -90,8 +88,10 @@ int main(int argc, char *argv[])
 
 	s = helper_init(device);
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
-	macan_init_ts(&macan_ctx, config, &node, loop, s);
-	macan_ctx.print_msg_enabled = true;
+	struct macan_ctx *macan_ctx = macan_alloc_mem(config, &node);
+
+	macan_init_ts(macan_ctx, loop, s);
+	macan_ctx->print_msg_enabled = true;
 
 	macan_ev_run(loop);
 

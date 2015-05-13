@@ -105,8 +105,9 @@ int main(int argc, char *argv[])
 		.ltk = &macan_ltk_node2,
 	};
 
-	macan_init(&macan_ctx, &config, &node, loop, s);
-	macan_reg_callback(&macan_ctx, SIGNAL_SIN1, sig_callback, sig_invalid);
+	struct macan_ctx *macan_ctx = macan_alloc_mem(&config, &node);
+	macan_init(macan_ctx, loop, s);
+	macan_reg_callback(macan_ctx, SIGNAL_SIN1, sig_callback, sig_invalid);
 
 	signal(SIGINT, sigint);
 	initscr(); cbreak(); noecho(); nodelay(stdscr, TRUE);
