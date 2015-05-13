@@ -1,5 +1,4 @@
 #include <macan.h>
-#include "macan_private.h"
 #include "helper.h"
 #include "cfg.h"
 

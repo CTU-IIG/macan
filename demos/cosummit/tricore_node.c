@@ -55,7 +55,6 @@
 #include <linux/can/raw.h>
 #endif /* __CPU_TC1798__ */
 #include "helper.h"
-#include "macan_private.h"
 #include "macan_config.h"
 #include "can_recv_cb.h"
 #include <math.h>

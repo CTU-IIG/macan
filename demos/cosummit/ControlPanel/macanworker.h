@@ -25,7 +25,6 @@
 #include "macan.h"
 #include "helper.h"
 #include "macan_config.h"
-#include "macan_private.h"
 #include <iostream>
 
 /**

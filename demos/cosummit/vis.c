@@ -34,9 +34,7 @@
 #include "helper.h"
 #include "macan_config.h"
 #include <inttypes.h>
-#include "macan_private.h"
 
-struct macan_ctx macan_ctx;
 extern const struct macan_key macan_ltk_node3;
 
 void sigint()

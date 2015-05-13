@@ -56,7 +56,6 @@
 
 #include "helper.h"
 #include "macan.h"
-#include <macan_private.h> 	/* FIXME: Needed for read_time - replace with macan_get_time */
 #include "macan_config.h"
 
 #include "macan_ev.h"

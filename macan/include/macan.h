@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "macan_ev.h"
+#include "can_frame.h"
 
 #ifdef __cplusplus
 extern "C" {

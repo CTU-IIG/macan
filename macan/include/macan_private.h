@@ -27,7 +27,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <can_frame.h>
 #include <macan.h>
 
 /* Return values of functions returning bool */
