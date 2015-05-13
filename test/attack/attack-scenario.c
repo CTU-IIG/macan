@@ -28,6 +28,12 @@ static void request_key(macan_ev_loop *loop, ev_timer *w, int revents)
 	macan_request_key(ctx, ECU_J);
 }
 
+static void do_exit(macan_ev_loop *loop, ev_timer *w, int revents)
+{
+	(void)loop; (void)revents; (void)w;
+	exit(0);
+}
+
 static void sig_callback(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status s)
 {
 	(void)sig_num, (void)sig_val; (void)s;
@@ -40,7 +46,7 @@ int main(int argc, char *argv[])
 {
 	(void)argc; (void)argv;
 	macan_ev_loop *loop = MACAN_EV_DEFAULT;
-	ev_timer ev_request_key;
+	ev_timer ev_request_key, ev_exit;
 
 	macan_ecuid i, ecu_from = 0, ecu_to = NODE_COUNT - 1;
 
@@ -58,6 +64,11 @@ int main(int argc, char *argv[])
 		case ECU_I:
 			macan_init(ctx, loop, helper_init("vcani"));
 			macan_ev_timer_setup(ctx, &ev_request_key, request_key, 100, 0);
+
+			/* This is run as a part of automated test
+			 * suite - we need to exit automatically.
+			 * Timeout of 200ms should be enough. */
+			macan_ev_timer_setup(ctx, &ev_exit, do_exit, 200, 0);
 			break;
 		case ECU_J:
 			macan_init(ctx, loop, helper_init("vcanj"));
@@ -65,6 +76,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 	}
+
 
 	macan_ev_run(loop);
 

@@ -2,7 +2,7 @@
 
 cd $(dirname $0)
 
-. ../wvtest.sh
+. wvtest.sh
 
 vcan() {(
 	set -x
