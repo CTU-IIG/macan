@@ -21,25 +21,21 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <inttypes.h>
 #include <net/if.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <sys/types.h>
+#include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
-
-#include "common.h"
 #include <linux/can.h>
-#include <linux/can/raw.h>
-#include "helper.h"
 #include "macan_private.h"
 
 /**

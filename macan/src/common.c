@@ -23,11 +23,12 @@
 
 #include <macan_private.h>
 #include <stdarg.h>
-#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
 #include "common.h"
+#include "macan.h"
 
 void print_hexn(const void *data, size_t len)
 {

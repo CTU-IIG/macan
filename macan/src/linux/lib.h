@@ -43,6 +43,9 @@
 
 /* buffer sizes for CAN frame string representations */
 
+#include <stddef.h>
+#include <stdio.h>
+
 #define CL_ID (sizeof("12345678##1"))
 #define CL_DATA sizeof(".AA")
 #define CL_BINDATA sizeof(".10101010")

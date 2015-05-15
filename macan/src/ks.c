@@ -22,12 +22,16 @@
  */
 
 #include <assert.h>
-#include <stdio.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <string.h>
 
 #include "common.h"
 #include "cryptlib.h"
+#include "macan.h"
+#include "macan_ev.h"
+#include "macan_private.h"
 
 #define NODE_COUNT 64
 

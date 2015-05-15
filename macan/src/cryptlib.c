@@ -22,12 +22,14 @@
  */
 
 #include <assert.h>
-#include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "common.h"
 #include "cryptlib.h"
 #include "endian.h"
+#include "macan_private.h"
 
 /* ToDo:
  * 	consider endianness

@@ -23,11 +23,14 @@
 
 #include <assert.h>
 #include <macan.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include <unistd.h> /* FIXME: get rid of this */
+#include <string.h>
 
+#include "common.h"
 #include "cryptlib.h"
-#include "macan_debug.h"
+#include "macan_ev.h"
 #include "macan_private.h"
 
 static

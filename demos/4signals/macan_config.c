@@ -23,6 +23,8 @@
 
 #include "macan_config.h"
 
+#include "macan.h"
+
 /* ToDo: more recipients */
 struct macan_sig_spec demo_sig_spec[] = {
 	[SIGNAL_A]    = {.can_nsid = 0,   .can_sid = 0,   .src_id = NODE1,       .dst_id = NODE2, .presc = 0}, // signal 1

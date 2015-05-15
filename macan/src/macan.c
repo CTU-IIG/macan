@@ -22,16 +22,15 @@
  */
 
 #include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
 #include <inttypes.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "common.h"
+#include "macan_ev.h"
 #ifdef __CPU_TC1798__
 #include "Can.h"
 #include "EcuM.h"
@@ -45,13 +44,7 @@
 #elif defined(__CPU_STM32F107__)
 
 #else
-#include <net/if.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <linux/can.h>
-#include <linux/can/raw.h>
 #endif /* __CPU_TC1798__ */
 #include <macan.h>
 
