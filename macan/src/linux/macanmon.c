@@ -21,25 +21,26 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <string.h>
 #include <assert.h>
 #include <errno.h>
 #include <net/if.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <dlfcn.h>
+#include <stdbool.h>
+#include <time.h>
+
 #include "common.h"
 #include "helper.h"
 #include "macan_private.h"
-#include <stdbool.h>
-#include <time.h>
-#include <dlfcn.h>
 
 #define NODE_COUNT 64
 

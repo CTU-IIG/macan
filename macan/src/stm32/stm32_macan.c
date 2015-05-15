@@ -1,9 +1,10 @@
 #include <stdbool.h>
 #include <stdlib.h>
-#include "stm32_eval.h"
-#include "stm3210c_eval_lcd.h"
+
 #include "can_frame.h"
 #include "macan_private.h"
+#include "stm3210c_eval_lcd.h"
+#include "stm32_eval.h"
 
 #define CAN_BAUDRATE  125  /* 125kBps */
 

@@ -21,13 +21,14 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
-#include <stdint.h>
+#include <common.h>
 #include <nettle/aes.h>
 #include <nettle/memxor.h>
-#include <common.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "cryptlib.h"
 
 static void lshift(uint8_t *dst, const uint8_t *src);

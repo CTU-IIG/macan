@@ -21,14 +21,15 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
+#include <common.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
-#include <stdint.h>
+
 #include "aes.h"
-#include "memxor.h"
-#include <common.h>
 #include "cryptlib.h"
+#include "memxor.h"
 
 static void lshift(uint8_t *dst, const uint8_t *src);
 static void generate_subkey(const struct macan_key *key, uint8_t *key1, uint8_t *key2);

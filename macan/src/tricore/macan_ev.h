@@ -22,8 +22,8 @@
 #ifndef MACAN_EV_H
 #define MACAN_EV_H
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #define MACAN_EV_DEFAULT &macan_ev_loop_default;
 

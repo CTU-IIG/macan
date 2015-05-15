@@ -21,14 +21,15 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <dlfcn.h>
+#include <helper.h>
+#include <macan.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "common.h"
 #include <unistd.h>
-#include <macan.h>
-#include <helper.h>
-#include <dlfcn.h>
+
+#include "common.h"
 
 /* ToDo
  *   implement groups

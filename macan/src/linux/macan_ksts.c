@@ -23,21 +23,22 @@
 
 /* This file combines MaCAN key and time server in a single binary. */
 
+#include <assert.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
 #include <string.h>
-#include <assert.h>
-#include <errno.h>
-#include "common.h"
-#include "macan_private.h"
-#include <stdbool.h>
-#include <time.h>
-#include <dlfcn.h>
-#include "helper.h"
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "common.h"
+#include "helper.h"
+#include "macan_private.h"
 #include <linux/can/raw.h>
 
 #define NODE_COUNT 64

@@ -24,10 +24,10 @@
 #ifndef MACAN_PRIVATE_H
 #define MACAN_PRIVATE_H
 
+#include <macan.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <stdbool.h>
-#include <macan.h>
 
 /* Return values of functions returning bool */
 #define SUCCESS true

@@ -21,42 +21,44 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <time.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 #include <assert.h>
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 #include "common.h"
 #ifdef __CPU_TC1798__
-#include "can_frame.h"
-#include "Std_Types.h"
-#include "Mcu.h"
-#include "Port.h"
 #include "Can.h"
 #include "EcuM.h"
-#include "Test_Print.h"
+#include "Mcu.h"
 #include "Os.h"
+#include "Port.h"
+#include "Std_Types.h"
+#include "Test_Print.h"
+#include "can_frame.h"
 #include "she.h"
 #elif defined(__CPU_STM32F107__)
 
 #else
-#include <unistd.h>
 #include <net/if.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
 #endif /* __CPU_TC1798__ */
 #include <macan.h>
-#include "macan_private.h"
-#include "macan_debug.h"
+
 #include "cryptlib.h"
 #include "endian.h"
+#include "macan_debug.h"
+#include "macan_private.h"
 
 static inline struct com_part *get_cpart(struct macan_ctx *ctx, macan_ecuid i)
 {

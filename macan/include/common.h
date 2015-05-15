@@ -26,6 +26,7 @@
 
 #include <stdint.h>
 #include <string.h>
+
 #include "macan_private.h"
 
 #define print_hex(key) print_hexn(key, 16)

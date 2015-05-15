@@ -21,9 +21,10 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdint.h>
-#include "helper.h"
 #include <Can.h>
+#include <stdint.h>
+
+#include "helper.h"
 #include "she.h"
 
 void clear_endinit(void)

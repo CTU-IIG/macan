@@ -24,10 +24,11 @@
 #ifndef MACAN_H
 #define MACAN_H
 
-#include <stdint.h>
 #include <stdbool.h>
-#include "macan_ev.h"
+#include <stdint.h>
+
 #include "can_frame.h"
+#include "macan_ev.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -20,6 +20,7 @@
  */
 
 #include "macan_ev.h"
+
 #include "macan_private.h"
 
 macan_ev_loop macan_ev_loop_default;

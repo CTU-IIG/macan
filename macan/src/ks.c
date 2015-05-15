@@ -21,12 +21,13 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "cryptlib.h"
-#include "common.h"
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <assert.h>
+
+#include "common.h"
+#include "cryptlib.h"
 
 #define NODE_COUNT 64
 

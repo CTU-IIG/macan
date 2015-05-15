@@ -21,19 +21,20 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
 #include <string.h>
-#include <assert.h>
-#include <errno.h>
-#include "common.h"
-#include "macan_private.h"
-#include <stdbool.h>
 #include <time.h>
-#include <dlfcn.h>
+#include <unistd.h>
+
+#include "common.h"
 #include "helper.h"
+#include "macan_private.h"
 
 #define NODE_COUNT 64
 

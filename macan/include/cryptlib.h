@@ -21,8 +21,8 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "macan_private.h"
 #include "macan.h"
+#include "macan_private.h"
 
 #ifndef CRYPTLIB_H
 #define CRYPTLIB_H

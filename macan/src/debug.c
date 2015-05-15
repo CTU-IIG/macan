@@ -21,13 +21,14 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <macan_debug.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include "macan_private.h"
-#include "linux/lib.h"		/* FIXME: target specific file should not be here */
-#include <string.h>
 #include <inttypes.h>
+#include <macan_debug.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "linux/lib.h"		/* FIXME: target specific file should not be here */
+#include "macan_private.h"
 
 void debug_printf(const char* format, ...)
 {

@@ -21,11 +21,12 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <stdint.h>
+#include <macan_private.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <macan_private.h>
+#include <stdint.h>
+#include <stdio.h>
+
 #include "common.h"
 
 void print_hexn(const void *data, size_t len)

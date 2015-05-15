@@ -21,12 +21,13 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
-#include "endian.h"
+
 #include "common.h"
 #include "cryptlib.h"
+#include "endian.h"
 
 /* ToDo:
  * 	consider endianness

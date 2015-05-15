@@ -21,25 +21,26 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <time.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 #include <assert.h>
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
-#include "common.h"
-#include <unistd.h>
 #include <net/if.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "common.h"
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include "macan_private.h"
 #include "helper.h"
+#include "macan_private.h"
 
 /**
  * read_time() - returns time in microseconds

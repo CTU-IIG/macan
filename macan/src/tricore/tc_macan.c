@@ -21,29 +21,30 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <time.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 #include <assert.h>
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
-#include "common.h"
-#include "can_frame.h"
-#include "Std_Types.h"
-#include "Mcu.h"
-#include "Port.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+
 #include "Can.h"
 #include "EcuM.h"
-#include "Test_Print.h"
+#include "Mcu.h"
 #include "Os.h"
-#include "she.h"
-#include "macan_config.h"
+#include "Port.h"
+#include "Std_Types.h"
+#include "Test_Print.h"
+#include "can_frame.h"
+#include "common.h"
 #include "macan.h"
-#include "macan_private.h"
 #include "macan_bench.h"
+#include "macan_config.h"
+#include "macan_private.h"
+#include "she.h"
 
 #define f_STM 100000000
 #define TIME_USEC (f_STM / 1000000)

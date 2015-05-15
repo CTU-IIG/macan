@@ -22,10 +22,11 @@
  */
 
 #include "can_fifo.h"
-#include <stdint.h>
+
+#include <CanIf_Cbk.h>
 #include <can.h>
 #include <can_frame.h>
-#include <CanIf_Cbk.h>
+#include <stdint.h>
 #include <string.h>
 
 struct Can_HardwareObject

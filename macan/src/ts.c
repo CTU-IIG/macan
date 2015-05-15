@@ -21,13 +21,14 @@
  *  along with MaCAN.	If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <macan.h>
-#include "macan_private.h"
-#include "macan_debug.h"
-#include "cryptlib.h"
 #include <assert.h>
-#include <unistd.h> /* FIXME: get rid of this */
+#include <macan.h>
 #include <stdlib.h>
+#include <unistd.h> /* FIXME: get rid of this */
+
+#include "cryptlib.h"
+#include "macan_debug.h"
+#include "macan_private.h"
 
 static
 void send_time_auth(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t challenge[6])
