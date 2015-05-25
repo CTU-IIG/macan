@@ -31,6 +31,10 @@
 #include "endian.h"
 #include "macan_private.h"
 
+#ifdef WITH_KLEE
+#include "klee.h"
+#endif
+
 /* ToDo:
  * 	consider endianness
  */
@@ -189,5 +193,10 @@ void macan_sign(struct macan_key *skey, uint8_t *cmac4, uint8_t *plain, unsigned
  */
 void macan_unwrap_key(const struct macan_key *key, size_t srclen, uint8_t *dst, uint8_t *src)
 {
+#ifdef WITH_KLEE
+	klee_make_symbolic(dst+16, 7, "aes unwrapped key");
+	(void)key, (void)srclen, (void)src; //Fixes warnings.
+#else
 	macan_aes_unwrap(key, srclen, dst, src, src);
+#endif
 }
