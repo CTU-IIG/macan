@@ -1,1 +1,1 @@
-SUBDIRS = macan
+SUBDIRS = macan node

@@ -1,0 +1,4 @@
+test_PROGRAMS = single_node
+
+single_node_SOURCES = node.c
+single_node_LIBS = macan $(MACAN_TARGET_LIBS)
