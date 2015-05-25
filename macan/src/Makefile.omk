@@ -7,9 +7,14 @@ include_HEADERS += $(CONFIG_TARGET)/macan_ev.h
 
 macan_SOURCES-linux = linux/linux_macan.c linux/lib.c linux/linux_cryptlib.c
 macan_SOURCES-stm32 = stm32/macan_ev.c stm32/stm32_macan.c stm32/stm32_cryptlib.c
+macan_SOURCES-klee  = klee/klee_macan.c klee/macan_ev.c klee/klee_cryptlib.c
 
 macanvw_SOURCES = $(macan_SOURCES)
 macanvw_CPPFLAGS = -DVW_COMPATIBLE
+
+ifeq ($(CONFIG_TARGET),klee)
+	include_HEADERS += klee/klee.h
+endif
 
 ifeq ($(CONFIG_TARGET),linux)
 # TODO: Move this to linux subdirectory
