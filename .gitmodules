@@ -1,3 +1,6 @@
 [submodule "infineon-proprietary"]
 	path = infineon-proprietary
 	url = ssh://git@rtime.felk.cvut.cz/macan/infineon-proprietary
+[submodule "nettle/nettle"]
+	path = nettle/nettle
+	url = http://git.lysator.liu.se/nettle/nettle.git

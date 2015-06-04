@@ -5,4 +5,15 @@ aes-encrypt-internal.c aes-decrypt-internal.c aes-invert-internal.c	\
 aes-set-encrypt-key.c aes-set-decrypt-key.c aes-encrypt.c		\
 aes-decrypt.c aes-encrypt-table.c
 
-include_HEADERS = aes.h macros.h memxor.h nettle-types.h nettle-stdint.h
+nettle_SOURCES := $(addprefix nettle/,$(nettle_SOURCES))
+
+nettle_CFLAGS += -DHAVE_CONFIG_H -I.
+
+nobase_include_HEADERS = $(addprefix nettle/,aes.h macros.h memxor.h nettle-types.h)
+include_GEN_HEADERS = nettle-stdint.h
+
+config.h nettle-stdint.h: $(SOURCES_DIR)/nettle/configure
+	unset CONFIG_FILES && $(SOURCES_DIR)/nettle/configure CC=$(CC)
+
+$(SOURCES_DIR)/nettle/configure:
+	cd $(@D) && ./.bootstrap
