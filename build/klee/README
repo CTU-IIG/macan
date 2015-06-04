@@ -7,8 +7,6 @@ in version 3.3, build STP and then build KLEE.
 Afterwards you also need to download WLLVM and set it up to use aforementioned
 Clang version.
 
-
-
-For more detailed outline and a working snapshot, see this github repository
-https://github.com/horenmar/thesis-setup-stable.
-
+To get the whole setup without pain, clone
+https://github.com/wentasah/klee-setup-horenmar.git and run make. Then
+setup the needed environment variables by running ". ./setup.env".
