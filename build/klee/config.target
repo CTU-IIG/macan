@@ -6,5 +6,5 @@ OMK_CFLAGS = -g -O0
 OMK_CFLAGS += -Wall -Wextra -Wconversion -Wno-missing-field-initializers
 OMK_CFLAGS += -fsanitize=signed-integer-overflow,unsigned-integer-overflow
 OMK_CFLAGS += -DWITH_KLEE
-OMK_LDFLAGS = -lkleeRuntest
+OMK_LDFLAGS = -lkleeRuntest $(OMK_CFLAGS)
 
