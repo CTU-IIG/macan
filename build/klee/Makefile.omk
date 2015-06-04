@@ -1,1 +1,5 @@
 SUBDIRS = macan node
+
+run: all
+	extract-bc _compiled/bin-tests/single_node
+	./run_klee.sh _compiled/bin-tests/single_node.bc
