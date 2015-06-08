@@ -54,7 +54,7 @@ private:
     /**
      * @brief MaCAN context
      */
-    struct macan_ctx macan_ctx;
+    struct macan_ctx *macan_ctx;
     /**
      * @brief Pointers to a MaCAN callback function for valid messages.
      */

@@ -43,15 +43,17 @@ bool MaCanWorker::configure(const char* port, const macan_key *ltk_node, macan_s
     node.node_id = NODE_PC;
     node.ltk = ltk_node;
 
-    if (macan_init(&macan_ctx, &config, &node, loop, socket) != 0) {
+    macan_ctx = macan_alloc_mem(&config, &node);
+
+    if (macan_init(macan_ctx, loop, socket) != 0) {
         std::cerr << "[ERR]:MaCanWorker::configure macan_init returned with an error." << std::endl;
         return false;
     }
-    if (macan_reg_callback(&macan_ctx, SIGNAL_SIN1, sig_callback, sig_invalid) != 0) {
+    if (macan_reg_callback(macan_ctx, SIGNAL_SIN1, sig_callback, sig_invalid) != 0) {
         std::cerr << "[ERR]:MaCanWorker::configure macan_reg_callback for SIGNAL_SIN1 returned with an error." << std::endl;
         return false;
     }
-    if (macan_reg_callback(&macan_ctx, SIGNAL_SIN2, sig_callback, sig_invalid) != 0) {
+    if (macan_reg_callback(macan_ctx, SIGNAL_SIN2, sig_callback, sig_invalid) != 0) {
         std::cerr << "[ERR]:MaCanWorker::configure macan_reg_callback or SIGNAL_SIN2 returned with an error." << std::endl;
         return false;
     }
@@ -65,7 +67,7 @@ bool MaCanWorker::sendSignal(uint8_t sig_num, uint32_t signal) {
         std::cerr << "[ERR]:MaCanWorker::sendSignal MaCAN has to been configured." << std::endl;
         return false;
     }
-    macan_send_sig(&macan_ctx, sig_num, signal);
+    macan_send_sig(macan_ctx, sig_num, signal);
     return true;
 }
 
