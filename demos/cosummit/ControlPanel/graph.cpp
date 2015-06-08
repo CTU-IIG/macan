@@ -67,7 +67,7 @@ void Graph::addGraphvalue(int id, int value)
 
     // calculate two new data points:
     double key = QDateTime::currentDateTime().toMSecsSinceEpoch()/1000.0;
-    graphView->graph(0)->addData(key, value);
+    graphView->graph(0)->addData(key, value & 0xff);
     // set data of dots:
     // remove data of lines that's outside visible range:
     graphView->graph(0)->removeDataBefore(key-8);

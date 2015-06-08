@@ -199,7 +199,7 @@ btn_chk_cb (macan_ev_loop *loop, macan_ev_timer *w, int revents)
 
 	handle_io();
 
-	int val = (int)((button_pressed ? -1 : +1) * 100*sin(2.0*3.14159265*(0.3*t/20.0)));
+	int val = (int)((button_pressed ? 50 : 0) + 100*sin(2.0*3.14159265*(0.3*t/20.0)) + 100);
 
 	macan_send_sig(ctx, SIGNAL_SIN1, (uint32_t)val);
 	macan_send_sig(ctx, SIGNAL_SIN2, (uint32_t)val);
