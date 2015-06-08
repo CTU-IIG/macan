@@ -1092,6 +1092,7 @@ struct macan_ctx *macan_alloc_mem(const struct macan_config *config,
 	/* Figure out how many communication partners is needed */
 	if (node->node_id == config->time_server_id) {
 		/* Time server */
+		ctx->sighand = calloc(config->sig_count, sizeof(struct sig_handle *));
 		for(i = 0; i < config->node_count; i++)
 			if (i != config->key_server_id && i != config->time_server_id)
 				cparts_bitmap |= (1ULL << i);
