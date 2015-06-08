@@ -1,5 +1,6 @@
 #!/bin/bash
 
-source ./path.sh
+HERE=$(pwd -P)
+C=${HERE%/demos/cosummit/test}/build/linux/_compiled
 export MACAN_DUMP=1 # Serve as macanmon too
-exec $PATH_TO_CTU_BIN/macan_ksts -c $PATH_TO_CTU_CONFIG/libdemo_cosummit_cfg.so -k $PATH_TO_CTU_CONFIG/libdemo_cosummit_keys.so
+exec $C/bin/macan_ksts -c $C/lib/libdemo_cosummit_cfg.so -k $C/lib/libdemo_cosummit_keys.so
