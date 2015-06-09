@@ -30,7 +30,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow),
     authMsgNum(0),
     forgedMsgNum(0),
-    forgedHighlightTimer()
+    forgedHighlightTimer(),
+    ledStatus(0)
 {
     ui->setupUi(this);
 
@@ -42,20 +43,9 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     ui->statusBar->showMessage("Connected (can0)");
 
-    /* Prepare buttons */
-    button1.setButtonId(1);
-    button2.setButtonId(0);
-    /* Build shortcuts for the buttons */
-    but1Shortcut = new QShortcut(QKeySequence("Alt+1"), this);
-    but2Shortcut = new QShortcut(QKeySequence("Alt+2"), this);
-    connect(but1Shortcut, SIGNAL(activated()), ui->btn_toogleLed1, SLOT(click()));
-    connect(but2Shortcut, SIGNAL(activated()), ui->btn_toogleLed2, SLOT(click()));
     /* Connect Virtual buttons views with its class */
-    connect(ui->btn_toogleLed1, SIGNAL(clicked()), &button1, SLOT(clicked()));
-    connect(ui->btn_toogleLed2, SIGNAL(clicked()), &button2, SLOT(clicked()));
-    /* Connect Virtual buttons objects with macan connection object */
-    connect(&button1, SIGNAL(buttonClicked(uint)), macan, SLOT(virtualButtonClicked(uint)));
-    connect(&button2, SIGNAL(buttonClicked(uint)), macan, SLOT(virtualButtonClicked(uint)));
+    connect(ui->btn_toogleLed1, SIGNAL(clicked()), this, SLOT(ledClicked1()));
+    connect(ui->btn_toogleLed2, SIGNAL(clicked()), this, SLOT(ledClicked2()));
 
     /* Prepare graph plotters */
     graphPlotter1.setGraphView(ui->graph);
@@ -78,8 +68,6 @@ MainWindow::~MainWindow()
 {
     delete ui;
     delete macan;
-    delete but1Shortcut;
-	delete but2Shortcut;
 }
 
 void MainWindow::incAuthMsgNum(int graph)
@@ -99,5 +87,26 @@ void MainWindow::incForgedMsgNum(int signal)
 
 void MainWindow::forgedMsgNumDehighlight()
 {
-	ui->forged->setStyleSheet("");
+  ui->forged->setStyleSheet("");
+}
+
+void MainWindow::ledClicked(int led)
+{
+  QPushButton *btn;
+
+  switch (led) {
+  case 0:
+    btn = ui->btn_toogleLed1;
+    break;
+  default:
+    btn = ui->btn_toogleLed2;
+  }
+
+  ledStatus ^= (1 << led);
+  if (ledStatus & (1 << led))
+    btn->setStyleSheet("background-color: rgb(0, 0, 255)");
+  else
+    btn->setStyleSheet("");
+
+  macan->send_buttons_states(ledStatus);
 }

@@ -49,13 +49,9 @@ void MaCANConnection::sig_invalid(uint8_t sig_num, uint32_t sig_val, enum macan_
     emit instance->invalidValueReceived(sig_num);
 }
 
-bool MaCANConnection::send_buttons_states(const bool *butStates, unsigned int numButtons, uint8_t msgId){
-    uint32_t data = 0;
-    for (unsigned int i = 0; i < numButtons; i++) {
-        data |= butStates[i] << i;
-    }
-    std::cout << "Sending message [" << (int)msgId << "]:" << std::hex << data << std::endl;
-    if (!macanWorker.sendSignal(msgId, data)) {
+bool MaCANConnection::send_buttons_states(uint32_t data)
+{
+    if (!macanWorker.sendSignal(SIGNAL_LED, data)) {
         std::cerr << "[ERR] Sending signal via MaCAN failed." << std::endl;
         return false;
     }
@@ -114,36 +110,5 @@ bool MaCANConnection::connect(const char* canBus)
 bool MaCANConnection::isRunning() const
 {
     return mIsRunning;
-}
-
-void MaCANConnection::virtualButtonReleased(unsigned int buttId)
-{
-    if (!mIsRunning) {
-        std::cerr << "[ERR] CAN is not connected." << std::endl;
-        return;
-    }
-    mButtonOn[buttId]=0;
-    send_buttons_states(mButtonOn, buttonsCnt, SIGNAL_LED);
-
-}
-
-void MaCANConnection::virtualButtonClicked(unsigned int buttId)
-{
-    if (!mIsRunning) {
-        std::cerr << "[ERR] CAN is not connected." << std::endl;
-        return;
-    }
-    mButtonOn[buttId]=!mButtonOn[buttId];
-    send_buttons_states(mButtonOn, buttonsCnt, SIGNAL_LED);
-}
-
-void MaCANConnection::virtualButtonPressed(unsigned int buttId)
-{
-    if (!mIsRunning) {
-        std::cerr << "[ERR] CAN is not connected./n" << std::endl;
-        return;
-    }
-    mButtonOn[buttId]=0;
-    send_buttons_states(mButtonOn, buttonsCnt, SIGNAL_LED);
 }
 

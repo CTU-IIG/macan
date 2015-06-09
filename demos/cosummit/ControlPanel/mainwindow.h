@@ -66,22 +66,6 @@ private:
      */
     Ui::MainWindow *ui;
     /**
-     * @brief A shortcut for clicking on the Button 1 (ALT+1)
-     */
-    QShortcut *but1Shortcut;
-    /**
-     * @brief A shortcut for clicking on the button 2 (ALT+2)
-     */
-    QShortcut *but2Shortcut;
-    /**
-     * @brief An instance of an object creating interface between MaCAN and QButton widget for toogling LED on the TriBoard.
-     */
-    VirtualButton button1;
-    /**
-     * @brief An instance of an object creating interface between MaCAN and QButton widget for toogling LED on the TriBoard.
-     */
-    VirtualButton button2;
-    /**
      * @brief A pointer to MaCAN object managing the CAN connection, state of the components and Event loop thread.
      */
     MaCANConnection *macan;
@@ -98,11 +82,14 @@ private:
     long forgedMsgNum;
     QTimer forgedHighlightTimer;
 
+    uint32_t ledStatus;
+    void ledClicked(int led);
 private slots:
     void incAuthMsgNum(int graph);
     void incForgedMsgNum(int graph);
     void forgedMsgNumDehighlight();
-
+    void ledClicked1() { ledClicked(0); };
+    void ledClicked2() { ledClicked(1); };
 };
 
 #endif // MAINWINDOW_H

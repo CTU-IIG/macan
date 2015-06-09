@@ -97,15 +97,6 @@ private:
      * @param status The status of the signal
      */
     static void sig_invalid(uint8_t sig_num, uint32_t sig_val, enum macan_signal_status status);
-    /**
-     * @brief Internal function for transfering buttons states.
-     * @param butStates Pointer to an array with buttons states
-     * @param numButtons Number of the buttons
-     * @param msgId The identifier if the signal.
-     * @return true if success, false otherwise.
-     */
-    bool send_buttons_states(const bool *butStates, unsigned int numButtons, uint8_t msgId);
-
 public:
     /**
      * @brief MaCANConnection constructor
@@ -126,29 +117,15 @@ public:
      * @return true if MaCAN is configured, connected and running.
      */
     bool isRunning() const;
+
+    bool send_buttons_states(uint32_t button_states);
+
     /**
      * @brief Static pointer to the instance of this class, used in MaCAN callbacks to emit signals.
      * @see sig_callback
      * @see sig_invalid
      */
     static MaCANConnection *instance;
-
-public slots:
-    /**
-     * @brief Set the button pressed and send the CAN message with the buttons states.
-     * @param buttId identifier of the button.
-     */
-    void virtualButtonPressed(unsigned int buttId);
-    /**
-     * @brief Set the button released and send the CAN message with the buttons states.
-     * @param buttId identifier of the button.
-     */
-    void virtualButtonReleased(unsigned int buttId);
-    /**
-     * @brief Toogle the button and send the CAN message with the buttons states.
-     * @param buttId identifier of the button.
-     */
-    void virtualButtonClicked(unsigned int buttId);
 
 signals:
     /**
