@@ -1,5 +1,5 @@
 /*
- *  Copyright 2014-2015 Czech Technical University in Prague
+ *  Copyright 2014-2015, 2019 Czech Technical University in Prague
  *
  *  Authors: Michal Sojka <sojkam1@fel.cvut.cz>
  *           Radek Matějka <radek.matejka@gmail.com>
@@ -119,7 +119,8 @@ void send_auth_req(struct macan_ctx *ctx, macan_ecuid dst_id, uint8_t sig_num, u
 	t = macan_get_time(ctx);
 	skey = get_cpart(ctx, dst_id)->skey;
 
-	memcpy(plain, &htole32(t), 4);
+	uint32_t tl = htole32(t);
+	memcpy(plain, &tl, 4);
 	plain[4] = ctx->node->node_id;
 	plain[5] = dst_id;
 	plain[6] = sig_num;
@@ -438,7 +439,8 @@ void receive_time_auth(struct macan_ctx *ctx, const struct can_frame *cf)
 	skey = ctx->cpart[ctx->config->time_server_id]->skey;
 	memcpy(plain, &time_ts, 4); // received time
 	memcpy(plain + 4, t->chg, 6); // challenge
-	memcpy(plain + 10, &htole32(CANID(ctx, ctx->config->time_server_id)),2);
+	uint32_t tsile = htole32(CANID(ctx, ctx->config->time_server_id));
+	memcpy(plain + 10, &tsile,2);
 
 	if (!macan_check_cmac(ctx, &skey, cf->data + 4, plain, -1, sizeof(plain))) {
 		/* not a fatal error, we possibly received signed time for different node */
